@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
+** $Id: dump.c,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -9,17 +9,20 @@
 #include <string.h>
 #include "luac.h"
 
+#define NotWord(x)    ((unsigned short)x!=x)
+
 static void DumpWord(int i, FILE* D)
 {
- Word w=i;
- fputc(w>>8,D);
- fputc(w,D);
+ int hi=(i>>8)&0x0FF;
+ int lo=i&0x0FF;
+ fputc(hi,D);
+ fputc(lo,D);
 }
 
 static void DumpLong(int i, FILE* D)
 {
- Word hi=(i>>16)&0x0FFFF;
- Word lo=i&0x0FFFF;
+ int hi=(i>>16)&0x0FFFF;
+ int lo=i&0x0FFFF;
  DumpWord(hi,D);
  DumpWord(lo,D);
 }
@@ -39,8 +42,8 @@ static void DumpSize(int s, FILE* D)
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
- extern int CodeSize(TProtoFunc*);		/* in print.c */
- int size=CodeSize(tf)+1;
+ extern int CodeSize(TProtoFunc*);	/* in print.c */
+ int size=CodeSize(tf)+2;		/* CodeSize skips header bytes */
  DumpSize(size,D);
  DumpBlock(tf->code,size,D);
 }
