@@ -1,22 +1,34 @@
 /*
-** $Id: $
-** opcode names (extracted semi-automatically from lopcodes.h)
-** Copyrightnotice
+** $Id$
+** opcode names and sizes (extracted automatically from lopcodes.h by mkprinth)
+** See Copyright Notice in lua.h
 */
 
-#define NOPCODES	(sizeof(OpCodeName)/sizeof(OpCodeName[0]))
+#define NOPCODES	(sizeof(OpcodeName)/sizeof(OpcodeName[0]))
 
-static char* OpCodeName[]={	/* ORDER lopcodes.h */
+static char* OpcodeName[]={		/* ORDER lopcodes.h */
  "ENDCODE",
  "PUSHNIL",
- "PUSHNILS",
- "PUSH0",
- "PUSH1",
- "PUSH2",
- "PUSHBYTE",
- "PUSHWORD",
- "PUSHCONSTANTB",
+ "PUSHNIL0",
+ "PUSHNUMBER",
+ "PUSHNUMBER0",
+ "PUSHNUMBER1",
+ "PUSHNUMBER2",
+ "PUSHNUMBERW",
  "PUSHCONSTANT",
+ "PUSHCONSTANT0",
+ "PUSHCONSTANT1",
+ "PUSHCONSTANT2",
+ "PUSHCONSTANT3",
+ "PUSHCONSTANT4",
+ "PUSHCONSTANT5",
+ "PUSHCONSTANT6",
+ "PUSHCONSTANT7",
+ "PUSHCONSTANTW",
+ "PUSHUPVALUE",
+ "PUSHUPVALUE0",
+ "PUSHUPVALUE1",
+ "PUSHLOCAL",
  "PUSHLOCAL0",
  "PUSHLOCAL1",
  "PUSHLOCAL2",
@@ -25,13 +37,34 @@ static char* OpCodeName[]={	/* ORDER lopcodes.h */
  "PUSHLOCAL5",
  "PUSHLOCAL6",
  "PUSHLOCAL7",
- "PUSHLOCAL8",
- "PUSHLOCAL9",
- "PUSHLOCAL",
- "PUSHGLOBAL",
- "PUSHINDEXED",
+ "GETGLOBAL",
+ "GETGLOBAL0",
+ "GETGLOBAL1",
+ "GETGLOBAL2",
+ "GETGLOBAL3",
+ "GETGLOBAL4",
+ "GETGLOBAL5",
+ "GETGLOBAL6",
+ "GETGLOBAL7",
+ "GETGLOBALW",
+ "GETTABLE",
+ "GETDOTTED",
+ "GETDOTTED0",
+ "GETDOTTED1",
+ "GETDOTTED2",
+ "GETDOTTED3",
+ "GETDOTTED4",
+ "GETDOTTED5",
+ "GETDOTTED6",
+ "GETDOTTED7",
+ "GETDOTTEDW",
  "PUSHSELF",
+ "PUSHSELFW",
  "CREATEARRAY",
+ "CREATEARRAY0",
+ "CREATEARRAY1",
+ "CREATEARRAYW",
+ "SETLOCAL",
  "SETLOCAL0",
  "SETLOCAL1",
  "SETLOCAL2",
@@ -40,16 +73,25 @@ static char* OpCodeName[]={	/* ORDER lopcodes.h */
  "SETLOCAL5",
  "SETLOCAL6",
  "SETLOCAL7",
- "SETLOCAL8",
- "SETLOCAL9",
- "SETLOCAL",
  "SETGLOBAL",
- "SETINDEXED0",
- "SETINDEXED",
- "SETLIST0",
+ "SETGLOBAL0",
+ "SETGLOBAL1",
+ "SETGLOBAL2",
+ "SETGLOBAL3",
+ "SETGLOBAL4",
+ "SETGLOBAL5",
+ "SETGLOBAL6",
+ "SETGLOBAL7",
+ "SETGLOBALW",
+ "SETTABLE0",
+ "SETTABLE",
  "SETLIST",
+ "SETLIST0",
+ "SETLISTW",
  "SETMAP",
+ "SETMAP0",
  "EQOP",
+ "NEQOP",
  "LTOP",
  "LEOP",
  "GTOP",
@@ -63,16 +105,155 @@ static char* OpCodeName[]={	/* ORDER lopcodes.h */
  "MINUSOP",
  "NOTOP",
  "ONTJMP",
+ "ONTJMPW",
  "ONFJMP",
+ "ONFJMPW",
  "JMP",
- "UPJMP",
+ "JMPW",
  "IFFJMP",
+ "IFFJMPW",
+ "IFTUPJMP",
+ "IFTUPJMPW",
  "IFFUPJMP",
+ "IFFUPJMPW",
+ "CLOSURE",
+ "CLOSURE0",
+ "CLOSURE1",
  "CALLFUNC",
- "RETCODE0",
+ "CALLFUNC0",
+ "CALLFUNC1",
  "RETCODE",
  "SETLINE",
- "ADJUST",
- "POPS",
+ "SETLINEW",
+ "POP",
+ "POP0",
+ "POP1",
+ "ARGS",
  "VARARGS",
+};
+
+static int OpcodeSize[]={		/* ORDER lopcodes.h */
+ 1,	/* ENDCODE, */
+ 2,	/* PUSHNIL, */
+ 1,	/* PUSHNIL0, */
+ 2,	/* PUSHNUMBER, */
+ 1,	/* PUSHNUMBER0, */
+ 1,	/* PUSHNUMBER1, */
+ 1,	/* PUSHNUMBER2, */
+ 3,	/* PUSHNUMBERW, */
+ 2,	/* PUSHCONSTANT, */
+ 1,	/* PUSHCONSTANT0, */
+ 1,	/* PUSHCONSTANT1, */
+ 1,	/* PUSHCONSTANT2, */
+ 1,	/* PUSHCONSTANT3, */
+ 1,	/* PUSHCONSTANT4, */
+ 1,	/* PUSHCONSTANT5, */
+ 1,	/* PUSHCONSTANT6, */
+ 1,	/* PUSHCONSTANT7, */
+ 3,	/* PUSHCONSTANTW, */
+ 2,	/* PUSHUPVALUE, */
+ 1,	/* PUSHUPVALUE0, */
+ 1,	/* PUSHUPVALUE1, */
+ 2,	/* PUSHLOCAL, */
+ 1,	/* PUSHLOCAL0, */
+ 1,	/* PUSHLOCAL1, */
+ 1,	/* PUSHLOCAL2, */
+ 1,	/* PUSHLOCAL3, */
+ 1,	/* PUSHLOCAL4, */
+ 1,	/* PUSHLOCAL5, */
+ 1,	/* PUSHLOCAL6, */
+ 1,	/* PUSHLOCAL7, */
+ 2,	/* GETGLOBAL, */
+ 1,	/* GETGLOBAL0, */
+ 1,	/* GETGLOBAL1, */
+ 1,	/* GETGLOBAL2, */
+ 1,	/* GETGLOBAL3, */
+ 1,	/* GETGLOBAL4, */
+ 1,	/* GETGLOBAL5, */
+ 1,	/* GETGLOBAL6, */
+ 1,	/* GETGLOBAL7, */
+ 3,	/* GETGLOBALW, */
+ 1,	/* GETTABLE, */
+ 2,	/* GETDOTTED, */
+ 1,	/* GETDOTTED0, */
+ 1,	/* GETDOTTED1, */
+ 1,	/* GETDOTTED2, */
+ 1,	/* GETDOTTED3, */
+ 1,	/* GETDOTTED4, */
+ 1,	/* GETDOTTED5, */
+ 1,	/* GETDOTTED6, */
+ 1,	/* GETDOTTED7, */
+ 3,	/* GETDOTTEDW, */
+ 2,	/* PUSHSELF, */
+ 3,	/* PUSHSELFW, */
+ 2,	/* CREATEARRAY, */
+ 1,	/* CREATEARRAY0, */
+ 1,	/* CREATEARRAY1, */
+ 3,	/* CREATEARRAYW, */
+ 2,	/* SETLOCAL, */
+ 1,	/* SETLOCAL0, */
+ 1,	/* SETLOCAL1, */
+ 1,	/* SETLOCAL2, */
+ 1,	/* SETLOCAL3, */
+ 1,	/* SETLOCAL4, */
+ 1,	/* SETLOCAL5, */
+ 1,	/* SETLOCAL6, */
+ 1,	/* SETLOCAL7, */
+ 2,	/* SETGLOBAL, */
+ 1,	/* SETGLOBAL0, */
+ 1,	/* SETGLOBAL1, */
+ 1,	/* SETGLOBAL2, */
+ 1,	/* SETGLOBAL3, */
+ 1,	/* SETGLOBAL4, */
+ 1,	/* SETGLOBAL5, */
+ 1,	/* SETGLOBAL6, */
+ 1,	/* SETGLOBAL7, */
+ 3,	/* SETGLOBALW, */
+ 1,	/* SETTABLE0, */
+ 2,	/* SETTABLE, */
+ 3,	/* SETLIST, */
+ 2,	/* SETLIST0, */
+ 3,	/* SETLISTW, */
+ 2,	/* SETMAP, */
+ 1,	/* SETMAP0, */
+ 1,	/* EQOP, */
+ 1,	/* NEQOP, */
+ 1,	/* LTOP, */
+ 1,	/* LEOP, */
+ 1,	/* GTOP, */
+ 1,	/* GEOP, */
+ 1,	/* ADDOP, */
+ 1,	/* SUBOP, */
+ 1,	/* MULTOP, */
+ 1,	/* DIVOP, */
+ 1,	/* POWOP, */
+ 1,	/* CONCOP, */
+ 1,	/* MINUSOP, */
+ 1,	/* NOTOP, */
+ 2,	/* ONTJMP, */
+ 3,	/* ONTJMPW, */
+ 2,	/* ONFJMP, */
+ 3,	/* ONFJMPW, */
+ 2,	/* JMP, */
+ 3,	/* JMPW, */
+ 2,	/* IFFJMP, */
+ 3,	/* IFFJMPW, */
+ 2,	/* IFTUPJMP, */
+ 3,	/* IFTUPJMPW, */
+ 2,	/* IFFUPJMP, */
+ 3,	/* IFFUPJMPW, */
+ 2,	/* CLOSURE, */
+ 1,	/* CLOSURE0, */
+ 1,	/* CLOSURE1, */
+ 3,	/* CALLFUNC, */
+ 2,	/* CALLFUNC0, */
+ 2,	/* CALLFUNC1, */
+ 2,	/* RETCODE, */
+ 2,	/* SETLINE, */
+ 3,	/* SETLINEW, */
+ 2,	/* POP, */
+ 1,	/* POP0, */
+ 1,	/* POP1, */
+ 2,	/* ARGS, */
+ 2,	/* VARARGS */
 };
