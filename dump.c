@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.9 1998/06/13 16:54:15 lhf Exp lhf $
+** $Id: dump.c,v 1.10 1998/06/25 15:50:09 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -60,12 +60,11 @@ static void DumpDouble(double f, FILE* D)
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
- extern int CodeSize(TProtoFunc*);	/* in print.c */
  int size=CodeSize(tf);
  if (NotWord(size))
   fprintf(stderr,"luac: warning: "
 	"\"%s\":%d code too long for 16-bit machines (%d bytes)\n",
-	tf->fileName->str,tf->lineDefined,size);
+	fileName(tf),tf->lineDefined,size);
  DumpLong(size,D);
  DumpBlock(tf->code,size,D);
 }
@@ -77,7 +76,7 @@ static void DumpString(char* s, int size, FILE* D)
  else
  {
   if (NotWord(size))
-   luaL_verror("string too long (%d bytes): \"%.32s...\"\n",size,s);
+   luaL_verror("string too long (%d bytes): \"%.32s...\"",size,s);
   DumpWord(size,D);
   DumpBlock(s,size,D);
  }
@@ -110,22 +109,23 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
+  fputc(-ttype(o),D);
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
-	fputc(ID_NUM,D);
 	DumpNumber(nvalue(o),D);
 	break;
    case LUA_T_STRING:
-	fputc(ID_STR,D);
 	DumpTString(tsvalue(o),D);
 	break;
    case LUA_T_PROTO:
-	fputc(ID_FUN,D);
 	DumpFunction(tfvalue(o),D);
 	break;
+   case LUA_T_NIL:
+	break;
    default:				/* cannot happen */
-	LUA_INTERNALERROR("bad constant");
+	luaL_verror("cannot dump constant #%d: type=%d [%s]",
+		i,ttype(o),luaO_typename(o));
 	break;
   }
  }
