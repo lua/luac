@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.35 2002/02/28 20:09:28 lhf Exp lhf $
+** $Id: dump.c,v 1.36 2002/06/06 13:22:56 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -10,10 +10,9 @@
 #include "lopcodes.h"
 #include "lundump.h"
 
-#define WRITE(b,size,n,D)	(*D->write)(b,size,n,D->data)
-#define DumpBlock(b,size,D)	WRITE(b,size,1,D)
-#define DumpVector(b,n,size,D)	WRITE(b,size,n,D)
-#define DumpLiteral(s,D)	WRITE("" s,(sizeof(s))-1,1,D)
+#define DumpBlock(b,size,D)	(*D->write)(b,size,D->data)
+#define DumpVector(b,n,size,D)	DumpBlock(b,(n)*(size),D)
+#define DumpLiteral(s,D)	DumpBlock("" s,(sizeof(s))-1,D)
 
 typedef struct {
  Writer write;

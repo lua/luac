@@ -1,5 +1,5 @@
 /*
-** $Id: ldumplib.c,v 1.6 2002/02/28 20:09:28 lhf Exp lhf $
+** $Id: ldumplib.c,v 1.7 2002/06/06 13:22:56 lhf Exp lhf $
 ** library access to precompiler
 ** See Copyright Notice in lua.h
 */
@@ -15,9 +15,9 @@
 
 LUALIB_API int lua_dumplibopen (lua_State *L);
 
-static size_t writer(const void* b, size_t size, size_t n, void* B) {
- luaL_addlstring((luaL_Buffer*)B,b,size*n);
- return n;
+static int writer(const void* b, size_t size, void* B) {
+ luaL_addlstring((luaL_Buffer*)B,b,size);
+ return 1;
 }
 
 static int dump(lua_State *L) {
