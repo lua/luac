@@ -1,11 +1,11 @@
-.\" $Id: luac.man,v 1.4 1997/04/15 11:49:02 lhf Exp $
-.TH LUAC 1 "23 December 1997"
+.\" $Id: luac.man,v 1.5 1998/01/12 13:04:24 lhf Exp lhf $
+.TH LUAC 1 "19 January 1998"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
 .B luac
 [
-.B \-c | -u
+.B \-c | \-u
 ]
 [
 .B \-d
@@ -34,30 +34,42 @@ is the Lua compiler.
 It translates programs written in the Lua programming language
 into binary files that can be loaded and executed with
 .B lua_dofile
-in C or
+in C or with
 .B dofile
 in Lua.
-
-.BR luac
+.LP
+The main advantages of pre-compiling chunks are:
+faster loading,
+protecting source code from user changes,
+off-line syntax error detection.
+.LP
+.B luac
 produces a single output file containing the bytecodes
 for all named source files.
 By default,
 the output file is named
-.BR luac.out ,
+.B luac.out ,
 but you can change this with the
 .B \-o
 option.
-
-You can use "-" to indicate stdin as a source file.
-
-.BR luac
+.LP
+You can use
+.B "\-"
+to indicate
+.I stdin
+as a source file.
+.LP
+.B luac
 can also load and list binary files with the
 .B \-u
 option.
-
-.SH OPTIONS
 .LP
-.TP 1i
+Binary files produced by differents runs of
+.B luac
+can be combined into one large file.
+The result is still a valid binary file.
+.SH OPTIONS
+.TP
 .B \-c
 compile (this is the default).
 .TP
@@ -68,7 +80,7 @@ If no files are given, then luac undumps
 .TP
 .BI \-D " name"
 predefine symbol
-.IR name
+.I name
 for conditional compilation.
 .TP
 .B \-d
@@ -80,9 +92,11 @@ This is the default when undumping.
 .TP
 .B \-p
 parses sources files but does not generate any output file.
+Used mainly for timing purposes.
 .TP
 .B \-q
-quiet; procudes no listing. This is the default when compiling.
+quiet; produces no listing.
+This is the default when compiling.
 .TP
 .B \-v
 prints version information.
@@ -104,9 +118,9 @@ default output file
 .PD
 .SH "SEE ALSO"
 .BR lua (1)
-.LP
-.IR "Reference Manual of the Programming Language Lua"
-.LP
+.br
+.I "Reference Manual of the Programming Language Lua"
+.br
 http://www.tecgraf.puc-rio.br/lua/
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
@@ -114,5 +128,5 @@ Error messages should be self explanatory.
 Inherits any bugs from Lua,
 but Lua has no bugs...
 .SH AUTHORS
-W. Celes, R. Ierusalimschy & L. H. de Figueiredo
-(lua@tecgraf.puc-rio.br)
+W. Celes, R. Ierusalimschy and L. H. de Figueiredo
+.I (lua@tecgraf.puc-rio.br)
