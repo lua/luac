@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: luac.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -13,8 +13,8 @@
 #include "lzio.h"
 #include "luadebug.h"
 
-void PrintChunk(TFunc* Main);
-void DumpChunk(TFunc* Main, FILE* D);
+void PrintChunk(TProtoFunc* Main);
+void DumpChunk(TProtoFunc* Main, FILE* D);
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
@@ -32,7 +32,7 @@ static void usage(void)
  "luac [-c | -u] [-D name] [-d] [-l] [-p] [-q] [-v] [-o output] file ...\n"
  " -c\tcompile (default)\n"
  " -u\tundump\n"
- " -D\tpredefine symbol for conditional compilation \n"
+ " -D\tpredefine symbol for conditional compilation\n"
  " -d\tgenerate debugging information\n"
  " -l\tlist (default for -u)\n"
  " -o\toutput file for -c (default is \"luac.out\")\n"
@@ -119,18 +119,18 @@ int main(int argc, char* argv[])
  return 0;
 }
 
-static void do_compile(ZIO* z, char* chunkname)
+static void do_compile(ZIO* z)
 {
- TFunc* Main=luaY_parser(z,chunkname);
+ TProtoFunc* Main=luaY_parser(z);
  if (listing) PrintChunk(Main);
  if (dumping) DumpChunk(Main,D);
 }
 
-static void do_undump(ZIO* z, char* filename)
+static void do_undump(ZIO* z)
 {
  while (1)
  {
-  TFunc* Main=luaU_undump1(z,filename);
+  TProtoFunc* Main=luaU_undump1(z);
   if (Main==NULL) break;
   if (listing) PrintChunk(Main);
  }
@@ -140,10 +140,10 @@ static void doit(int undump, char* filename)
 {
  FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
  ZIO z;
- zFopen(&z,f);
  if (filename==NULL) filename="(stdin)";
+ zFopen(&z,f,filename);
  if (verbose) fprintf(stderr,"%s\n",filename);
- if (undump) do_undump(&z,filename); else do_compile(&z,filename);
+ if (undump) do_undump(&z); else do_compile(&z);
  if (f!=stdin) fclose(f);
 }
 
