@@ -1,13 +1,16 @@
 /*
-** $Id: print.c,v 1.40 2002/10/28 17:42:28 lhf Exp lhf $
+** $Id: print.c,v 1.41 2003/01/10 11:08:45 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 
-#define LUA_OPNAMES
+#undef  DEBUG_PRINT
 #define DEBUG_PRINT
+
+#undef  LUA_OPNAMES
+#define LUA_OPNAMES
 
 #include "ldebug.h"
 #include "lobject.h"
@@ -157,7 +160,7 @@ static void PrintHeader(const Proto* f)
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
-	S(f->nupvalues));
+	S(f->nups));
  printf("%d local%s, %d constant%s, %d function%s\n",
 	S(f->sizelocvars),S(f->sizek),S(f->sizep));
 }
@@ -188,7 +191,7 @@ static void PrintLocals(const Proto* f)
 
 static void PrintUpvalues(const Proto* f)
 {
- int i,n=f->nupvalues;
+ int i,n=f->sizeupvalues;
  printf("upvalues (%d) for %p:\n",n,VOID(f));
  if (f->upvalues==NULL) return;
  for (i=0; i<n; i++)
