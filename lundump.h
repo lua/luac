@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.8 1998/07/03 13:17:08 lhf Exp lhf $
+** $Id: lundump.h,v 1.9 1998/07/12 00:17:37 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -12,13 +12,11 @@
 
 TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 
-#define	SIGNATURE	"Lua"
-#define	VERSION		0x31		/* last format change was in 3.1 */
-#define	VERSION0	0x31		/* last major  change was in 3.1 */
-#define ID_CHUNK	27		/* ESC */
-
-#define IsMain(f)	(f->lineDefined==0)
-#define luaO_typename(o)	luaO_typenames[-ttype(o)]
+/* definitions for headers of binary files */
+#define	VERSION		0x32		/* last format change was in 3.2 */
+#define	VERSION0	0x32		/* last major  change was in 3.2 */
+#define ID_CHUNK	27		/* binary files start with ESC */
+#define	SIGNATURE	"Lua"		/* followed by this signature */
 
 /* number representation */
 #define ID_INT4		'l'		/* 4-byte integers */
@@ -26,17 +24,23 @@ TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 #define ID_REAL8	'd'		/* 8-byte reals */
 #define ID_NATIVE	'?'		/* whatever your machine uses */
 
+/* how to format numbers in listings and error messages */
+#ifndef NUMBER_FMT
+#define NUMBER_FMT	"%.16g"		/* LUA_NUMBER */
+#endif
+
 /*
-* use a multiple of PI for testing number representation.
-* multiplying by 1E8 gives notrivial integer values.
+* we use a multiple of PI for testing number representation.
+* multiplying by 1E8 gives non-trivial integer values.
 */
 #define	TEST_NUMBER	3.14159265358979323846E8
 
 /* LUA_NUMBER
-* choose one below for the number representation in precompiled chunks.
+* choose below the number representation in precompiled chunks.
+* you have to choose an adequate definition for ID_NUMBER.
 * the default is ID_REAL8 because the default for LUA_NUM_TYPE is double.
 * if your machine does not use IEEE 754, use ID_NATIVE.
-* the next version will support conversion to/from IEEE 754.
+* a future version may include support portable conversion to and from IEEE 754.
 *
 * if you change LUA_NUM_TYPE, make sure you set ID_NUMBER accordingly,
 * specially if sizeof(long)!=4.
