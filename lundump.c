@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.4 1998/01/13 20:05:24 lhf Exp lhf $
+** $Id: lundump.c,v 1.6 1998/02/06 20:24:30 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -35,7 +35,7 @@
 
 static void unexpectedEOZ(ZIO* Z)
 {
- luaL_verror("unexpected end of file in %s",Z->name);
+ luaL_verror("unexpected end of file in %s",zname(Z));
 }
 
 static int ezgetc(ZIO* Z)
@@ -100,7 +100,7 @@ static Byte* LoadCode(ZIO* Z)
  long size=LoadLong(Z);
  unsigned int s=size;
  void* b;
- if (s!=size) luaL_verror("code too long (%ld bytes) in %s",size,Z->name);
+ if (s!=size) luaL_verror("code too long (%ld bytes) in %s",size,zname(Z));
  b=luaM_malloc(size);
  LoadBlock(b,size,Z);
  return b;
@@ -170,7 +170,7 @@ static void LoadConstants(TProtoFunc* tf, ZIO* Z)
 	tfvalue(o)=LoadFunction(Z);
 	break;
    default:
-	luaL_verror("bad constant #%d in %s: type=%d ('%c')",Z->name,i,c,c);
+	luaL_verror("bad constant #%d in %s: type=%d ('%c')",i,zname(Z),c,c);
 	break;
   }
  }
@@ -192,7 +192,7 @@ static void LoadSignature(ZIO* Z)
  char* s=SIGNATURE;
  while (*s!=0 && ezgetc(Z)==*s)
   ++s;
- if (*s!=0) luaL_verror("bad signature in %s",Z->name);
+ if (*s!=0) luaL_verror("bad signature in %s",zname(Z));
 }
 
 static void LoadHeader(ZIO* Z)
@@ -204,24 +204,24 @@ static void LoadHeader(ZIO* Z)
  if (version>VERSION)
   luaL_verror(
 	"%s too new: version=0x%02x; expected at most 0x%02x",
-	Z->name,version,VERSION);
+	zname(Z),version,VERSION);
  if (version<0x31)			/* major change in 3.1 */
   luaL_verror(
 	"%s too old: version=0x%02x; expected at least 0x%02x",
-	Z->name,version,0x31);
+	zname(Z),version,0x31);
  id=ezgetc(Z);				/* test number representation */
  sizeofR=ezgetc(Z);
  if (id!=ID_NUMBER || sizeofR!=sizeof(real))
  {
   luaL_verror("unknown number representation in %s: "
-	"read 0x%02x%02x; expected 0x%02x%02x",
-	Z->name,id,sizeofR,ID_NUMBER,sizeof(real));
+	"read 0x%02x %d; expected 0x%02x %d",
+	zname(Z),id,sizeofR,ID_NUMBER,sizeof(real));
  }
  f=LoadNumber(Z);
  if (f!=tf)
   luaL_verror("unknown number representation in %s: "
-	"read %g; expected %g",		 /* LUA_NUMBER */
-	Z->name,f,tf);
+	"read %g; expected %g",		/* LUA_NUMBER */
+	zname(Z),(double)f,(double)tf);
 }
 
 static TProtoFunc* LoadChunk(ZIO* Z)
@@ -240,6 +240,6 @@ TProtoFunc* luaU_undump1(ZIO* Z)
  if (c==ID_CHUNK)
   return LoadChunk(Z);
  else if (c!=EOZ)
-  luaL_verror("%s is not a lua binary file",Z->name);
+  luaL_verror("%s is not a Lua binary file",zname(Z));
  return NULL;
 }
