@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.42 2003/02/11 23:52:12 lhf Exp lhf $
+** $Id: print.c,v 1.43 2003/04/01 17:57:19 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -97,7 +97,7 @@ static void PrintCode(const Proto* f)
     break;
    case OP_GETUPVAL:
    case OP_SETUPVAL:
-    printf("\t; %s",getstr(f->upvalues[b]));
+    printf("\t; %s", (f->sizeupvalues>0) ? getstr(f->upvalues[b]) : "-");
     break;
    case OP_GETGLOBAL:
    case OP_SETGLOBAL:
