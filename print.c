@@ -1,14 +1,11 @@
 /*
-** $Id: print.c,v 1.46 2004/03/24 00:25:08 lhf Exp lhf $
+** $Id: print.c,v 1.47 2004/06/09 21:03:53 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <ctype.h>
 #include <stdio.h>
-
-#undef LUA_OPNAMES
-#define LUA_OPNAMES
 
 #define LUA_CORE
 
@@ -86,13 +83,11 @@ static void PrintCode(const Proto* f)
   {
    case iABC:
     printf("%d",a);
-    if (getBMode(o)!=OpArgN) 
-    { if (b>=MAXSTACK) printf(" #%d",b-MAXSTACK); else printf(" %d",b); }
-    if (getCMode(o)!=OpArgN) 
-    { if (c>=MAXSTACK) printf(" #%d",c-MAXSTACK); else printf(" %d",c); }
+    if (getBMode(o)!=OpArgN) printf(" %d",ISK(b) ? (-1-INDEXK(b)) : b);
+    if (getCMode(o)!=OpArgN) printf(" %d",ISK(c) ? (-1-INDEXK(c)) : c);
     break;
    case iABx:
-    if (getBMode(o)==OpArgK) printf("%d #%d",a,bx); else printf("%d %d",a,bx);
+    if (getBMode(o)==OpArgK) printf("%d %d",a,-1-bx); else printf("%d %d",a,bx);
     break;
    case iAsBx:
     if (o==OP_JMP) printf("%d",sbx); else printf("%d %d",a,sbx);
@@ -113,7 +108,7 @@ static void PrintCode(const Proto* f)
     break;
    case OP_GETTABLE:
    case OP_SELF:
-    if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
+    if (ISK(c)) { printf("\t; "); PrintConstant(f,INDEXK(c)); }
     break;
    case OP_SETTABLE:
    case OP_ADD:
@@ -124,12 +119,12 @@ static void PrintCode(const Proto* f)
    case OP_EQ:
    case OP_LT:
    case OP_LE:
-    if (b>=MAXSTACK || c>=MAXSTACK)
+    if (ISK(b) || ISK(c))
     {
      printf("\t; ");
-     if (b>=MAXSTACK) PrintConstant(f,b-MAXSTACK); else printf("-");
+     if (ISK(b)) PrintConstant(f,INDEXK(b)); else printf("-");
      printf(" ");
-     if (c>=MAXSTACK) PrintConstant(f,c-MAXSTACK); else printf("-");
+     if (ISK(c)) PrintConstant(f,INDEXK(c)); else printf("-");
     }
     break;
    case OP_JMP:
@@ -180,7 +175,7 @@ static void PrintConstants(const Proto* f)
  printf("constants (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
-  printf("\t%d\t",i);
+  printf("\t%d\t",i+1);
   PrintConstant(f,i);
   printf("\n");
  }
