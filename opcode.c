@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.5 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: opcode.c,v 1.6 1999/03/16 18:08:20 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -59,8 +59,8 @@ int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
  }
  else if (op>=NOPCODES)			/* cannot happen */
  {
-  luaL_verror("[%s:%d] bad opcode %d at %d in %p (\"%s\":%d)",
-	xFILE,xLINE,op,(int)(p-code),tf,tf->source->str,tf->lineDefined);
+  luaL_verror("[%s:%d] bad opcode %d at %d" IN,
+	xFILE,xLINE,op,(int)(p-code),INLOC);
   return 0;
  }
  else					/* ordinary opcode */
@@ -79,8 +79,8 @@ int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
    case ARGS_WB:	size=4;	OP.arg=(p[1]<<8)+p[2];	OP.arg2=p[3];
     break;
    default:				/* cannot happen */
-    luaL_verror("internal error at %s:%d: bad args %d for %s at %d in tf=%p",
-	__FILE__,__LINE__,OP.args,OP.name,(int)(p-code),tf);
+    luaL_verror("[%s:%d] bad args %d for %s at %d" IN,
+	__FILE__,__LINE__,OP.args,OP.name,(int)(p-code),INLOC);
     break;
   }
  }

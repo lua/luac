@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.6 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: opt.c,v 1.7 1999/03/16 18:17:26 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -159,7 +159,7 @@ printf("%d\tC[%d]=%d\tD[%d]=%d\n",i,i,C[i],i,D[i]);
  }
  if (k<n)
  {
-printf("\t\"%s\":%d reduced constants from %d to %d\n",
+printf("\t" SOURCE " reduced constants from %d to %d\n",
 	 tf->source->str,tf->lineDefined,n,k);
   FixConstants(tf,C);
   tf->nconsts=k;
@@ -254,7 +254,7 @@ static void PackCode(TProtoFunc* tf)
   p+=n;
   if (op==ENDCODE) break;
  }
-printf("\t\"%s\":%d reduced code from %d to %d\n",
+printf("\t" SOURCE " reduced code from %d to %d\n",
 	tf->source->str,tf->lineDefined,(int)(p-code),(int)(q-code));
 }
 
