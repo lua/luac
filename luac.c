@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.19 1999/11/23 19:12:11 lhf Exp lhf $
+** $Id: luac.c,v 1.20 1999/12/02 18:45:03 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -34,21 +34,21 @@ static void usage(char* op)
  if (op) fprintf(stderr,"luac: unrecognized option '%s'\n",op);
  fprintf(stderr,
  "usage: luac [options] [filenames].  Available options are:\n"
- " -c\t\tcompile (default)\n"
- " -d\t\tgenerate debugging information\n"
- " -D name\tpredefine 'name' for conditional compilation\n"
- " -l\t\tlist (default for -u)\n"
- " -n\t\tsave numbers in native format (file may not be portable)\n"
- " -o file\toutput file for -c (default is \"" OUTPUT "\")\n"
- " -O\t\toptimize\n"
- " -p\t\tparse only\n"
- " -q\t\tquiet (default for -c)\n"
- " -t\t\ttest code integrity\n"
- " -u\t\tundump\n"
- " -U name\tundefine 'name' for conditional compilation\n"
- " -v\t\tshow version information\n"
- " -V\t\tverbose\n"
- " -\t\tcompile \"stdin\"\n"
+ "  -        compile stdin\n"
+ "  -c       compile (default)\n"
+ "  -d       generate debugging information\n"
+ "  -D name  predefine `name' for conditional compilation\n"
+ "  -l       list (default for -u)\n"
+ "  -n       save numbers in native format (file may not be portable)\n"
+ "  -o file  output file for -c (default is \"" OUTPUT "\")\n"
+ "  -O       optimize\n"
+ "  -p       parse only\n"
+ "  -q       quiet (default for -c)\n"
+ "  -t       test code integrity\n"
+ "  -u       undump\n"
+ "  -U name  undefine `name' for conditional compilation\n"
+ "  -v       show version information\n"
+ "  -V       verbose\n"
  );
  exit(1);
 }
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 {
  const char* d=OUTPUT;			/* output file name */
  int i;
- L=lua_newstate();
+ L=lua_newstate(NULL);
  for (i=1; i<argc; i++)
  {
   if (argv[i][0]!='-')			/* end of options */
@@ -91,7 +91,10 @@ int main(int argc, char* argv[])
   else if (IS("-q"))			/* quiet */
    listing=0;
   else if (IS("-t"))			/* test */
+  {
    testing=1;
+   if (argc==2) { dumping=0; undumping=1; }
+  }
   else if (IS("-u"))			/* undump */
   {
    dumping=0;
@@ -102,7 +105,7 @@ int main(int argc, char* argv[])
    defineglobal(argv[++i],0);
   else if (IS("-v"))			/* show version */
   {
-   printf("%s  %s\n(written by %s)\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
+   printf("%s  %s\n", LUA_VERSION,LUA_COPYRIGHT);
    if (argc==2) return 0;
   }
   else if (IS("-V"))			/* verbose */
