@@ -3,13 +3,13 @@
 ** thread and save bytecodes to file
 */
 
-char *rcs_dump="$Id: dump.c,v 1.8 1996/02/28 23:10:08 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.9 1996/03/01 03:41:30 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
 #include "luac.h"
 
-static TFunc *lastF=NULL;		/* list of functions seen in code */
+static TFunc* lastF=NULL;		/* list of functions seen in code */
 
 static int SawVar(int i, int at)
 {
@@ -25,9 +25,9 @@ static int SawStr(int i, int at)
  return old;
 }
 
-static void ThreadCode(Byte *code, Byte *end)
+static void ThreadCode(Byte* code, Byte* end)
 {
- Byte *p;
+ Byte* p;
  int i;
  for (i=0; i<lua_ntable; i++) VarLoc(i)=0;
  for (i=0; i<lua_nconstant; i++) StrLoc(i)=0;
@@ -161,12 +161,13 @@ static void ThreadCode(Byte *code, Byte *end)
  }
 }
 
-static void CheckThread(Byte *code, int i)
+#ifdef CHECKTHREAD
+static void CheckThread(Byte* code, int i)
 {
  while (i!=0)
  {
   CodeWord c;
-  Byte *p=code+i;
+  Byte* p=code+i;
   printf(" %d",i);
   get_word(c,p);
   i=c.w;
@@ -174,7 +175,7 @@ static void CheckThread(Byte *code, int i)
  printf("\n");
 }
 
-static void CheckThreads(Byte *code)
+static void CheckThreads(Byte* code)
 {
  int i;
  printf("-- debug: var threads\n");
@@ -192,19 +193,20 @@ static void CheckThreads(Byte *code)
    CheckThread(code,StrLoc(i));
   }
 }
+#endif
 
-static void DumpWord(int i, FILE *D)
+static void DumpWord(int i, FILE* D)
 {
  Word w=i;
  fwrite(&w,sizeof(w),1,D);
 }
 
-static void DumpBlock(char* b, int size, FILE *D)
+static void DumpBlock(char* b, int size, FILE* D)
 {
  fwrite(b,size,1,D);
 }
 
-static void DumpString(char *s, FILE *D)
+static void DumpString(char* s, FILE* D)
 {
  int n=strlen(s)+1;
  if ((Word)n != n)
@@ -216,7 +218,7 @@ static void DumpString(char *s, FILE *D)
  DumpBlock(s,n,D);
 }
 
-static void DumpStrings(FILE *D)
+static void DumpStrings(FILE* D)
 {
  int i;
  for (i=0; i<lua_ntable; i++)
@@ -241,27 +243,12 @@ static void DumpStrings(FILE *D)
  }
 }
 
-static void DumpLocals(LocVar* lv, FILE *D)
-{
- LocVar* v;
- int n;
- for (n=0,v=lv; v->varname!=NULL; v++) ++n;
- if (n==0) return;
- fputc(ID_LOC,D);
- DumpWord(n,D);
- for (v=lv; v->varname!=NULL; v++)
- {
-  DumpWord(LocLoc(v),D);
-  DumpString(LocStr(v),D);
- }
-}
-
-void DumpFunction(TFunc *tf, FILE *D)
+void DumpFunction(TFunc* tf, FILE* D)
 {
  lastF=tf;
  ThreadCode(tf->code,tf->code+tf->size);
  fputc(ID_FUN,D);
- DumpWord(tf->size,D);
+ DumpWord(tf->size,D);			/* TODO: test if too long? */
  DumpWord(tf->lineDefined,D);
  if (IsMain(tf))
   DumpString(tf->fileName,D);
@@ -269,13 +256,12 @@ void DumpFunction(TFunc *tf, FILE *D)
   DumpWord(tf->marked,D);
  DumpBlock(tf->code,tf->size,D);
  DumpStrings(D);
- DumpLocals(tf->locvars,D);
-#if 0
+#ifdef CHECKTHREAD
 CheckThreads(tf->code);			/* TODO: remove */
 #endif
 }
 
-void DumpHeader(FILE *D)
+void DumpHeader(FILE* D)
 {
  Word w=TEST_WORD;
  float f=TEST_FLOAT;
