@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.2 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: opcode.c,v 1.3 1998/04/02 20:44:08 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -53,7 +53,7 @@ int OpcodeInfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
  }
  else if (op>=NOPCODES)			/* cannot happen */
  {
-  luaL_verror("internal error at %s:%d: bad opcode %d at %d in tf=%p\n",
+  luaL_verror("internal error at %s:%d: bad opcode %d at %d in tf=%p",
 	xFILE, xLINE,op,(int)(p-code),tf);
   return 0;
  }
@@ -71,4 +71,17 @@ int OpcodeInfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
  }
  *I=OP;
  return OP.size;
+}
+
+int CodeSize(TProtoFunc* tf)
+{
+ Byte* code=tf->code;
+ Byte* p=code;
+ while (1)
+ {
+  Opcode OP;
+  p+=INFO(tf,p,&OP);
+  if (OP.op==ENDCODE) break;
+ }
+ return p-code;
 }
