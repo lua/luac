@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.11 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: luac.c,v 1.12 1999/03/11 17:09:10 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -16,10 +16,9 @@
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
-void testnumber(void);
 
 static int listing=0;			/* list bytecodes? */
-static int debugging=0;			/* debug? */
+static int debugging=0;			/* emit debug information? */
 static int dumping=1;			/* dump bytecodes? */
 static int undumping=0;			/* undump bytecodes? */
 static int optimizing=0;		/* optimize? */
@@ -58,7 +57,7 @@ int main(int argc, char* argv[])
  char* d=OUTPUT;			/* output file name */
  int i;
  lua_open();
- testnumber();				/* test number representation */
+ luaU_testnumber();
  for (i=1; i<argc; i++)
  {
   if (argv[i][0]!='-')			/* end of options */
@@ -107,7 +106,7 @@ int main(int argc, char* argv[])
   else if (IS("-v"))			/* show version */
    printf("%s  %s\n(written by %s)\n\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
   else if (IS("-V"))			/* verbose */
-   verbose++;
+   verbose=1;
   else					/* unknown option */
    usage(argv[i]);
  }
@@ -143,7 +142,7 @@ int main(int argc, char* argv[])
 static void do_compile(ZIO* z)
 {
  TProtoFunc* Main;
- if (optimizing) L->debug=0;		/* set debugging before parsing */
+ if (optimizing) L->debug=0;
  if (debugging)  L->debug=1;
  Main=luaY_parser(z);
  if (optimizing) luaU_optchunk(Main);
@@ -186,32 +185,4 @@ static FILE* efopen(char* name, char* mode)
   exit(1);
  }
  return f; 
-}
-
-void testnumber(void)
-{
- real t=TEST_NUMBER;
- if (sizeof(real)!=SIZEOF_NUMBER)
-   luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
-	(int)sizeof(real),SIZEOF_NUMBER);
- else
- {
-#if   ID_NUMBER==ID_REAL4
-  float v=TEST_NUMBER;
-  #define EXPECTED	"4-byte float"
-#elif ID_NUMBER==ID_REAL8
-  double v=TEST_NUMBER;
-  #define EXPECTED	"8-byte double"
-#elif ID_NUMBER==ID_INT4
-  int v=TEST_NUMBER;
-  #define EXPECTED	"4-byte int"
-#elif ID_NUMBER==ID_NATIVE
-  #define EXPECTED	"native"
-#else
-  #error	bad ID_NUMBER
-#endif
-  if (t!=v)
-   luaL_verror("unsupported number type. "
-		"expected " EXPECTED ". see config and lundump.h");
- }
 }
