@@ -1,20 +1,15 @@
 /*
-** $Id: luac.h,v 1.18 2000/10/31 16:57:23 lhf Exp lhf $
+** $Id: luac.h,v 1.19 2001/03/15 17:29:16 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
 
-#include "ldebug.h"
-#include "lfunc.h"
-#include "lmem.h"
-#include "lobject.h"
-#include "lopcodes.h"
-#include "lstring.h"
-#include "ltable.h"
-#include "lundump.h"
+#define LUA_PRIVATE
+#include "lua.h"
 
-extern lua_State *lua_state;
-#define	L	lua_state		/* lazy! */
+#include "lobject.h"
+
+extern lua_State *luac_state;		/* lazy! */
 
 /* from dump.c */
 void luaU_dumpchunk(const Proto* Main, FILE* D);
