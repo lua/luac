@@ -143,4 +143,8 @@ static struct				/* ORDER lopcodes.h */
  { "POP", 2, POP, POP-POP-1 },
  { "POP0", 1, POP, POP0-POP-1 },
  { "POP1", 1, POP, POP1-POP-1 },
+#ifdef PACK
+#define NOP POP1+1
+ { "NOP", 1, NOP, NOP-NOP-1 },
+#endif
 };
