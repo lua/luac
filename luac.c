@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.36 2002/06/06 13:22:56 lhf Exp lhf $
+** $Id: luac.c,v 1.37 2002/06/20 14:46:51 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -127,7 +127,7 @@ static Proto* combine(lua_State* L, int n)
   f->code=luaM_newvector(L,f->sizecode,Instruction);
   for (i=0; i<n; i++)
   {
-   const Closure* c=lua_topointer(L,i+1);
+   const Closure* c=lua_topointer(L,i-n);
    f->p[i]=c->l.p;
    f->code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
    f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
@@ -149,9 +149,9 @@ static void strip(lua_State* L, Proto* f)
  for (i=0; i<n; i++) strip(L,f->p[i]);
 }
 
-static size_t writer(const void* p, size_t size, size_t n, void* u)
+static int writer(const void* p, size_t size, void* u)
 {
- return fwrite(p,size,n,(FILE*)u);
+ return fwrite(p,size,1,(FILE*)u)==1;
 }
 
 int main(int argc, char* argv[])
