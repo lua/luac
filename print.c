@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.10 1998/04/02 20:44:08 lhf Exp lhf $
+** $Id: print.c,v 1.11 1998/06/13 16:54:15 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -46,7 +46,6 @@ void PrintConstant1(TProtoFunc* tf, int i)
 static void PrintConstants(TProtoFunc* tf)
 {
  int i,n=tf->nconsts;
- int i;
  printf("constants (%d):\n",n);
  for (i=0; i<n; i++) PrintConstant1(tf,i);
 }
@@ -111,6 +110,8 @@ static void PrintCode(TProtoFunc* tf)
 		printf("\n");
 		return;
 
+	case CLOSURE:
+		printf(" %d",OP.arg2);
 	case PUSHCONSTANT:
 	case GETDOTTED:
 	case PUSHSELF:
@@ -133,7 +134,6 @@ static void PrintCode(TProtoFunc* tf)
 
 	case SETLIST:
 	case CALLFUNC:
-	case CLOSURE:
 		if (n>=3) printf(" %d",OP.arg2);
 		break;
 
@@ -227,7 +227,7 @@ static void PrintFunctions(TProtoFunc* Main)
   Opcode OP;
   int n=INFO(Main,p,&OP);
   if (OP.class==ENDCODE) break;
-  if (OP.class==PUSHCONSTANT)
+  if (OP.class==PUSHCONSTANT || OP.class==CLOSURE)
   {
    int i=OP.arg;
    TObject* o=Main->consts+i;
