@@ -1,33 +1,33 @@
-.\" $Id: luac.man,v 1.5 1998/01/12 13:04:24 lhf Exp lhf $
-.TH LUAC 1 "19 January 1998"
+.\" $Id: luac.man,v 1.6 1998/01/19 16:10:52 lhf Exp lhf $
+.TH LUAC 1 "06 February 1998"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
 .B luac
 [
-.B \-c | \-u
-]
-[
+.B \-c
+|
+.B \-u
+] [
+.B \-D
+.I name
+] [
 .B \-d
-]
-[
+] [
 .B \-l
-]
-[
-.B \-p
-]
-[
-.B \-q
-]
-[
-.B \-v
-]
-[
+] [
 .B \-o
-.I outputfile
+.I filename
+] [
+.B \-p
+] [
+.B \-q
+] [
+.B \-v
+] [
+.B \-V
 ]
-.I sourcefile
-\&.\|.\|.
+.IR sourcefile " ..."
 .SH DESCRIPTION
 .B luac
 is the Lua compiler.
@@ -42,13 +42,16 @@ The main advantages of pre-compiling chunks are:
 faster loading,
 protecting source code from user changes,
 off-line syntax error detection.
+The binary files created by
+.B luac
+are portable to all known architectures.
 .LP
 .B luac
 produces a single output file containing the bytecodes
-for all named source files.
+for all source files given.
 By default,
 the output file is named
-.B luac.out ,
+.BR luac.out ,
 but you can change this with the
 .B \-o
 option.
@@ -66,8 +69,15 @@ option.
 .LP
 Binary files produced by differents runs of
 .B luac
-can be combined into one large file.
-The result is still a valid binary file.
+can be combined into one large file,
+using 
+.BR cat (1).
+The result is still a valid binary file,
+and can be loaded with a single call to
+.B lua_dofile
+or 
+.BR dofile .
+.LP
 .SH OPTIONS
 .TP
 .B \-c
@@ -84,49 +94,58 @@ predefine symbol
 for conditional compilation.
 .TP
 .B \-d
-turns debugging on.
+turn debugging on.
+Individual chunks may
+still control the generation of debug information with
+$debug and $nodebug.
 .TP
 .B \-l
-produces a listing of the compiled bytecode for Lua's virtual machine.
+produce a listing of the compiled bytecode for Lua's virtual machine.
 This is the default when undumping.
 .TP
+.BI \-o " filename"
+output to
+.IR filename ,
+instead of the default
+.BR luac.out .
+The output file cannot be a source file.
+.TP
 .B \-p
-parses sources files but does not generate any output file.
-Used mainly for timing purposes.
+parse sources files but does not generate any output file.
+Used mainly for syntax checking.
 .TP
 .B \-q
 quiet; produces no listing.
 This is the default when compiling.
 .TP
 .B \-v
-prints version information.
+print version information.
 .TP
 .B \-V
-verbose.
-.TP
-.BI \-o " outputfile"
-name the output file
-.IR output ,
-instead of the default
-.BR luac.out .
-The output file cannot be a source file.
+verbose;
+print the names of the source files as they are processed.
 .SH FILES
-.PD 0
-.TP 20
+.TP 15
 .B luac.out
 default output file
-.PD
 .SH "SEE ALSO"
 .BR lua (1)
 .br
 .I "Reference Manual of the Programming Language Lua"
 .br
 http://www.tecgraf.puc-rio.br/lua/
+.br
+"Lua: an extensible extension language",
+.I Software: Practice & Experience
+.B 26
+#6 (1996) 635-652.
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
 .SH BUGS
 Inherits any bugs from Lua,
 but Lua has no bugs...
 .SH AUTHORS
-W. Celes, R. Ierusalimschy and L. H. de Figueiredo
+L. H. de Figueiredo,
+R. Ierusalimschy and
+W. Celes
 .I (lua@tecgraf.puc-rio.br)
