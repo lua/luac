@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.7 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: dump.c,v 1.8 1998/03/30 11:22:25 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -13,11 +13,7 @@
 #define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
 
 /* LUA_NUMBER */
-/* if you change the definition of real, make sure you set ID_NUMBER
-* accordingly lundump.h, specially if sizeof(long)!=4.
-* for types other than the ones listed below, you'll have to write your own
-* dump and undump routines.
-*/
+/* see comment in lundump.h */
 
 #if   ID_NUMBER==ID_REAL4
 	#define	DumpNumber	DumpFloat
@@ -47,6 +43,7 @@ static void DumpLong(long i, FILE* D)
  DumpWord(lo,D);
 }
 
+#if ID_NUMBER==ID_REAL4
 /* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
 static void DumpFloat(float f, FILE* D)
@@ -54,7 +51,9 @@ static void DumpFloat(float f, FILE* D)
  long l=*(long*)&f;
  DumpLong(l,D);
 }
+#endif
 
+#if ID_NUMBER==ID_REAL8
 /* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
 static void DumpDouble(double f, FILE* D)
@@ -72,6 +71,7 @@ static void DumpDouble(double f, FILE* D)
   DumpLong(l[1],D);
  }
 }
+#endif
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
