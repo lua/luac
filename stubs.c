@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.5 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: stubs.c,v 1.6 1998/06/13 16:54:15 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -10,8 +10,8 @@
 #include "luac.h"
 
 /*
-* avoid lapi.o lauxlib.o lbuiltin.o ldo.o lgc.o ltable.o ltm.o lvm.o
-* use lbuffer.o lfunc.o llex.o lmem.o lobject.o lparser.o lstate.o lstring.o lzio.o
+* avoid lapi lauxlib lbuiltin ldo lgc ltable ltm lvm
+* use only lbuffer lfunc llex lmem lobject lparser lstate lstring lzio
 */
 
 /* simplified from ldo.c */
@@ -30,6 +30,16 @@ void luaL_verror(char* fmt, ...)
  vsprintf(buff,fmt,argp);
  va_end(argp);
  lua_error(buff);
+}
+
+/* copied from lauxlib.c */
+int luaL_findstring (char* name, char* list[])
+{
+ int i;
+ for (i=0; list[i]; i++)
+   if (strcmp(list[i], name) == 0)
+     return i;
+ return -1;				/* name not found */
 }
 
 /* avoid runtime modules in lstate.c */
