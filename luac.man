@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.13 1999/03/11 14:43:37 lhf Exp lhf $
-.TH LUAC 1 "$Date: 1999/03/11 14:43:37 $"
+.\" $Id: luac.man,v 1.14 1999/03/12 23:57:18 lhf Exp lhf $
+.TH LUAC 1 "$Date: 1999/03/12 23:57:18 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -26,7 +26,7 @@ and
 off-line syntax error detection.
 The binary files created by
 .B luac
-are portable to all known architectures.
+are portable to all architectures.
 .LP
 Pre-compiling does not imply faster execution
 because in Lua chunks are always compiled into bytecodes before being executed.
