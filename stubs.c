@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.15 2000/01/28 17:51:09 lhf Exp lhf $
+** $Id: stubs.c,v 1.16 2000/04/24 17:32:29 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -22,8 +22,8 @@ const char luac_ident[] = "$luac: " LUA_VERSION " " LUA_COPYRIGHT " $\n"
                           "$Authors: " LUA_AUTHORS " $";
 
 /*
-* avoid lapi lauxlib lbuiltin ldebug ldo lgc lref ltable ltm lvm
-* use only lbuffer lcode lfunc llex lmem lobject lparser lstate lstring lzio
+* avoid lapi lauxlib lbuiltin ldebug ldo lgc lref ltm lvm
+* use only lbuffer lcode lfunc llex lmem lobject lparser lstate ltable lstring lzio
 */
 
 /* simplified from ldo.c */
@@ -69,7 +69,6 @@ int luaL_findstring (const char *name, const char *const list[]) {
 
 void luaB_predefine(lua_State *L){ UNUSED(L); }
 void luaC_collect(lua_State *L, int all){ UNUSED(L); UNUSED(all); }
-void luaH_free(lua_State *L, Hash *frees){ UNUSED(L); UNUSED(frees); }
 void luaT_init(lua_State *L){ UNUSED(L);}
 
 /*
