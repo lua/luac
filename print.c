@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char *rcs_print="$Id$";
+char *rcs_print="$Id: print.c,v 1.1 1996/02/23 19:04:13 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -117,7 +117,7 @@ static void PrintCode(Byte *code, Byte *end)
 		CodeCode c;
 		p++;
 		get_code(c,p);
-		printf("\t%p",c.tf);
+		printf("\t%p\t; \"%s\":%d",c.tf,c.tf->fileName,c.tf->lineDefined);
 		break;
 	}
 	case PUSHGLOBAL:
@@ -160,9 +160,9 @@ static void PrintCode(Byte *code, Byte *end)
 void PrintFunction(TFunc *tf)
 {
  if (tf->lineDefined==0)
-  printf("\nmain of \"%s\" (%d bytes)\n",tf->fileName,tf->size);
+  printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
-  printf("\nfunction \"%s\":%d (%d bytes); used at main+%d\n",
-	tf->fileName,tf->lineDefined,tf->size,tf->marked);
+  printf("\nfunction \"%s\":%d (%d bytes at %p); used at main+%d\n",
+	tf->fileName,tf->lineDefined,tf->size,tf,tf->marked);
  PrintCode(tf->code,tf->code+tf->size);
 }
