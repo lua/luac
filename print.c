@@ -3,10 +3,10 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.8 1996/11/14 09:22:55 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.9 1996/11/14 11:44:34 lhf Exp lhf $";
 
 #include <stdio.h>
-#include <string.h>
+#include <stdlib.h>
 #include "luac.h"
 #include "print.h"
 

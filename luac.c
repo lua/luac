@@ -3,9 +3,10 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.16 1996/03/13 17:33:03 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.17 1996/11/14 09:23:31 lhf Exp lhf $";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "luac.h"
 
