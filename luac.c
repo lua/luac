@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.15 1996/03/12 20:00:58 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.16 1996/03/13 17:33:03 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
    fprintf(stderr,"luac: will not overwrite input file \"%s\"\n",d);
    exit(1);
   }
- D=(dumping) ? fopen(d,"wb") : stdout;	/* must open in  binary mode */
+ D=(dumping) ? fopen(d,"wb") : stdout;	/* must open in binary mode */
  if (D==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
