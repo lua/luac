@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.13 1999/12/02 18:51:09 lhf Exp lhf $
+** $Id: luac.h,v 1.14 2000/04/24 17:32:29 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -12,6 +12,7 @@
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lstring.h"
+#include "ltable.h"
 #include "lundump.h"
 
 extern lua_State *lua_state;
