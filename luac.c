@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.25 2000/09/18 20:03:46 lhf Exp lhf $
+** $Id: luac.c,v 1.26 2000/09/19 19:46:12 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "lparser.h"
 #include "lstate.h"
 #include "lzio.h"
@@ -14,6 +15,8 @@
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
+static void usage(const char* message, const char* arg);
+static int doargs(int argc, const char* argv[]);
 static Proto* load(const char* filename);
 static FILE* efopen(const char* name, const char* mode);
 static void strip(Proto* tf);
@@ -26,6 +29,30 @@ static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;			/* strip debug information? */
 static int testing=0;			/* test integrity? */
 static const char* output=OUTPUT;	/* output file name */
+
+#define	IS(s)	(strcmp(argv[i],s)==0)
+
+int main(int argc, const char* argv[])
+{
+ Proto** P,*tf;
+ int i=doargs(argc,argv);
+ argc-=i; argv+=i;
+ if (argc<=0) usage("no input files given",NULL);
+ L=lua_open(0);
+ P=luaM_newvector(L,argc,Proto*);
+ for (i=0; i<argc; i++)
+  P[i]=load(IS("-")? NULL : argv[i]);
+ tf=combine(P,argc);
+ if (dumping) luaU_optchunk(tf);
+ if (listing) luaU_printchunk(tf);
+ if (testing) luaU_testchunk(tf);
+ if (dumping)
+ {
+  if (stripping) strip(tf);
+  luaU_dumpchunk(tf,efopen(output,"wb"));
+ }
+ return 0;
+}
 
 static void usage(const char* message, const char* arg)
 {
@@ -45,8 +72,6 @@ static void usage(const char* message, const char* arg)
  );
  exit(1);
 }
-
-#define	IS(s)	(strcmp(argv[i],s)==0)
 
 static int doargs(int argc, const char* argv[])
 {
@@ -81,46 +106,41 @@ static int doargs(int argc, const char* argv[])
   else					/* unknown option */
    usage("unrecognized option `%s'",argv[i]);
  }
- if (i==argc && (listing || testing)) argv[--i]=OUTPUT;
- return i;
-}
-
-int main(int argc, const char* argv[])
-{
- Proto** P,*tf;
- int i=doargs(argc,argv);
- argc-=i; argv+=i;
- if (argc<=0) usage("no input files given",NULL);
- L=lua_open(0);
- P=luaM_newvector(L,argc,Proto*);
- for (i=0; i<argc; i++)
-  P[i]=load(IS("-")? NULL : argv[i]);
- tf=combine(P,argc);
- if (dumping) luaU_optchunk(tf);
- if (listing) luaU_printchunk(tf);
- if (testing) luaU_testchunk(tf);
- if (dumping)
+ if (i==argc && (listing || testing))
  {
-  if (stripping) strip(tf);
-  luaU_dumpchunk(tf,efopen(output,"wb"));
+  dumping=0;
+  argv[--i]=OUTPUT;
  }
- return 0;
+ return i;
 }
 
 static Proto* load(const char* filename)
 {
  Proto* tf;
  ZIO z;
- char source[MAXFILENAME];
- FILE* f= (filename==NULL) ? stdin : efopen(filename,"r");
- int c=ungetc(fgetc(f),f);
- int undump=(c==ID_CHUNK);
+ char source[512];
+ FILE* f;
+ int c,undump;
+ if (filename==NULL) 
+ {
+  f=stdin;
+  filename="(stdin)";
+ }
+ else
+  f=efopen(filename,"r");
+ c=ungetc(fgetc(f),f);
+ if (ferror(f))
+ {
+  fprintf(stderr,"luac: cannot read from ");
+  perror(filename);
+  exit(1);
+ }
+ undump=(c==ID_CHUNK);
  if (undump && f!=stdin)
  {
   fclose(f);
   f=efopen(filename,"rb");
  }
- if (filename==NULL) filename="(stdin)";
  sprintf(source,"@%.*s",Sizeof(source)-2,filename);
  luaZ_Fopen(&z,f,source);
  tf = undump ? luaU_undump(L,&z) : luaY_parser(L,&z);
@@ -136,17 +156,16 @@ static Proto* combine(Proto** P, int n)
  {
   int i,pc=0;
   Proto* tf=luaF_newproto(L);
-  tf->source=luaS_new(L,"(luac)");
-  tf->numparams=0;
-  tf->is_vararg=0;
+  tf->source=luaS_new(L,"=(luac)");
   tf->maxstacksize=1;
   tf->kproto=P;
   tf->nkproto=n;
-  tf->code=luaM_newvector(L,2*n+1,Instruction);
+  tf->ncode=2*n+1;
+  tf->code=luaM_newvector(L,tf->ncode,Instruction);
   for (i=0; i<n; i++)
   {
    tf->code[pc++]=CREATE_AB(OP_CLOSURE,i,0);
-   tf->code[pc++]=CREATE_AB(OP_CALL,1,0);
+   tf->code[pc++]=CREATE_AB(OP_CALL,0,0);
   }
   tf->code[pc++]=OP_END;
   return tf;
@@ -157,7 +176,8 @@ static void strip(Proto* tf)
 {
  int i,n=tf->nkproto;
  tf->lineinfo=NULL;
- tf->source=luaS_new(L,"");
+ tf->nlineinfo=0;
+ tf->source=luaS_new(L,"=(none)");
  tf->locvars=NULL;
  tf->nlocvars=0;
  for (i=0; i<n; i++) strip(tf->kproto[i]);
