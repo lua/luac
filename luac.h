@@ -1,7 +1,7 @@
 /*
 ** luac.h
 ** definitions for luac compiler
-** $Id: luac.h,v 1.1 1996/02/23 19:03:27 lhf Exp lhf $
+** $Id: luac.h,v 1.2 1996/02/28 23:09:00 lhf Exp lhf $
 */
 
 #include "inout.h"
@@ -13,6 +13,8 @@
 #define VarLoc(i)	(lua_table[i].varname->varindex)
 #define StrStr(i)	(lua_constant[i]->str)
 #define StrLoc(i)	(lua_constant[i]->constindex)
+#define LocStr(v)	(v->varname->str)
+#define LocLoc(v)	(v->line)
 #define IsMain(f)	(f->lineDefined==0)
 
 extern Word lua_ntable;
@@ -25,7 +27,11 @@ void PrintFunction(TFunc *tf);
 
 /* definitions for chunk headers */
 
-#define ESC		0x1b
+#define ID_CHUNK	27		/* ESC */
+#define ID_FUN		'F'
+#define ID_VAR		'V'
+#define ID_STR		'S'
+#define ID_LOC		'L'
 #define	SIGNATURE	"Lua"
 #define	VERSION		0x23		/* 2.3 */
 #define	TEST_WORD	0x1234		/* a word for testing byte ordering */
