@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.23 2002/04/21 21:17:38 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2002/04/21 21:17:38 $"
+.\" $Id: luac.man,v 1.24 2002/08/12 20:28:42 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2002/08/12 20:28:42 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -13,11 +13,7 @@ luac \- Lua compiler
 .B luac
 is the Lua compiler.
 It translates programs written in the Lua programming language
-into binary files that can be loaded with
-.B lua_loadfile
-in C or with
-.B loadfile
-in Lua.
+into binary files that can be latter loaded and executed.
 .LP
 The main advantages of precompiling chunks are:
 faster loading,
@@ -67,7 +63,7 @@ and
 to signal the end of options
 (that is,
 all remaining arguments will be treated as files even if they start with
-.BR "\-" .)
+.BR "\-" ).
 .LP
 The internal format of the binary files produced by
 .B luac
@@ -121,7 +117,7 @@ then the error messages may not contain the full information they usually do
 (line numbers and names of locals are lost).
 .TP
 .B \-v
-print version information.
+show version information.
 .SH FILES
 .TP 15
 .B luac.out
