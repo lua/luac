@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.43 2003/03/11 23:51:09 lhf Exp lhf $
+** $Id: luac.c,v 1.44 2003/04/07 20:34:20 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -142,19 +142,6 @@ static Proto* combine(lua_State* L, int n)
  }
 }
 
-static void strip(lua_State* L, Proto* f)
-{
- int i,n=f->sizep;
- luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
- luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
- luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
- f->lineinfo=NULL; f->sizelineinfo=0;
- f->locvars=NULL;  f->sizelocvars=0;
- f->upvalues=NULL; f->sizeupvalues=0;
- f->source=luaS_newliteral(L,"=(none)");
- for (i=0; i<n; i++) strip(L,f->p[i]);
-}
-
 static int writer(lua_State* L, const void* p, size_t size, void* u)
 {
  UNUSED(L);
@@ -181,10 +168,11 @@ int main(int argc, char* argv[])
  {
   FILE* D=fopen(output,"wb");
   if (D==NULL) cannot(output,"open","out");
-  if (stripping) strip(L,f);
-  luaU_dump(L,f,writer,D);
+  lua_lock(L);
+  luaU_dump(L,f,writer,D,stripping);
+  lua_unlock(L);
   if (ferror(D)) cannot(output,"write","out");
-  fclose(D);
+  if (fclose(D)) cannot(output,"close","out");
  }
  lua_close(L);
  return 0;
