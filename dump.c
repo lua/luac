@@ -1,47 +1,47 @@
 /*
-** $Id: dump.c,v 1.34 2001/07/25 20:45:50 lhf Exp lhf $
+** $Id: dump.c,v 1.35 2002/02/28 20:09:28 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
 
-#ifdef WRITETO
-#define STATIC	static
-#else
-#include <stdio.h>
-#include "luac.h"
-#define WRITETO	FILE*
-#define WRITE1	fputc
-#define WRITE	fwrite
-#define STATIC
-#endif
+#include <stddef.h>
 
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lundump.h"
 
-#define	DumpByte(b,D)		WRITE1(b,D)
+#define WRITE(b,size,n,D)	(*D->write)(b,size,n,D->data)
 #define DumpBlock(b,size,D)	WRITE(b,size,1,D)
 #define DumpVector(b,n,size,D)	WRITE(b,size,n,D)
 #define DumpLiteral(s,D)	WRITE("" s,(sizeof(s))-1,1,D)
-#define DumpChunk		luaU_dumpchunk
-#define DumpShort		DumpInt
 
-static void DumpInt(int x, WRITETO D)
+typedef struct {
+ Writer write;
+ void *data;
+} DumpState;
+
+static void DumpByte(int y, DumpState* D)
+{
+ char x=(char)y;
+ DumpBlock(&x,sizeof(x),D);
+}
+
+static void DumpInt(int x, DumpState* D)
 {
  DumpBlock(&x,sizeof(x),D);
 }
 
-static void DumpSize(size_t x, WRITETO D)
+static void DumpSize(size_t x, DumpState* D)
 {
  DumpBlock(&x,sizeof(x),D);
 }
 
-static void DumpNumber(lua_Number x, WRITETO D)
+static void DumpNumber(lua_Number x, DumpState* D)
 {
  DumpBlock(&x,sizeof(x),D);
 }
 
-static void DumpString(TString* s, WRITETO D)
+static void DumpString(TString* s, DumpState* D)
 {
  if (s==NULL || getstr(s)==NULL)
   DumpSize(0,D);
@@ -53,13 +53,13 @@ static void DumpString(TString* s, WRITETO D)
  }
 }
 
-static void DumpCode(const Proto* f, WRITETO D)
+static void DumpCode(const Proto* f, DumpState* D)
 {
  DumpInt(f->sizecode,D);
  DumpVector(f->code,f->sizecode,sizeof(*f->code),D);
 }
 
-static void DumpLocals(const Proto* f, WRITETO D)
+static void DumpLocals(const Proto* f, DumpState* D)
 {
  int i,n=f->sizelocvars;
  DumpInt(n,D);
@@ -71,15 +71,20 @@ static void DumpLocals(const Proto* f, WRITETO D)
  }
 }
 
-static void DumpLines(const Proto* f, WRITETO D)
+static void DumpLines(const Proto* f, DumpState* D)
 {
- DumpInt(f->sizelineinfo,D);
- DumpVector(f->lineinfo,f->sizelineinfo,sizeof(*f->lineinfo),D);
+ if (f->lineinfo==NULL)
+  DumpInt(0,D);
+ else
+ {
+  DumpInt(f->sizecode,D);
+  DumpVector(f->lineinfo,f->sizecode,sizeof(*f->lineinfo),D);
+ }
 }
 
-static void DumpFunction(const Proto* f, const TString* p, WRITETO D);
+static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
 
-static void DumpConstants(const Proto* f, WRITETO D)
+static void DumpConstants(const Proto* f, DumpState* D)
 {
  int i,n;
  DumpInt(n=f->sizek,D);
@@ -106,21 +111,21 @@ static void DumpConstants(const Proto* f, WRITETO D)
  for (i=0; i<n; i++) DumpFunction(f->p[i],f->source,D);
 }
 
-static void DumpFunction(const Proto* f, const TString* p, WRITETO D)
+static void DumpFunction(const Proto* f, const TString* p, DumpState* D)
 {
  DumpString((f->source==p) ? NULL : f->source,D);
  DumpInt(f->lineDefined,D);
- DumpShort(f->nupvalues,D);
- DumpShort(f->numparams,D);
- DumpShort(f->is_vararg,D);
- DumpShort(f->maxstacksize,D);
+ DumpByte(f->nupvalues,D);
+ DumpByte(f->numparams,D);
+ DumpByte(f->is_vararg,D);
+ DumpByte(f->maxstacksize,D);
  DumpLocals(f,D);
  DumpLines(f,D);
  DumpConstants(f,D);
  DumpCode(f,D);
 }
 
-static void DumpHeader(WRITETO D)
+static void DumpHeader(DumpState* D)
 {
  DumpLiteral(LUA_SIGNATURE,D);
  DumpByte(VERSION,D);
@@ -136,8 +141,11 @@ static void DumpHeader(WRITETO D)
  DumpNumber(TEST_NUMBER,D);
 }
 
-STATIC void DumpChunk(const Proto* Main, WRITETO D)
+void luaU_dump(const Proto* Main, Writer w, void* data)
 {
- DumpHeader(D);
- DumpFunction(Main,NULL,D);
+ DumpState D;
+ D.write=w;
+ D.data=data;
+ DumpHeader(&D);
+ DumpFunction(Main,NULL,&D);
 }
