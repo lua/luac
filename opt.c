@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.19 2000/06/28 14:12:55 lhf Exp lhf $
+** $Id: opt.c,v 1.20 2000/09/18 20:03:46 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -14,7 +14,7 @@ static int MapConstant(Hash* t, int j, const TObject* key)
 {
  const TObject* o=luaH_get(L,t,key);
  if (ttype(o)==TAG_NUMBER)
-  return nvalue(o);
+  return (int) nvalue(o);
  else
  {
   TObject val;

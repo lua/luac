@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.17 2000/04/27 18:17:54 lhf Exp lhf $
+** $Id: stubs.c,v 1.18 2000/09/18 20:03:46 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -15,7 +15,7 @@ const char luac_ident[] = "$luac: " LUA_VERSION " " LUA_COPYRIGHT " $\n"
                           "$Authors: " LUA_AUTHORS " $";
 
 /*
-* avoid lapi ldebug ldo lgc lref ltm lvm
+* avoid lapi ldebug ldo lgc ltm lvm
 * use only lcode lfunc llex lmem lobject lparser lstate lstring ltable lzio
 */
 

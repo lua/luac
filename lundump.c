@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.29 2000/06/28 14:12:55 lhf Exp lhf $
+** $Id: lundump.c,v 1.30 2000/09/18 20:03:46 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -45,7 +45,7 @@ static void LoadBlock (lua_State* L, void* b, size_t size, ZIO* Z, int swap)
  {
   char *p=(char *) b+size-1;
   int n=size;
-  while (n--) *p--=ezgetc(L,Z);
+  while (n--) *p--=(char)ezgetc(L,Z);
  }
  else
   ezread(L,Z,b,size);
@@ -60,7 +60,7 @@ static void LoadVector (lua_State* L, void* b, int m, size_t size, ZIO* Z, int s
   {
    char *p=q+size-1;
    int n=size;
-   while (n--) *p--=ezgetc(L,Z);
+   while (n--) *p--=(char)ezgetc(L,Z);
    q+=size;
   }
  }
