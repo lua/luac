@@ -1,21 +1,28 @@
 /*
-** $Id: dump.c,v 1.30 2000/10/31 16:57:23 lhf Exp lhf $
+** $Id: dump.c,v 1.31 2001/03/15 17:29:16 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
 
-#ifndef WRITETO
+#ifdef WRITETO
+#define STATIC	static
+#else
 #include <stdio.h>
 #include "luac.h"
 #define WRITETO	FILE*
 #define WRITE1	fputc
 #define WRITE	fwrite
+#define STATIC
 #endif
+
+#include "lobject.h"
+#include "lundump.h"
 
 #define	DumpByte(b,D)		WRITE1(b,D)
 #define DumpBlock(b,size,D)	WRITE(b,size,1,D)
 #define DumpVector(b,n,size,D)	WRITE(b,size,n,D)
 #define DumpLiteral(s,D)	WRITE("" s,(sizeof(s))-1,1,D)
+#define DumpChunk		luaU_dumpchunk
 
 static void DumpInt(int x, WRITETO D)
 {
@@ -32,7 +39,7 @@ static void DumpNumber(lua_Number x, WRITETO D)
  DumpBlock(&x,sizeof(x),D);
 }
 
-static void DumpString(const TString* s, WRITETO D)
+static void DumpString(TString* s, WRITETO D)
 {
  if (s==NULL || getstr(s)==NULL)
   DumpSize(0,D);
@@ -113,7 +120,7 @@ static void DumpHeader(WRITETO D)
  DumpNumber(TEST_NUMBER,D);
 }
 
-void luaU_dumpchunk(const Proto* Main, WRITETO D)
+STATIC void DumpChunk(const Proto* Main, WRITETO D)
 {
  DumpHeader(D);
  DumpFunction(Main,D);
