@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.4 1996/03/01 03:42:39 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.5 1996/03/06 15:59:55 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -100,7 +100,6 @@ static void PrintCode(Byte* code, Byte* end)
 		p+=2;
 		break;
 	case PUSHWORD:
-	case PUSHSELF:
 	case CREATEARRAY:
 	case ONTJMP:
 	case ONFJMP:
@@ -124,6 +123,7 @@ static void PrintCode(Byte* code, Byte* end)
 		printf("\t%g",c.f);
 		break;
 	}
+	case PUSHSELF:
 	case PUSHSTRING:
 	{
 		CodeWord c;

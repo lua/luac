@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.10 1996/03/06 15:58:14 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.11 1996/03/06 21:39:25 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -91,7 +91,6 @@ static void ThreadCode(Byte* code, Byte* end)
 		p+=2;
 		break;
 	case PUSHWORD:
-	case PUSHSELF:
 	case CREATEARRAY:
 	case ONTJMP:
 	case ONFJMP:
@@ -107,6 +106,7 @@ static void ThreadCode(Byte* code, Byte* end)
 	case PUSHFLOAT:
 		p+=5;
 		break;
+	case PUSHSELF:
 	case PUSHSTRING:
 	{
 		CodeWord c;
