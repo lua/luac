@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.23 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: print.c,v 1.24 1999/12/02 18:51:09 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -23,9 +23,9 @@ static void PrintConstants(const TProtoFunc* tf)
 	printf("N " NUMBER_FMT "\n",(double)nvalue(o));
 	break;
    case LUA_T_STRING:
-	printf("S %p\t\"%s\"\n",(void*)tsvalue(o),svalue(o));
+	printf("S %p\t\"%s\"\n",tsvalue(o),svalue(o));
 	break;
-   case LUA_T_PROTO:
+   case LUA_T_LPROTO:
 	printf("F %p\n",tfvalue(o));
 	break;
    case LUA_T_NIL:
@@ -36,6 +36,22 @@ static void PrintConstants(const TProtoFunc* tf)
 	break;
   }
  }
+}
+
+static void PrintLocvars(const TProtoFunc* tf)
+{
+ LocVar* v=tf->locvars;
+ int i=0;
+ int n=-1;
+ printf("locvars for %p at %p:\n",tf,v);
+ if (v==NULL) return;
+ printf("%6s\t#\tL\tN\tP\n","I");
+ do
+ {
+  if (v->varname==NULL) --n; else ++n;
+  printf("%6d\t%d\t%d\t%s\t%p\n",
+	i++,n,v->line,v->varname?v->varname->str:"-",v->varname);
+ } while (v++->line>=0);
 }
 #endif
 
@@ -50,8 +66,8 @@ static void PrintConstant(const TProtoFunc* tf, int i, int at)
   case LUA_T_STRING:
        printf("\"%s\"",svalue(o));
        break;
-  case LUA_T_PROTO:
-       printf("function at %p",(void*)tfvalue(o));
+  case LUA_T_LPROTO:
+       printf("function at %p",tfvalue(o));
        break;
   case LUA_T_NIL:
        printf("(nil)");
@@ -105,11 +121,7 @@ static void PrintCode(const TProtoFunc* tf)
 	case PUSHLOCAL:
 	case SETLOCAL:
 	{
-#if 0
-		const char* s=luaF_getlocalname((TProtoFunc*)tf,i+1,line);
-#else
 		const char* s=luaF_getlocalname(tf,i+1,line);
-#endif
 		if (s) printf("\t; %s",s);
 		break;
 	}
@@ -117,6 +129,13 @@ static void PrintCode(const TProtoFunc* tf)
 	case SETLINE:
 		printf("\t; " SOURCE,tf->source->str,line=i);
 		break;
+
+	case SETNAME:
+	{
+		printf("\t; %s ",luaO_typenames[OP.arg2]);
+		PrintConstant(tf,i,at);
+		break;
+	}
 
 	case LONGARG:
 		longarg=i<<16;
@@ -153,7 +172,7 @@ static void PrintLocals(const TProtoFunc* tf)
  {
   if (v->varname==NULL)
   {
-   --i; if (i<0) luaL_verror(L,"bad locvars[%d]",v-tf->locvars); else printf(")");
+   if (--i<0) luaL_verror(L,"bad locvars[%d]",v-tf->locvars); else printf(")");
   }
   else
   {
@@ -202,7 +221,7 @@ static void PrintFunctions(const TProtoFunc* Main)
   if (op==PUSHCONSTANT || op==CLOSURE)
   {
    const TObject* o=Main->consts+i;
-   if (ttype(o)==LUA_T_PROTO) PrintFunction(tfvalue(o),Main,(int)(p-code));
+   if (ttype(o)==LUA_T_LPROTO) PrintFunction(tfvalue(o),Main,(int)(p-code));
   }
   else if (op==LONGARG) longarg=i<<16;
   else if (op==ENDCODE) break;
@@ -213,6 +232,9 @@ static void PrintFunctions(const TProtoFunc* Main)
 static void PrintFunction(const TProtoFunc* tf, const TProtoFunc* Main, int at)
 {
  PrintHeader(tf,Main,at);
+#ifdef DEBUG
+ PrintLocvars(tf);
+#endif
  PrintLocals(tf);
  PrintCode(tf);
 #ifdef DEBUG
