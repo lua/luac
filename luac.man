@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.12 1999/03/08 11:08:43 lhf Exp lhf $
-.TH LUAC 1 "$Date$"
+.\" $Id: luac.man,v 1.13 1999/03/11 14:43:37 lhf Exp lhf $
+.TH LUAC 1 "$Date: 1999/03/11 14:43:37 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -31,7 +31,7 @@ are portable to all known architectures.
 Pre-compiling does not imply faster execution
 because in Lua chunks are always compiled into bytecodes before being executed.
 .B luac
-simply allows those bytecodes to be saved in files for later execution.
+simply allows those bytecodes to be saved in a file for later execution.
 .LP
 .B luac
 produces a single output file containing the bytecodes
@@ -116,8 +116,9 @@ produce a listing of the compiled bytecode for Lua's virtual machine.
 This is the default when undumping.
 .TP
 .B \-O
-optimize code.
+optimize.
 Debug information is removed,
+and
 duplicate constants are coalesced.
 .TP
 .BI \-o " filename"
@@ -128,7 +129,7 @@ instead of the default
 The output file cannot be a source file.
 .TP
 .B \-p
-parse sources files but does not generate any output file.
+parse sources files but do not generate any output file.
 Used mainly for syntax checking.
 .TP
 .B \-q
