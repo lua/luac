@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.3 1998/01/13 20:05:24 lhf Exp lhf $
+** $Id: luac.h,v 1.4 1998/03/05 15:45:08 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -10,13 +10,6 @@
 #include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
-
-#ifdef DEBUG
-#define INTERNAL_ERROR(s)	\
-	luaL_verror("internal error: %s [%s:%s]",s?s:"",__FILE__,__LINE)
-#else
-#define INTERNAL_ERROR(s)
-#endif
 
 typedef struct
 {
