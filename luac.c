@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.12 1996/03/06 15:59:14 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.13 1996/03/08 21:41:09 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -62,34 +62,32 @@ int main(int argc, char* argv[])
  return 0;
 }
 
-static void dump(TFunc* tf)
-{
- if (listing) PrintFunction(tf);
- DumpFunction(tf,D);
- luaI_free(tf->code);			/* TODO: use freefunc */
- luaI_free(tf->locvars);
-}
-
 static void do_dump(TFunc* tf)		/* only for tf==main */
 {
  DumpHeader(D);
- dump(tf);				/* thread main; build function list */
- for (tf=tf->next; tf!=NULL; tf=tf->next)
-  dump(tf);				/* TODO: free tf (but not main?) */
+ while (tf!=NULL)
+ {
+  TFunc* nf;
+  if (listing) PrintFunction(tf);
+  DumpFunction(tf,D);
+  nf=tf->next;				/* list only built after first main */
+  luaI_freefunc(tf);
+  tf=nf;
+ }
 }
 
 static void do_compile(void)
 {
- TFunc tf;				/* TODO: alloc? */
- luaI_initTFunc(&tf);
- tf.fileName = lua_parsedfile;
- lua_parse(&tf);
- if (dumping) do_dump(&tf);
+ TFunc* tf=new(TFunc);
+ luaI_initTFunc(tf);
+ tf->fileName = lua_parsedfile;
+ lua_parse(tf);
+ if (dumping) do_dump(tf);
 }
 
 static void compile(char* filename)
 {
- if (lua_openfile(filename))
+ if (lua_openfile(filename)==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
   perror(filename);
