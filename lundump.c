@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.27 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: lundump.c,v 1.28 2000/04/24 19:32:58 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -88,26 +88,16 @@ static TString* LoadString (lua_State* L, ZIO* Z)
  }
 }
 
-static void SwapCode (lua_State* L, Instruction* code, int size, ZIO* Z)
+static void SwapCode (Instruction* code, int size)
 {
  unsigned char* p;
- int c;
- if (sizeof(Instruction)==4)
-  while (size--)
-  {
-   p=(unsigned char *) code++;
-   c=p[0]; p[0]=p[3]; p[3]=c;
-   c=p[1]; p[1]=p[2]; p[2]=c;
-  }
- else if (sizeof(Instruction)==2)
-  while (size--)
-  {
-   p=(unsigned char *) code++;
-   c=p[0]; p[0]=p[1]; p[1]=c;
-  }
- else
-  luaL_verror(L,"cannot swap code with %d-byte instructions in `%.255s'",
-	(int)sizeof(Instruction),ZNAME(Z));
+ unsigned char c;
+ while (size--)
+ {
+  p=(unsigned char *) code++;
+  c=p[0]; p[0]=p[3]; p[3]=c;
+  c=p[1]; p[1]=p[2]; p[2]=c;
+ }
 }
 
 static void LoadCode (lua_State* L, Proto* tf, ZIO* Z)
@@ -121,11 +111,14 @@ static void LoadCode (lua_State* L, Proto* tf, ZIO* Z)
  if (t!=tt)
  {
   Instruction ot=t;
-  SwapCode(L,&t,1,Z);
+  if (sizeof(Instruction)!=32)
+   luaL_verror(L,"cannot swap code with %d-byte instructions in `%.255s'",
+	(int)sizeof(Instruction),ZNAME(Z));
+  SwapCode(&t,1);
   if (t!=tt) luaL_verror(L,"cannot swap code in `%.255s';\n"
 	"  read 0x%08X; swapped to 0x%08X; expected 0x%08X",
 	ZNAME(Z),(unsigned long)ot,(unsigned long)t,(unsigned long)tt);
-  SwapCode(L,tf->code,size,Z);
+  SwapCode(tf->code,size);
  }
 }
 
@@ -152,13 +145,7 @@ static void LoadConstants (lua_State* L, Proto* tf, ZIO* Z, int native)
  if (n>0)
  {
   tf->kstr=luaM_newvector(L,n,TString*);
-  for (i=0; i<n; i++)
-  {
-   TString* s=LoadString(L,Z);
-   int isglobal=LoadByte(L,Z);
-   if (isglobal) luaS_assertglobal(L,s);
-   tf->kstr[i]=s;
-  }
+  for (i=0; i<n; i++) tf->kstr[i]=LoadString(L,Z);
  }
  tf->nknum=n=LoadInt(L,Z,"too many numbers");
  if (n>0)
