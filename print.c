@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: print.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -71,12 +71,9 @@ static void PrintCode(TFunc* tf)
 #ifdef DEBUG
 	if (op>=NOPCODES)		/* cannot happen */
 	 luaL_verror("internal error in PrintCode: "
-		"bad opcode %d at %d\n",op,(int)(p-code));
+		"bad opcode %d at %d (NOPCODES=%d)\n",op,(int)(p-code),NOPCODES);
 #endif
 	n=OpcodeSize[op];
-#if 0
-	printf("%6d\t%-13s",(int)(p-code),OpcodeName[op]);
-#else
 	printf("%6d  ",(int)(p-code));
 	{
 	 Byte* q=p;
@@ -84,7 +81,6 @@ static void PrintCode(TFunc* tf)
 	 while (i--) printf("%02X",*q++);
 	}
 	printf("\t%-13s",OpcodeName[op]);
-#endif
 	if (n==1) i=-1; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
 	if (n!=1 && op!=SETLIST && op!=CALLFUNC) printf("\t%d",i);
 
@@ -98,18 +94,6 @@ static void PrintCode(TFunc* tf)
 		printf("\n");
 		return;
 
-	case GETDOTTED0:
-	case GETDOTTED1:
-	case GETDOTTED2:
-	case GETDOTTED3:
-	case GETDOTTED4:
-	case GETDOTTED5:
-	case GETDOTTED6:
-	case GETDOTTED7:
-		i=op-GETDOTTED0;
-		printf("\t");
-		goto PRINTCONSTANT;
-
 	case PUSHCONSTANT0:
 	case PUSHCONSTANT1:
 	case PUSHCONSTANT2:
@@ -120,12 +104,38 @@ static void PrintCode(TFunc* tf)
 	case PUSHCONSTANT7:
 		i=op-PUSHCONSTANT0;
 		printf("\t");
-	case PUSHCONSTANTW:
 	case PUSHCONSTANT:
-	case GETDOTTEDW:
+	case PUSHCONSTANTW:
+		goto PRINTCONSTANT;
+
+	case GETDOTTED0:
+	case GETDOTTED1:
+	case GETDOTTED2:
+	case GETDOTTED3:
+	case GETDOTTED4:
+	case GETDOTTED5:
+	case GETDOTTED6:
+	case GETDOTTED7:
+		i=op-GETDOTTED0;
+		printf("\t");
 	case GETDOTTED:
-	case PUSHSELFW:
+	case GETDOTTEDW:
+		goto PRINTCONSTANT;
+
+	case PUSHSELF0:
+	case PUSHSELF1:
+	case PUSHSELF2:
+	case PUSHSELF3:
+	case PUSHSELF4:
+	case PUSHSELF5:
+	case PUSHSELF6:
+	case PUSHSELF7:
+		i=op-PUSHSELF0;
+		printf("\t");
 	case PUSHSELF:
+	case PUSHSELFW:
+		goto PRINTCONSTANT;
+
 	case CLOSURE:
 PRINTCONSTANT:
 		printf("\t; ");
@@ -144,6 +154,7 @@ PRINTCONSTANT:
 		printf("\t");
 	case PUSHLOCAL:
 		goto PRINTLOCAL;
+
 	case SETLOCAL0:
 	case SETLOCAL1:
 	case SETLOCAL2:
@@ -161,6 +172,7 @@ PRINTLOCAL:
 		if (s) printf("\t; %s",s);
 		break;
 	}
+
 	case GETGLOBAL0:
 	case GETGLOBAL1:
 	case GETGLOBAL2:
@@ -171,9 +183,10 @@ PRINTLOCAL:
 	case GETGLOBAL7:
 		i=op-GETGLOBAL0;
 		printf("\t");
-	case GETGLOBALW:
 	case GETGLOBAL:
+	case GETGLOBALW:
 		goto PRINTGLOBAL;
+
 	case SETGLOBAL0:
 	case SETGLOBAL1:
 	case SETGLOBAL2:
@@ -184,9 +197,10 @@ PRINTLOCAL:
 	case SETGLOBAL7:
 		i=op-SETGLOBAL0;
 		printf("\t");
-PRINTGLOBAL:
-	case SETGLOBALW:
 	case SETGLOBAL:
+	case SETGLOBALW:
+
+PRINTGLOBAL:
 		printf("\t; %s",VarStr(i));
 		break;
 
@@ -213,6 +227,7 @@ PRINTGLOBAL:
 		break;
 
 	case SETLINE:
+	case SETLINEW:
 		printf("\t; \"%s\":%d",tf->fileName->str,line=i);
 		break;
 
@@ -237,13 +252,16 @@ static void PrintLocals(TFunc* tf)
  int i=0;
  Byte* p;
  if (v==NULL || v->varname==NULL) return;
- for (p=tf->code+1; *p==SETLINE; p+=3) ;
- if (*p==ARGS || *p==VARARGS) n=p[1];
+ for (p=tf->code+1;;)
+  if (*p==SETLINE) p+=2; else if (*p==SETLINEW) p+=3; else break;
+ if (*p==ARGS || *p==VARARGS) n=p[1]; else
+ if (*p>ARGS && *p<VARARGS) n=*p-ARGS0;
+ printf("PrintLocals: %d %s n=%d\n",(int)(p-tf->code)-1,OpcodeName[*p],n);
 
  printf("locals:");
  if (n>0)
  {
-#if 0
+#ifdef TRACELOCALS
   for (i=0; i<n; v++,i++) printf(" %s[%d@%d]",v->varname->str,i,v->line);
 #else
   for (i=0; i<n; v++,i++) printf(" %s",v->varname->str);
@@ -255,14 +273,14 @@ static void PrintLocals(TFunc* tf)
   {
    if (v->varname==NULL)
    {
-#if 0
+#ifdef TRACELOCALS
     printf(")[%d@%d]",--i,v->line);
 #else
     printf(")"); --i;
 #endif
    }
    else
-#if 0
+#ifdef TRACELOCALS
     printf(" (%s[%d@%d]",v->varname->str,i++,v->line);
 #else
     printf(" (%s",v->varname->str); i++;
