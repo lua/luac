@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: test.c,v 1.1 1998/03/30 11:22:25 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -16,9 +16,9 @@ static void grow(TProtoFunc* tf, int n, int at)
 {
  sp+=n;
 printf("tf=%p at=%d ss=%d sp=%d\n",tf,at,ss,sp);
- if (sp<00) luaL_verror("unsafe code: stack underflow at %d in %p (\"%s\":%d)\n",
+ if (sp<00) luaL_verror("unsafe code: stack underflow at %d in %p (\"%s\":%d)",
 	at,tf,tf->fileName->str,tf->lineDefined);
- if (sp>ss) luaL_verror("unsafe code: stack overflow at %d in %p (\"%s\":%d)\n",
+ if (sp>ss) luaL_verror("unsafe code: stack overflow at %d in %p (\"%s\":%d)",
 	at,tf,tf->fileName->str,tf->lineDefined);
 }
 
@@ -128,8 +128,8 @@ static void TestConstants(TProtoFunc* tf)
 	TestFunction(tfvalue(o));
 	break;
    default:
-	luaL_verror("bad constant #%d in %p: type=%d ('%c')",
-		i,tf,ttype(o),ttype(o));
+	luaL_verror("cannot test constant #%d: type=%d [%s]",
+		i,ttype(o),luaO_typename(o));
 	break;
   }
  }
