@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.1 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: test.c,v 1.2 1998/07/12 00:17:37 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -8,68 +8,124 @@
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
+#include "ldo.h"
+#include "lmem.h"
 
-static int ss=0;
-static int sp=0;
+#define AT		" at %d in %p (\"%s\":%d)"
+#define UNSAFE(s)	luaL_verror("unsafe code: " s AT
+#define ATLOC		at,tf,tf->source->str,tf->lineDefined)
 
-static void grow(TProtoFunc* tf, int n, int at)
+static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 {
+#if 0
+printf("check in  n=%d tf=%p ss=%d sp=%d at=%d\n",n,tf,ss,sp,at);
+#endif
+ if (n==0) return sp;
  sp+=n;
-printf("tf=%p at=%d ss=%d sp=%d\n",tf,at,ss,sp);
- if (sp<00) luaL_verror("unsafe code: stack underflow at %d in %p (\"%s\":%d)",
-	at,tf,tf->fileName->str,tf->lineDefined);
- if (sp>ss) luaL_verror("unsafe code: stack overflow at %d in %p (\"%s\":%d)",
-	at,tf,tf->fileName->str,tf->lineDefined);
+ if (sp<00) UNSAFE("stack underflow"),ATLOC;
+ if (sp>ss) UNSAFE("stack overflow"),ATLOC;
+#if 0
+printf("check out n=%d tf=%p ss=%d sp=%d at=%d\n",n,tf,ss,sp,at);
+#endif
+ return sp;
 }
 
-#define GROW(n)	grow(tf,n,at)
+#define CHECK(before,after)	\
+	sp=check(-(before),tf,at,sp,ss), sp=check(after,tf,at,sp,ss)
 
-static void TestCode(TProtoFunc* tf)
+static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 {
  Byte* code=tf->code;
  Byte* p=code;
- ss=*p;
- sp=0;
+ int longarg=0;
+ int ss=*p;
+ int sp=0;
  while (1)
  {
 	Opcode OP;
 	int n=INFO(tf,p,&OP);
-	int op=OP.op;
-	int i=OP.arg;
+	int op=OP.class;
+	int i=OP.arg+longarg;
 	int at=p-code;
 
-	switch (OP.class)
+	longarg=0;
+	SP[at]=sp;
+
+	switch (op)
 	{
-
-	case STACK:		ss=i;		break;
-
-	case ENDCODE:				return;
-
-	case ARGS:
-	case SETLINE:
-						break;
-
+	case PUSHCONSTANT:
+	case GETGLOBAL:
 	case GETDOTTED:
-	case MINUSOP:
-	case NOTOP:
-				GROW(0);	break;
+	case PUSHSELF:
+	case SETGLOBAL:
+	case SETGLOBALDUP:
+	case CLOSURE:
+		if (i>=tf->nconsts)
+			UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts,ATLOC;
+		break;
+	case PUSHLOCAL:
+	case SETLOCAL:
+	case SETLOCALDUP:
+		if (i>=sp)
+			UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
+		break;
+	case ONTJMP:
+	case ONFJMP:
+		JP[at]=-(at+i+n);	/* negate to remember ON?JMP */
+		break;
+	case JMP:
+	case IFFJMP:
+		JP[at]=at+i+n;
+		break;
+	case IFTUPJMP:
+	case IFFUPJMP:
+		JP[at]=at-i+n;
+		break;
+	case CALL:
+		if (i==MULT_RET)
+		{
+		 i=0;
+		 if (p[n]!=RETCODE) UNSAFE("RETCODE expected after CALL"),ATLOC;
+		}
+		break;
+	}
 
-	case PUSHNIL:		GROW(i+1);	break;
+#if 0
+printf("tf=%p ss=%d sp=%d JP=%d at=%d %s %d %d\n",tf,ss,sp,JP[at],at,OP.name,i,OP.arg2);
+#endif
 
+	switch (op)
+	{
+	case STACK:		ss=i;			break;
+	case ARGS:		CHECK(0,i);		break;
+	case VARARGS:					break;
+	case ENDCODE:					return;
+	case RETCODE:		CHECK(i,0); sp=i;	break;
+	case PUSHNIL:		CHECK(0,i+1);		break;
+	case POP:		CHECK(0,-i);		break;
+	case POPDUP:		CHECK(i+1,1);		break;
 	case PUSHNUMBER:
+	case PUSHNUMBERNEG:
 	case PUSHCONSTANT:
 	case PUSHUPVALUE:
 	case PUSHLOCAL:
-	case GETGLOBAL:
-	case PUSHSELF:
-	case CREATEARRAY:
-				GROW(1);	break;
-
-	case GETTABLE:
-	case SETLOCAL:
-	case SETGLOBAL:
-	case EQOP:
+	case GETGLOBAL:		CHECK(0,1);		break;
+	case GETTABLE:		CHECK(2,1);		break;
+	case GETDOTTED:		CHECK(1,1);		break;
+	case PUSHSELF:		CHECK(1,2);		break;
+	case CREATEARRAY:	CHECK(0,1);		break;
+	case SETLOCAL:		CHECK(1,0);		break;
+	case SETLOCALDUP:	CHECK(1,1);		break;
+	case SETGLOBAL:		CHECK(1,0);		break;
+	case SETGLOBALDUP:	CHECK(1,1);		break;
+	case SETTABLEPOP:	CHECK(3,0);		break;
+	case SETTABLEPOPDUP:	CHECK(3,1);		break;
+	case SETTABLE:		CHECK(i+3,i+2);		break;
+	case SETTABLEDUP:	CHECK(i+3,i+3);		break;
+	case SETLIST:		CHECK(OP.arg2+1,1);	break;
+	case SETMAP:		CHECK(2*(i+1)+1,1);	break;
 	case NEQOP:
+	case EQOP:
 	case LTOP:
 	case LEOP:
 	case GTOP:
@@ -79,32 +135,74 @@ static void TestCode(TProtoFunc* tf)
 	case MULTOP:
 	case DIVOP:
 	case POWOP:
-	case CONCOP:
-				GROW(-1);	break;
-
-	case SETTABLE:
-		if (OP.op==SETTABLE0) GROW(-3); else GROW(-5-2*i);
+	case CONCOP:		CHECK(2,1);		break;
+	case MINUSOP:
+	case NOTOP:		CHECK(1,1);		break;
+	case ONTJMP:
+	case ONFJMP:
+	case IFFJMP:
+	case IFTUPJMP:
+	case IFFUPJMP:		CHECK(1,0);		break;
+	case JMP:					break;
+	case CLOSURE:		CHECK(OP.arg2,1);	break;
+	case CALL:		CHECK(OP.arg2+1,i);	break;
+	case SETLINE:					break;
+	case LONGARG:
+		longarg=i<<16;
+		if (longarg<0) UNSAFE("longarg overflow"),ATLOC;
 		break;
-
-	case SETLIST:
-		if (OP.op==SETLIST0) GROW(-i-1); else GROW(-OP.arg2-1);
-		break;
-
-	case SETMAP:		GROW(2*i+2);	break;
-
-	case CLOSURE:
-				GROW(-i);	break;
-
-	case CALLFUNC:
-				GROW(OP.arg-OP.arg2-1); break;
-
-	default:
-		fprintf(stderr,"TestCode: cannot handle %6d  %s\n",at,OP.name);
+	case CHECKSTACK:				break;
+	default:			/* cannot happen */
+		UNSAFE("cannot handle opcode %d [%s]"),OP.op,OP.name,ATLOC;
 		break;
 	}
-
 	p+=n;
  }
+}
+
+static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
+{
+ int i;
+#define at i				/* for ATLOC */
+ for (i=0; i<size; i++)
+ {
+  int to=JP[i];
+  int on=0;
+  if (to<0) { on=1; to=-to; };		/* handle ON?JMP */
+  if (to!=0)
+  {
+   int j=i;
+   int a,b;
+   while (SP[++j]<0) ;			/* find next instruction */
+
+#if 0
+printf("tf=%p to=%d at=%d next=%d on=%d\n",tf,to,i,j,on);
+printf("SP[%d]=%d SP[%d]=%d\n",j,SP[j],to,SP[to]);
+#endif
+
+   if (to<2 || to>=size)
+    UNSAFE("invalid jump to %d (range is 2..%d)"),to,size-1,ATLOC;
+   a=SP[to];
+   if (a<0)
+    UNSAFE("invalid jump to %d (not an instruction)"),to,ATLOC;
+   b=SP[j]+on;
+   if (a!=b)
+    UNSAFE("stack inconsistency in jump to %d (%d x %d)"),to,b,a,ATLOC;
+  }
+ }
+}
+
+static void TestCode(TProtoFunc* tf)
+{
+ static int* SP=NULL;
+ static int* JP=NULL;
+ int size=luaU_codesize(tf);
+ SP=luaM_reallocvector(SP,size,int);
+ JP=luaM_reallocvector(JP,size,int);
+ memset(SP,-1,size*sizeof(*SP));
+ memset(JP, 0,size*sizeof(*JP));
+ TestStack(tf,size,SP,JP);
+ TestJumps(tf,size,SP,JP);
 }
 
 static void TestLocals(TProtoFunc* tf)
@@ -127,9 +225,13 @@ static void TestConstants(TProtoFunc* tf)
    case LUA_T_PROTO:
 	TestFunction(tfvalue(o));
 	break;
+   case LUA_T_NIL:
+	break;
    default:
 	luaL_verror("cannot test constant #%d: type=%d [%s]",
-		i,ttype(o),luaO_typename(o));
+		" in %p (\"%s\":%d)",
+		i,ttype(o),luaO_typename(o),
+		tf,tf->source->str,tf->lineDefined);
 	break;
   }
  }
@@ -142,7 +244,7 @@ static void TestFunction(TProtoFunc* tf)
  TestConstants(tf);
 }
 
-void TestChunk(TProtoFunc* Main)
+void luaU_testchunk(TProtoFunc* Main)
 {
  TestFunction(Main);
 }
