@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.26 2000/02/17 19:17:44 lhf Exp lhf $
+** $Id: print.c,v 1.27 2000/04/24 17:32:29 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -98,6 +98,9 @@ static void PrintLocals(const Proto* tf)
 
 #define IsMain(tf)	(tf->lineDefined==0)
 
+#define SS(x)	(x==1)?"":"s"
+#define S(x)	x,SS(x)
+
 static void PrintHeader(const Proto* tf, const Proto* Main, int at)
 {
  int size=luaU_codesize(tf);
@@ -114,10 +117,10 @@ static void PrintHeader(const Proto* tf, const Proto* Main, int at)
    printf("%p",Main);
   printf("+%d\n",at);
  }
- printf("has %d%s params, uses %d stack positions, ",
-	tf->numparams,tf->is_vararg?"+":"",tf->maxstacksize);
- printf("%d strings, %d numbers, %d functions\n",
-	tf->nkstr,tf->nknum,tf->nkproto);
+ printf("has %d%s param%s, uses %d stack position%s, ",
+	tf->numparams,tf->is_vararg?"+":"",SS(tf->numparams),S(tf->maxstacksize));
+ printf("%d string%s, %d number%s, %d function%s\n",
+	S(tf->nkstr),S(tf->nknum),S(tf->nkproto));
 }
 
 static void PrintFunction(const Proto* tf, const Proto* Main, int at);
