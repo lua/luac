@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.27 2000/10/31 16:57:23 lhf Exp lhf $
+** $Id: luac.c,v 1.28 2000/11/06 20:06:27 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -27,7 +27,6 @@ lua_State* lua_state=NULL;		/* lazy! */
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;			/* strip debug information? */
-static int testing=0;			/* test integrity? */
 static const char* output=OUTPUT;	/* output file name */
 
 #define	IS(s)	(strcmp(argv[i],s)==0)
@@ -45,11 +44,18 @@ int main(int argc, const char* argv[])
  tf=combine(P,argc);
  if (dumping) luaU_optchunk(tf);
  if (listing) luaU_printchunk(tf);
- if (testing) luaU_testchunk(tf);
  if (dumping)
  {
+  FILE* D;
   if (stripping) strip(tf);
-  luaU_dumpchunk(tf,efopen(output,"wb"));
+  D=efopen(output,"wb");
+  luaU_dumpchunk(tf,D);
+  if (ferror(D))
+  {
+   perror("luac: write error");
+   exit(1);
+  }
+  fclose(D);
  }
  return 0;
 }
@@ -67,7 +73,6 @@ static void usage(const char* message, const char* arg)
  "  -o file  output file (default is \"" OUTPUT "\")\n"
  "  -p       parse only\n"
  "  -s       strip debug information\n"
- "  -t       test code integrity\n"
  "  -v       show version information\n"
  );
  exit(1);
@@ -93,11 +98,6 @@ static int doargs(int argc, const char* argv[])
    dumping=0;
   else if (IS("-s"))			/* strip debug information */
    stripping=1;
-  else if (IS("-t"))			/* test */
-  {
-   testing=1;
-   dumping=0;
-  }
   else if (IS("-v"))			/* show version */
   {
    printf("%s  %s\n",LUA_VERSION,LUA_COPYRIGHT);
@@ -106,7 +106,7 @@ static int doargs(int argc, const char* argv[])
   else					/* unknown option */
    usage("unrecognized option `%s'",argv[i]);
  }
- if (i==argc && (listing || testing))
+ if (i==argc && listing)
  {
   dumping=0;
   argv[--i]=OUTPUT;
@@ -159,27 +159,27 @@ static Proto* combine(Proto** P, int n)
   tf->source=luaS_new(L,"=(luac)");
   tf->maxstacksize=1;
   tf->kproto=P;
-  tf->nkproto=n;
-  tf->ncode=2*n+1;
-  tf->code=luaM_newvector(L,tf->ncode,Instruction);
+  tf->sizekproto=n;
+  tf->sizecode=2*n+1;
+  tf->code=luaM_newvector(L,tf->sizecode,Instruction);
   for (i=0; i<n; i++)
   {
    tf->code[pc++]=CREATE_AB(OP_CLOSURE,i,0);
    tf->code[pc++]=CREATE_AB(OP_CALL,0,0);
   }
-  tf->code[pc++]=OP_END;
+  tf->code[pc++]=CREATE_U(OP_RETURN,1);
   return tf;
  }
 }
 
 static void strip(Proto* tf)
 {
- int i,n=tf->nkproto;
+ int i,n=tf->sizekproto;
  tf->lineinfo=NULL;
- tf->nlineinfo=0;
+ tf->sizelineinfo=0;
  tf->source=luaS_new(L,"=(none)");
  tf->locvars=NULL;
- tf->nlocvars=0;
+ tf->sizelocvars=0;
  for (i=0; i<n; i++) strip(tf->kproto[i]);
 }
 
@@ -193,11 +193,4 @@ static FILE* efopen(const char* name, const char* mode)
   exit(1);
  }
  return f; 
-}
-
-void luaU_testchunk(const Proto* Main)
-{
- UNUSED(Main);
- fprintf(stderr,"luac: -t not operational in this version\n");
- exit(1);
 }
