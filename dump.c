@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char *rcs_dump="$Id: dump.c,v 1.7 1996/02/26 19:43:32 lhf Exp lhf $";
+char *rcs_dump="$Id: dump.c,v 1.8 1996/02/28 23:10:08 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -123,9 +123,8 @@ static void ThreadCode(Byte *code, Byte *end)
 		p++;
 		get_code(c,p);
 		c.tf->marked=at;
-		c.tf->next=NULL;
-		lastF->next=c.tf;
-		lastF=c.tf;
+		c.tf->next=NULL;	/* TODO: remove? */
+		lastF=lastF->next=c.tf;
 		break;
 	}
 	case PUSHGLOBAL:
@@ -155,8 +154,8 @@ static void ThreadCode(Byte *code, Byte *end)
 		break;
 	}
 	default:
-		printf("\tcannot happen:  opcode=%d",*p);
-		p++;
+		fprintf(stderr,"luac: cannot happen:  opcode=%d",*p);
+		exit(1);
 		break;
 	}
  }
@@ -208,7 +207,7 @@ static void DumpBlock(char* b, int size, FILE *D)
 static void DumpString(char *s, FILE *D)
 {
  int n=strlen(s)+1;
- if (n>0xFFFF)
+ if ((Word)n != n)
  {
   fprintf(stderr,"luac: string too long: \"%.32s...\"\n",s);
   exit(1);
@@ -224,7 +223,7 @@ static void DumpStrings(FILE *D)
  {
   if (VarLoc(i)!=0)
   {
-   fputc('V',D);
+   fputc(ID_VAR,D);
    DumpWord(VarLoc(i),D);
    DumpString(VarStr(i),D);
   }
@@ -234,7 +233,7 @@ static void DumpStrings(FILE *D)
  {
   if (StrLoc(i)!=0)
   {
-   fputc('S',D);
+   fputc(ID_STR,D);
    DumpWord(StrLoc(i),D);
    DumpString(StrStr(i),D);
   }
@@ -242,11 +241,26 @@ static void DumpStrings(FILE *D)
  }
 }
 
+static void DumpLocals(LocVar* lv, FILE *D)
+{
+ LocVar* v;
+ int n;
+ for (n=0,v=lv; v->varname!=NULL; v++) ++n;
+ if (n==0) return;
+ fputc(ID_LOC,D);
+ DumpWord(n,D);
+ for (v=lv; v->varname!=NULL; v++)
+ {
+  DumpWord(LocLoc(v),D);
+  DumpString(LocStr(v),D);
+ }
+}
+
 void DumpFunction(TFunc *tf, FILE *D)
 {
  lastF=tf;
  ThreadCode(tf->code,tf->code+tf->size);
- fputc('F',D);
+ fputc(ID_FUN,D);
  DumpWord(tf->size,D);
  DumpWord(tf->lineDefined,D);
  if (IsMain(tf))
@@ -255,6 +269,7 @@ void DumpFunction(TFunc *tf, FILE *D)
   DumpWord(tf->marked,D);
  DumpBlock(tf->code,tf->size,D);
  DumpStrings(D);
+ DumpLocals(tf->locvars,D);
 #if 0
 CheckThreads(tf->code);			/* TODO: remove */
 #endif
@@ -264,8 +279,8 @@ void DumpHeader(FILE *D)
 {
  Word w=TEST_WORD;
  float f=TEST_FLOAT;
- fputc(ESC,D);
- DumpString(SIGNATURE,D);
+ fputc(ID_CHUNK,D);
+ fputs(SIGNATURE,D);
  fputc(VERSION,D);
  fwrite(&w,sizeof(w),1,D);		/* a word for testing byte ordering */
  fwrite(&f,sizeof(f),1,D);		/* a float for testing byte ordering */
