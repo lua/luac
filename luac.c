@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.13 1996/03/08 21:41:09 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.14 1996/03/11 22:00:26 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
  argc-=i;
  argv+=i;
  if (argc<2) usage();
- D=fopen(d,"wb");			/* must open in  binary mode */
+ D=(dumping) ? fopen(d,"wb") : stdout;	/* must open in  binary mode */
  if (D==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
@@ -64,12 +64,12 @@ int main(int argc, char* argv[])
 
 static void do_dump(TFunc* tf)		/* only for tf==main */
 {
- DumpHeader(D);
+ if (dumping) DumpHeader(D);
  while (tf!=NULL)
  {
   TFunc* nf;
   if (listing) PrintFunction(tf);
-  DumpFunction(tf,D);
+  if (dumping) DumpFunction(tf,D);
   nf=tf->next;				/* list only built after first main */
   luaI_freefunc(tf);
   tf=nf;
@@ -82,7 +82,7 @@ static void do_compile(void)
  luaI_initTFunc(tf);
  tf->fileName = lua_parsedfile;
  lua_parse(tf);
- if (dumping) do_dump(tf);
+ do_dump(tf);
 }
 
 static void compile(char* filename)
