@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.19 2000/09/19 18:18:38 lhf Exp lhf $
+** $Id: stubs.c,v 1.20 2000/10/31 16:57:23 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -22,8 +22,13 @@ const char luac_ident[] = "$luac: " LUA_VERSION " " LUA_COPYRIGHT " $\n"
 * use only lcode lfunc llex lmem lobject lparser lstring ltable lzio
 */
 
-/* simplified from ldo.c */
+/* simplified from lapi.c */
 void lua_error (lua_State* L, const char* s) {
+ luaD_error(L,s);
+}
+
+/* simplified from ldo.c */
+void luaD_error (lua_State* L, const char* s) {
   UNUSED(L);
   if (s) fprintf(stderr,"luac: %s\n",s);
   exit(1);
@@ -36,38 +41,30 @@ void luaD_breakrun (lua_State *L, int errcode) {
 }
 
 /* simplified from lstate.c */
-lua_State *lua_open (int stacksize) {
-  lua_State *L = luaM_new(NULL, lua_State);
-  if (L == NULL) return NULL;  /* memory allocation error */
-  L->stack = NULL;
-  L->strt.size = L->udt.size = 0;
-  L->strt.nuse = L->udt.nuse = 0;
-  L->strt.hash = NULL;
-  L->udt.hash = NULL;
-  L->Mbuffer = NULL;
-  L->Mbuffsize = 0;
-  L->rootproto = NULL;
-  L->rootcl = NULL;
-  L->roottable = NULL;
-  L->TMtable = NULL;
-  L->last_tag = -1;
-  L->refArray = NULL;
-  L->refSize = 0;
-  L->refFree = NONEXT;
-  L->nblocks = sizeof(lua_State);
-  L->GCthreshold = MAX_INT;  /* to avoid GC during pre-definitions */
-  L->callhook = NULL;
-  L->linehook = NULL;
-  L->allowhooks = 1;
-  L->errorJmp = NULL;
-  if (stacksize == 0)
-    stacksize = DEFAULT_STACK_SIZE;
-  else
-    stacksize += LUA_MINSTACK;
-  L->gt = luaH_new(L, 10);  /* table of globals */
+lua_State *lua_newthread (lua_State *OL, int stacksize) {
+  lua_State *L = luaM_new(OL, lua_State);
+  if (L == NULL) lua_error(L,"not enough memory");
+  G(L) = luaM_new(L, global_State);
+  G(L)->strt.size = G(L)->udt.size = 0;
+  G(L)->strt.nuse = G(L)->udt.nuse = 0;
+  G(L)->strt.hash = G(L)->udt.hash = NULL;
+  G(L)->Mbuffer = NULL;
+  G(L)->Mbuffsize = 0;
+  G(L)->rootproto = NULL;
+  G(L)->rootcl = NULL;
+  G(L)->roottable = NULL;
+  G(L)->TMtable = NULL;
+  G(L)->sizeTM = 0;
+  G(L)->ntag = 0;
+  G(L)->refArray = NULL;
+  G(L)->nref = 0;
+  G(L)->sizeref = 0;
+  G(L)->refFree = NONEXT;
+  G(L)->nblocks = sizeof(lua_State);
   luaS_init(L);
   luaX_init(L);
-  L->GCthreshold = 2*L->nblocks;
+  G(L)->GCthreshold = 4*G(L)->nblocks;
+  UNUSED(stacksize);
   return L;
 }
 
@@ -78,21 +75,21 @@ int luaG_getline (int *lineinfo, int pc, int refline, int *prefi) {
     return -1;  /* no line info or function is not active */
   refi = prefi ? *prefi : 0;
   if (lineinfo[refi] < 0)
-    refline += -lineinfo[refi++]; 
-  LUA_ASSERT(lineinfo[refi] >= 0, "invalid line info");
+    refline += -lineinfo[refi++];
+  lua_assert(lineinfo[refi] >= 0);
   while (lineinfo[refi] > pc) {
     refline--;
     refi--;
     if (lineinfo[refi] < 0)
-      refline -= -lineinfo[refi--]; 
-    LUA_ASSERT(lineinfo[refi] >= 0, "invalid line info");
+      refline -= -lineinfo[refi--];
+    lua_assert(lineinfo[refi] >= 0);
   }
   for (;;) {
     int nextline = refline + 1;
     int nextref = refi + 1;
     if (lineinfo[nextref] < 0)
-      nextline += -lineinfo[nextref++]; 
-    LUA_ASSERT(lineinfo[nextref] >= 0, "invalid line info");
+      nextline += -lineinfo[nextref++];
+    lua_assert(lineinfo[nextref] >= 0);
     if (lineinfo[nextref] > pc)
       break;
     refline = nextline;
@@ -103,7 +100,7 @@ int luaG_getline (int *lineinfo, int pc, int refline, int *prefi) {
 }
 
 /*
-* the code below avoids the lexer and the parser (llex lparser lcode).
+* the code below avoids the lexer and the parser (llex lparser).
 * it is useful if you only want to load binary files.
 * this works for interpreters like lua.c too.
 */
