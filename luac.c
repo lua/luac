@@ -1,16 +1,16 @@
 /*
-** $Id: luac.c,v 1.34 2002/02/28 20:09:28 lhf Exp lhf $
+** $Id: luac.c,v 1.35 2002/03/01 01:46:24 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
 
-#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "lua.h"
 #include "lauxlib.h"
-#include "luac.h"
+
 #include "lfunc.h"
 #include "lmem.h"
 #include "lobject.h"
@@ -18,83 +18,55 @@
 #include "lstring.h"
 #include "lundump.h"
 
-#define	OUTPUT	"luac.out"		/* default output file */
+#ifdef LUA_DEBUG
+#define FREEALL
+#else
+#define luaB_opentests(L)
+#endif
 
-static void usage(const char* message, const char* arg);
-static int doargs(int argc, const char* argv[]);
-static Proto* load(lua_State* L, const char* filename);
-static Proto* combine(lua_State* L, Proto** P, int n);
-static void strip(lua_State* L, Proto* f);
-static void cannot(const char* name, const char* what, const char* mode);
-static void fatal(const char* message);
+#define PROGNAME	"luac"		/* program name */
+#define	OUTPUT		PROGNAME ".out"	/* default output file */
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;			/* strip debug information? */
-static const char* output=OUTPUT;	/* output file name */
+static char Output[]={ OUTPUT };	/* default output file name */
+static const char* output=Output;	/* output file name */
 
-/* need this to handle errors during parse or undump */
-static int ERRORMESSAGE(lua_State *l)
+static void fatal(const char* message)
 {
- fatal(lua_tostring(l,1));
- return 0;
+ fprintf(stderr,"%s: %s\n",PROGNAME,message);
+ exit(EXIT_FAILURE);
 }
 
-#define	IS(s)	(strcmp(argv[i],s)==0)
-
-int main(int argc, const char* argv[])
+static void cannot(const char* name, const char* what, const char* mode)
 {
- lua_State* L;
- Proto** P,*f;
- int i=doargs(argc,argv);
- argc-=i; argv+=i;
- if (argc<=0) usage("no input files given",NULL);
- L=lua_open();
-#ifdef LUA_DEBUG
-#define FREEALL
- luaB_opentests(L);
-#endif
- lua_register(L,LUA_ERRORMESSAGE,ERRORMESSAGE);
- P=luaM_newvector(L,argc,Proto*);
- for (i=0; i<argc; i++)
-  P[i]=load(L,IS("-")? NULL : argv[i]);
- f=combine(L,P,argc);
- if (listing) luaU_printchunk(f);
- if (dumping)
- {
-  FILE* D=fopen(output,"wb");
-  if (D==NULL) cannot(output,"open","out");
-  if (stripping) strip(L,f);
-  luaU_dumpchunk(f,D);
-  if (ferror(D)) cannot(output,"write","out");
-  fclose(D);
- }
-#ifdef FREEALL
- if (argc==1) luaM_freearray(L,P,argc,sizeof(Proto*));
- lua_close(L);
-#endif
- return 0;
+ fprintf(stderr,"%s: cannot %s %sput file ",PROGNAME,what,mode);
+ perror(name);
+ exit(EXIT_FAILURE);
 }
 
 static void usage(const char* message, const char* arg)
 {
  if (message!=NULL)
  {
-  fprintf(stderr,"luac: "); fprintf(stderr,message,arg); fprintf(stderr,"\n");
+  fprintf(stderr,"%s: ",PROGNAME); fprintf(stderr,message,arg); fprintf(stderr,"\n");
  }
  fprintf(stderr,
- "usage: luac [options] [filenames].  Available options are:\n"
+ "usage: %s [options] [filenames].  Available options are:\n"
  "  -        process stdin\n"
  "  -l       list\n"
  "  -o file  output file (default is \"" OUTPUT "\")\n"
  "  -p       parse only\n"
  "  -s       strip debug information\n"
- "  -v       show version information\n"
- );
- exit(1);
+ "  -v       show version information\n",
+ PROGNAME);
+ exit(EXIT_FAILURE);
 }
 
-static int doargs(int argc, const char* argv[])
+#define	IS(s)	(strcmp(argv[i],s)==0)
+
+static int doargs(int argc, char* argv[])
 {
  int i;
  for (i=1; i<argc; i++)
@@ -108,7 +80,7 @@ static int doargs(int argc, const char* argv[])
   else if (IS("-o"))			/* output file */
   {
    output=argv[++i];
-   if (output==NULL) usage(NULL,NULL);
+   if (output==NULL || *output==0) usage("`-o' needs argument",NULL);
   }
   else if (IS("-p"))			/* parse only */
    dumping=0;
@@ -117,7 +89,7 @@ static int doargs(int argc, const char* argv[])
   else if (IS("-v"))			/* show version */
   {
    printf("%s  %s\n",LUA_VERSION,LUA_COPYRIGHT);
-   if (argc==2) exit(0);
+   if (argc==2) exit(EXIT_SUCCESS);
   }
   else					/* unknown option */
    usage("unrecognized option `%s'",argv[i]);
@@ -125,30 +97,23 @@ static int doargs(int argc, const char* argv[])
  if (i==argc && (listing || !dumping))
  {
   dumping=0;
-  argv[--i]=OUTPUT;
+  argv[--i]=Output;
  }
  return i;
 }
 
 static Proto* load(lua_State* L, const char* filename)
 {
- int code=lua_loadfile(L,filename);
- switch (code)
+ if (luaL_loadfile(L,filename)==0)
  {
-  case 0:
-  if (errno!=0) cannot(filename,"read","in");
-  {
-   const Closure* c=lua_topointer(L,-1);
-   return c->l.p;
-  }
-  case LUA_ERRFILE:
-   cannot(filename,"open","in");
-   break;
-  default:
-   fatal(luaL_errstr(code));
-   break;
+  const Closure* c=lua_topointer(L,-1);
+  return c->l.p;
  }
- return NULL;
+ else
+ {
+  fatal(lua_tostring(L,-1));
+  return NULL;
+ }
 }
 
 static Proto* combine(lua_State* L, Proto** P, int n)
@@ -159,7 +124,7 @@ static Proto* combine(lua_State* L, Proto** P, int n)
  {
   int i,pc=0;
   Proto* f=luaF_newproto(L);
-  f->source=luaS_new(L,"=(luac)");
+  f->source=luaS_newliteral(L,"=(" PROGNAME ")");
   f->maxstacksize=1;
   f->p=P;
   f->sizep=n;
@@ -167,7 +132,7 @@ static Proto* combine(lua_State* L, Proto** P, int n)
   f->code=luaM_newvector(L,f->sizecode,Instruction);
   for (i=0; i<n; i++)
   {
-   f->code[pc++]=CREATE_ABc(OP_CLOSURE,0,i);
+   f->code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
    f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
   }
   f->code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
@@ -179,50 +144,47 @@ static void strip(lua_State* L, Proto* f)
 {
  int i,n=f->sizep;
 #ifdef FREEALL
- luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
+ luaM_freearray(L, f->lineinfo, f->sizecode, int);
  luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
 #endif
  f->lineinfo=NULL;
- f->sizelineinfo=0;
- f->source=luaS_new(L,"=(none)");
+ f->source=luaS_newliteral(L,"=(none)");
  f->locvars=NULL;
  f->sizelocvars=0;
  for (i=0; i<n; i++) strip(L,f->p[i]);
 }
 
-static void cannot(const char* name, const char* what, const char* mode)
+static size_t writer(const void* p, size_t size, size_t n, void* u)
 {
- fprintf(stderr,"luac: cannot %s %sput file ",what,mode);
- perror(name);
- exit(1);
+ return fwrite(p,size,n,(FILE*)u);
 }
 
-static void fatal(const char* message)
+int main(int argc, char* argv[])
 {
- fprintf(stderr,"luac: %s\n",message);
- exit(1);
-}
-
-/*
-* the code below avoids the parsing modules (lcode, llex, lparser).
-* it is useful if you only want to load binary files.
-* this works for interpreters like lua.c too.
-*/
-
-#ifdef NOPARSER
-
-#include "llex.h"
-#include "lparser.h"
-#include "lzio.h"
-
-void luaX_init(lua_State *L) {
-  UNUSED(L);
-}
-
-Proto *luaY_parser(lua_State *L, ZIO *z) {
-  UNUSED(z);
-  lua_error(L,"parser not loaded");
-  return NULL;
-}
-
+ lua_State* L;
+ Proto** P,*f;
+ int i=doargs(argc,argv);
+ argc-=i; argv+=i;
+ if (argc<=0) usage("no input files given",NULL);
+ L=lua_open();
+ luaB_opentests(L);
+ P=luaM_newvector(L,argc,Proto*);
+ for (i=0; i<argc; i++)
+  P[i]=load(L,IS("-")? NULL : argv[i]);
+ f=combine(L,P,argc);
+ if (listing) luaU_print(f);
+ if (dumping)
+ {
+  FILE* D=fopen(output,"wb");
+  if (D==NULL) cannot(output,"open","out");
+  if (stripping) strip(L,f);
+  luaU_dump(f,writer,D);
+  if (ferror(D)) cannot(output,"write","out");
+  fclose(D);
+ }
+#ifdef FREEALL
+ if (argc==1) luaM_freearray(L,P,argc,sizeof(Proto*));
+ lua_close(L);
 #endif
+ return 0;
+}
