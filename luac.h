@@ -1,12 +1,9 @@
 /*
-** $Id: luac.h,v 1.14 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: luac.h,v 1.15 2000/06/28 14:12:55 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
 
-#define LUA_REENTRANT
-
-#include "lauxlib.h"
 #include "lfunc.h"
 #include "lmem.h"
 #include "lobject.h"
@@ -19,9 +16,7 @@ extern lua_State *lua_state;
 #define	L	lua_state		/* lazy! */
 
 /* from dump.c */
-void luaU_dumpchunk(const Proto* Main, FILE* D, int native);
-
-/* from opcode.c */
+void luaU_dumpchunk(const Proto* Main, FILE* D);
 int luaU_codesize(const Proto* tf);
 
 /* from opt.c */
