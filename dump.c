@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.33 2001/07/19 14:34:06 lhf Exp lhf $
+** $Id: dump.c,v 1.34 2001/07/25 20:45:50 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -94,6 +94,8 @@ static void DumpConstants(const Proto* f, WRITETO D)
 	break;
    case LUA_TSTRING:
 	DumpString(tsvalue(o),D);
+	break;
+   case LUA_TNIL:
 	break;
    default:
 	lua_assert(0);			/* cannot happen */
