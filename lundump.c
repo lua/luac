@@ -1,10 +1,11 @@
 /*
-** $Id: lundump.c,v 1.10 1998/06/25 15:50:09 lhf Exp lhf $
+** $Id: lundump.c,v 1.11 1998/07/12 00:17:37 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "lauxlib.h"
 #include "lfunc.h"
 #include "lmem.h"
@@ -58,7 +59,8 @@ static unsigned long LoadLong(ZIO* Z)
 static float LoadFloat(ZIO* Z)
 {
  unsigned long l=LoadLong(Z);
- float f=*(float*)&l;
+ float f;
+ memcpy(&f,&l,sizeof(f));
  return f;
 }
 #endif
@@ -81,7 +83,7 @@ static double LoadDouble(ZIO* Z)
   l[0]=LoadLong(Z);
   l[1]=LoadLong(Z);
  }
- f=*(double*)l;
+ memcpy(&f,l,sizeof(f));
  return f;
 }
 #endif
