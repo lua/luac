@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.1 2002/12/13 11:12:35 lhf Exp lhf $
+** $Id: ldump.c,v 1.2 2002/12/13 11:17:27 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -88,6 +88,18 @@ static void DumpLines(const Proto* f, DumpState* D)
  DumpVector(f->lineinfo,f->sizelineinfo,sizeof(*f->lineinfo),D);
 }
 
+static void DumpUpvalues(const Proto* f, DumpState* D)
+{
+ if (f->upvalues==NULL)
+  DumpInt(0,D);
+ else
+ {
+  int i,n=f->nupvalues;
+  DumpInt(n,D);
+  for (i=0; i<n; i++) DumpString(f->upvalues[i],D);
+ }
+}
+
 static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
@@ -121,12 +133,13 @@ static void DumpFunction(const Proto* f, const TString* p, DumpState* D)
 {
  DumpString((f->source==p) ? NULL : f->source,D);
  DumpInt(f->lineDefined,D);
- DumpByte(f->nupvalues,D);
+ DumpInt(f->nupvalues,D);
  DumpByte(f->numparams,D);
  DumpByte(f->is_vararg,D);
  DumpByte(f->maxstacksize,D);
- DumpLocals(f,D);
  DumpLines(f,D);
+ DumpLocals(f,D);
+ DumpUpvalues(f,D);
  DumpConstants(f,D);
  DumpCode(f,D);
 }

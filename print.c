@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.39 2002/06/20 14:46:51 lhf Exp lhf $
+** $Id: print.c,v 1.40 2002/10/28 17:42:28 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -90,6 +90,10 @@ static void PrintCode(const Proto* f)
    case OP_LOADK:
     printf("\t; "); PrintConstant(f,bc);
     break;
+   case OP_GETUPVAL:
+   case OP_SETUPVAL:
+    printf("\t; %s",getstr(f->upvalues[b]));
+    break;
    case OP_GETGLOBAL:
    case OP_SETGLOBAL:
     printf("\t; %s",svalue(&f->k[bc]));
@@ -107,11 +111,12 @@ static void PrintCode(const Proto* f)
    case OP_EQ:
    case OP_LT:
    case OP_LE:
-    if (b>=MAXSTACK || c>=MAXSTACK) {
+    if (b>=MAXSTACK || c>=MAXSTACK)
+    {
      printf("\t; ");
-    if (b>=MAXSTACK) PrintConstant(f,b-MAXSTACK); else printf("-");
-    printf(" ");
-    if (c>=MAXSTACK) PrintConstant(f,c-MAXSTACK);
+     if (b>=MAXSTACK) PrintConstant(f,b-MAXSTACK); else printf("-");
+     printf(" ");
+     if (c>=MAXSTACK) PrintConstant(f,c-MAXSTACK);
     }
     break;
    case OP_JMP:
@@ -180,11 +185,20 @@ static void PrintLocals(const Proto* f)
   i,getstr(f->locvars[i].varname),f->locvars[i].startpc,f->locvars[i].endpc);
  }
 }
+
+static void PrintUpvalues(const Proto* f)
+{
+ int i,n=f->nupvalues;
+ printf("upvalues (%d) for %p:\n",n,VOID(f));
+ if (f->upvalues==NULL) return;
+ for (i=0; i<n; i++)
+ {
+  printf("\t%d\t%s\n",i,getstr(f->upvalues[i]));
+ }
+}
 #endif
 
-#define PrintFunction luaU_print
-
-void PrintFunction(const Proto* f)
+void luaU_print(const Proto* f)
 {
  int i,n=f->sizep;
  PrintHeader(f);
@@ -192,6 +206,7 @@ void PrintFunction(const Proto* f)
 #ifdef DEBUG_PRINT
  PrintConstants(f);
  PrintLocals(f);
+ PrintUpvalues(f);
 #endif
- for (i=0; i<n; i++) PrintFunction(f->p[i]);
+ for (i=0; i<n; i++) luaU_print(f->p[i]);
 }

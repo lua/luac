@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.39 2002/10/28 17:42:28 lhf Exp lhf $
+** $Id: luac.c,v 1.40 2002/12/13 11:12:35 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -142,10 +142,10 @@ static void strip(lua_State* L, Proto* f)
  int i,n=f->sizep;
  luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
  luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
- f->lineinfo=NULL;
- f->sizelineinfo=0;
- f->locvars=NULL;
- f->sizelocvars=0;
+ luaM_freearray(L, f->upvalues, f->nupvalues, TString *);
+ f->lineinfo=NULL; f->sizelineinfo=0;
+ f->locvars=NULL;  f->sizelocvars=0;
+ f->upvalues=NULL;
  f->source=luaS_newliteral(L,"=(none)");
  for (i=0; i<n; i++) strip(L,f->p[i]);
 }
