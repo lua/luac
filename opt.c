@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: opt.c,v 1.1 1998/02/06 20:05:39 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -8,35 +8,53 @@
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
-#include "print.h"
+#include "lmem.h"
 
-#if 0
-#define DEBUG
-#else
-#endif
-
-static void PrintConstant1(TProtoFunc* tf, int i)
+static void FixConstants(TProtoFunc* tf, int* C)
 {
- TObject* o=tf->consts+i;
-#if 0
- printf("%6d %d ",i,o->value.i);
-#else
- printf("%6d ",i,o->value.i);
-#endif
- switch (ttype(o))
+ Byte* code=tf->code;
+ Byte* p=code;
+ while (1)
  {
-  case LUA_T_NUMBER:	printf("N %g",(double)nvalue(o)); break;/* LUA_NUMBER */
-  case LUA_T_STRING:	printf("S %p\t\"%s\"",tsvalue(o),svalue(o)); break;
-  case LUA_T_PROTO:	printf("F %p",tfvalue(o)); break;
-  default:				/* cannot happen */
-		       printf("? %d",ttype(o)); 
-  break;
+  Opcode OP;
+  int n=INFO(tf,p,&OP);
+  int op=OP.class;
+  int i=OP.arg;
+  if (op==ENDCODE) break;
+  if (	op==PUSHCONSTANT || op==GETDOTTED || op==PUSHSELF ||
+	op==GETGLOBAL    || op==SETGLOBAL)
+  {
+   int j=C[i];
+   if (j==i)
+    ;
+   else if (n==1)
+   {
+    p[0]=op+j+1;
+   }
+   else if (n==2)
+   {
+    if (j<8) { p[0]=op+j+1; p[1]=NOP; } else p[1]=j;
+   }
+   else
+   {
+    if (j<=255)
+    {
+     p[0]=op;
+     p[1]=j;
+     p[2]=NOP;
+    }
+    else 
+    {
+     p[1]= 0x0000FF &  j;
+     p[2]= 0x0000FF & (j>>8);
+    }
+   }
+  }
+  p+=n;
  }
- printf("\n");
 }
 
 static TProtoFunc* TF;
-#define N 20000
 
 static int compare(const void* a, const void *b)
 {
@@ -50,45 +68,98 @@ static int compare(const void* a, const void *b)
  return ia-ib;
 }
 
-static void FixConstants(TProtoFunc* tf, int* C)
+static void OptConstants(TProtoFunc* tf)
+{
+ static int* C=NULL;
+ static int* D=NULL;
+ int i,k;
+ int n=tf->nconsts;
+ if (n==0) return;
+ C=luaM_reallocvector(C,n,int);
+ D=luaM_reallocvector(D,n,int);
+ for (i=0; i<n; i++) C[i]=D[i]=i;	/* group duplicates */
+ TF=tf; qsort(C,n,sizeof(C[0]),compare);
+ k=C[0];				/* build duplicate table */
+ for (i=1; i<n; i++)
+ {
+  int j=C[i];
+  TObject* oa=tf->consts+k;
+  TObject* ob=tf->consts+j;
+  if (ttype(oa)==ttype(ob) && oa->value.i==ob->value.i) D[j]=k; else k=j;
+ }
+ k=0;					/* build rename map & pack constants */
+ for (i=0; i<n; i++)
+ {
+  if (D[i]==i) { tf->consts[k]=tf->consts[i]; C[i]=k++; } else C[i]=C[D[i]];
+ }
+ if (k>=n) return;
+printf("\t\"%s\":%d reduced constants from %d to %d\n",
+	tf->fileName->str,tf->lineDefined,n,k);
+ tf->nconsts=k;
+ FixConstants(tf,C);
+}
+
+static int NoDebug(TProtoFunc* tf)
 {
  Byte* code=tf->code;
- Byte* p=code+2;			/* skip headers bytes */
+ Byte* p=code;
+ int nop=0;
+ while (1)				/* change SETLINE to NOP */
+ {
+  Opcode OP;
+  int n=INFO(tf,p,&OP);
+  int op=OP.class;
+  if (op==ENDCODE) break;
+  if (op==NOP) ++nop;
+  if (op==SETLINE) { nop+=n; memset(p,NOP,n); }
+  p+=n;
+ }
+ return nop;
+}
+
+static int FixJump(TProtoFunc* tf, Byte* a, Byte* b)
+{
+ Byte* p;
+ int nop=0;
+ for (p=a; p<b; )
+ {
+  Opcode OP;
+  int n=INFO(tf,p,&OP);
+  int op=OP.class;
+  if (op==ENDCODE) break;
+  if (op==NOP) ++nop;
+  p+=n;
+ }
+ return nop;
+}
+
+static void FixJumps(TProtoFunc* tf)
+{
+ Byte* code=tf->code;
+ Byte* p=code;
  while (1)
  {
-  int op=*p;
-  int n,i;
+  Opcode OP;
+  int n=INFO(tf,p,&OP);
+  int op=OP.class;
+  int i=OP.arg;
+  int nop;
   if (op==ENDCODE) break;
-  n=Opcode[op].size;
-  if (n==1) i=Opcode[op].arg; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
-  op=Opcode[op].class;
-#ifdef PACK
-  if (op==SETLINE) memset(p,NOP,n); else
-#endif
-  if (	op==PUSHCONSTANT || op==GETDOTTED || op==PUSHSELF ||
-	op==GETGLOBAL    || op==SETGLOBAL)
+  nop=0;
+  if (op==IFTUPJMP || op==IFFUPJMP) nop=FixJump(tf,p-i+n,p); else
+  if (op==ONTJMP || op==ONFJMP || op==JMP || op==IFFJMP) nop=FixJump(tf,p,p+i+n);
+  if (nop>0)
   {
-   int j=C[i];
-   if (j==i)
-    ;
-   else if (n==1)
-   {
-    p[0]=op+j+1;
-   }
-   else if (n==2)
-   {
-#ifdef PACK
-    if (j<8) { p[0]=op+j+1; p[1]=NOP; } else p[1]=j;
-#else
+   int j=i-nop;
+   if (n==2)
     p[1]=j;
-#endif
-   }
    else
+#if 0
    {
-#ifdef PACK
-    if (j<255)
+    if (j<=255)				/* does NOT work for nested loops */
     {
-     p[0]=op;
+     if (op==IFTUPJMP || op==IFFUPJMP) --j;
+     p[0]=OP.op-1;			/* *JMP and *JMPW are consecutive */
      p[1]=j;
      p[2]=NOP;
     }
@@ -98,53 +169,38 @@ static void FixConstants(TProtoFunc* tf, int* C)
      p[1]= 0x0000FF &  j;
      p[2]= 0x0000FF & (j>>8);
     }
+#if 0
    }
+#endif
   }
   p+=n;
  }
 }
 
-void OptConstants(TProtoFunc* tf)
+static void PackCode(TProtoFunc* tf)
 {
- static int C[N];
- static int D[N];
- int i,k;
- int n=tf->nconsts;
- if (n>=N) luaL_verror("SortConstants: too many constants (%d > %d)",n,N);
- for (i=0; i<n; i++) C[i]=i;
- for (i=0; i<n; i++) D[i]=i;
- TF=tf;
- qsort(C,n,sizeof(C[0]),compare);
-#ifdef DEBUG
- printf("after sort:\n");
- for (i=0; i<n; i++) PrintConstant1(tf,C[i]);
-#endif
- k=C[0];
- for (i=1; i<n; i++)
+ Byte* code=tf->code;
+ Byte* p=code;
+ Byte* q=code;
+ while (1)
  {
-  int j=C[i];
-  TObject* oa=tf->consts+k;
-  TObject* ob=tf->consts+j;
-  if (ttype(oa)==ttype(ob) && oa->value.i==ob->value.i) D[j]=k; else k=j;
+  Opcode OP;
+  int n=INFO(tf,p,&OP);
+  int op=OP.class;
+  if (op!=NOP) { memcpy(q,p,n); q+=n; }
+  p+=n;
+  if (op==ENDCODE) break;
  }
-#ifdef DEBUG
- printf("duplicates:\n");
- for (i=0; i<n; i++) if (D[i]!=i) printf("%6d = %d\n",i,D[i]);
-#endif
- k=0;
- for (i=0; i<n; i++)
- {
-  if (D[i]==i) { tf->consts[k]=tf->consts[i]; C[i]=k++; } else C[i]=C[D[i]];
- }
- if (k>=n) return;
-#ifdef DEBUG
- printf("pack map:\n");
- for (i=0; i<n; i++) printf("%6d = %d\n",i,C[i]);
- printf("after pack (%d/%d):\n",k,n);
- for (i=0; i<k; i++) PrintConstant1(tf,i);
-#endif
- tf->nconsts=k;
- FixConstants(tf,C);
+printf("\t\"%s\":%d reduced code from %d to %d\n",
+	tf->fileName->str,tf->lineDefined,(int)(p-code),(int)(q-code));
+}
+
+static void OptCode(TProtoFunc* tf)
+{
+ int nop=NoDebug(tf);
+ if (nop==0) return;			/* cannot improve code */
+ FixJumps(tf);
+ PackCode(tf);
 }
 
 static void OptFunction(TProtoFunc* tf);
@@ -161,7 +217,9 @@ static void OptFunctions(TProtoFunc* tf)
 
 static void OptFunction(TProtoFunc* tf)
 {
+ tf->locvars=NULL;			/* remove local variables table */
  OptConstants(tf);
+ OptCode(tf);
  OptFunctions(tf);
 }
 
