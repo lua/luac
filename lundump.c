@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
+** $Id: lundump.c,v 1.4 1998/01/13 20:05:24 lhf Exp $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -11,8 +11,11 @@
 #include "lstring.h"
 #include "lundump.h"
 
-static int SwapNumber=0;
-static int LoadFloat=1;
+typedef struct {
+ ZIO* Z;
+ int SwapNumber;
+ int LoadFloat;
+} Sundump;
 
 static void unexpectedEOZ(ZIO* Z)
 {
@@ -96,20 +99,20 @@ static void SwapDouble(double* f)
  t=*p; *p++=*q; *q--=t;
 }
 
-static real LoadNumber(ZIO* Z)
+static real LoadNumber(Sundump* S)
 {
- if (LoadFloat)
+ if (S->LoadFloat)
  {
   float f;
-  ezread(Z,&f,sizeof(f));
-  if (SwapNumber) SwapFloat(&f);
+  ezread(S->Z,&f,sizeof(f));
+  if (S->SwapNumber) SwapFloat(&f);
   return f;
  }
  else
  {
   double f;
-  ezread(Z,&f,sizeof(f));
-  if (SwapNumber) SwapDouble(&f);
+  ezread(S->Z,&f,sizeof(f));
+  if (S->SwapNumber) SwapDouble(&f);
   return f;
  }
 }
@@ -128,25 +131,25 @@ static void LoadLocals(TProtoFunc* tf, ZIO* Z)
  tf->locvars[i].varname=NULL;
 }
 
-static void LoadConstants(TProtoFunc* tf, ZIO* Z)
+static void LoadConstants(TProtoFunc* tf, Sundump* S)
 {
- int i,n=LoadWord(Z);
+ int i,n=LoadWord(S->Z);
  tf->nconsts=n;
  if (n==0) return;
  tf->consts=luaM_newvector(n,TObject);
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
-  int c=ezgetc(Z);
+  int c=ezgetc(S->Z);
   switch (c)
   {
    case ID_NUM:
 	ttype(o)=LUA_T_NUMBER;
-	nvalue(o)=LoadNumber(Z);
+	nvalue(o)=LoadNumber(S);
 	break;
    case ID_STR:
 	ttype(o)=LUA_T_STRING;	
-	tsvalue(o)=LoadTString(Z);
+	tsvalue(o)=LoadTString(S->Z);
 	break;
    case ID_FUN:
 	ttype(o)=LUA_T_PROTO;
@@ -162,28 +165,29 @@ static void LoadConstants(TProtoFunc* tf, ZIO* Z)
  }
 }
 
-static TProtoFunc* LoadFunction(ZIO* Z);
+static TProtoFunc* LoadFunction(Sundump* S);
 
-static void LoadFunctions(TProtoFunc* tf, ZIO* Z)
+static void LoadFunctions(TProtoFunc* tf, Sundump* S)
 {
- while (zgetc(Z)==ID_FUNCTION)
+ while (zgetc(S->Z)==ID_FUNCTION)
  {
-  int i=LoadWord(Z); 
-  TProtoFunc* t=LoadFunction(Z);
+  int i=LoadWord(S->Z); 
+  TProtoFunc* t=LoadFunction(S);
   TObject* o=tf->consts+i;
   tfvalue(o)=t;
  }
 }
 
-static TProtoFunc* LoadFunction(ZIO* Z)
+static TProtoFunc* LoadFunction(Sundump* S)
 {
+ ZIO* Z=S->Z;
  TProtoFunc* tf=luaF_newproto();
  tf->lineDefined=LoadWord(Z);
  tf->fileName=LoadTString(Z);
  tf->code=LoadBlock(LoadSize(Z),Z);
- LoadConstants(tf,Z);
+ LoadConstants(tf,S);
  LoadLocals(tf,Z);
- LoadFunctions(tf,Z);
+ LoadFunctions(tf,S);
  return tf;
 }
 
@@ -195,8 +199,9 @@ static void LoadSignature(ZIO* Z)
  if (*s!=0) luaL_verror("bad signature in binary file %s",Z->name);
 }
 
-static void LoadHeader(ZIO* Z)
+static void LoadHeader(Sundump* S)
 {
+ ZIO* Z=S->Z;
  int version,sizeofR;
  LoadSignature(Z);
  version=ezgetc(Z);
@@ -218,9 +223,9 @@ static void LoadHeader(ZIO* Z)
    SwapFloat(&f);
    if (f!=tf)
     luaL_verror("unknown float representation in binary file %s",Z->name);
-   SwapNumber=1;
+   S->SwapNumber=1;
   }
-  LoadFloat=1;
+  S->LoadFloat=1;
  }
  else if (sizeofR==sizeof(double))
  {
@@ -231,9 +236,9 @@ static void LoadHeader(ZIO* Z)
    SwapDouble(&f);
    if (f!=tf)
     luaL_verror("unknown float representation in binary file %s",Z->name);
-   SwapNumber=1;
+   S->SwapNumber=1;
   }
-  LoadFloat=0;
+  S->LoadFloat=0;
  }
  else
   luaL_verror(
@@ -242,10 +247,10 @@ static void LoadHeader(ZIO* Z)
        Z->name,sizeofR,sizeof(float),sizeof(double));
 }
 
-static TProtoFunc* LoadChunk(ZIO* Z)
+static TProtoFunc* LoadChunk(Sundump* S)
 {
- LoadHeader(Z);
- return LoadFunction(Z);
+ LoadHeader(S);
+ return LoadFunction(S);
 }
 
 /*
@@ -255,8 +260,12 @@ static TProtoFunc* LoadChunk(ZIO* Z)
 TProtoFunc* luaU_undump1(ZIO* Z)
 {
  int c=zgetc(Z);
+ Sundump S;
+ S.Z=Z;
+ S.SwapNumber=0;
+ S.LoadFloat=1;
  if (c==ID_CHUNK)
-  return LoadChunk(Z);
+  return LoadChunk(&S);
  else if (c!=EOZ)
   luaL_verror("%s is not a lua binary file",Z->name);
  return NULL;
