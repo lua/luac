@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.42 2002/06/20 14:46:51 lhf Exp lhf $
+** $Id: lundump.c,v 1.43 2002/08/07 00:36:03 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -19,6 +19,7 @@
 typedef struct {
  lua_State* L;
  ZIO* Z;
+ Mbuffer* b;
  int swap;
  const char* name;
 } LoadState;
@@ -45,7 +46,7 @@ static void LoadBlock (LoadState* S, void* b, size_t size)
 {
  if (S->swap)
  {
-  char *p=(char*) b+size-1;
+  char* p=(char*) b+size-1;
   int n=size;
   while (n--) *p--=(char)ezgetc(S);
  }
@@ -57,10 +58,10 @@ static void LoadVector (LoadState* S, void* b, int m, size_t size)
 {
  if (S->swap)
  {
-  char *q=(char*) b;
+  char* q=(char*) b;
   while (m--)
   {
-   char *p=q+size-1;
+   char* p=q+size-1;
    int n=size;
    while (n--) *p--=(char)ezgetc(S);
    q+=size;
@@ -99,7 +100,7 @@ static TString* LoadString (LoadState* S)
   return NULL;
  else
  {
-  char* s=luaO_openspace(S->L,size,char);
+  char* s=luaZ_openspace(S->L,S->b,size);
   ezread(S,s,size);
   return luaS_newlstr(S->L,s,size-1);	/* remove trailing '\0' */
  }
@@ -129,10 +130,10 @@ static void LoadLocals (LoadState* S, Proto* f)
 
 static void LoadLines (LoadState* S, Proto* f)
 {
- int n;
- n=LoadInt(S);
- f->lineinfo=luaM_newvector(S->L,n,int);
- LoadVector(S,f->lineinfo,n,sizeof(*f->lineinfo));
+ int size=LoadInt(S);
+ f->lineinfo=luaM_newvector(S->L,size,int);
+ f->sizelineinfo=size;
+ LoadVector(S,f->lineinfo,size,sizeof(*f->lineinfo));
 }
 
 static Proto* LoadFunction (LoadState* S, TString* p);
@@ -232,8 +233,7 @@ static void LoadHeader (LoadState* S)
  TESTSIZE(sizeof(lua_Number), "number");
  x=LoadNumber(S);
  if ((long)x!=(long)tx)		/* disregard errors in last bits of fraction */
-  luaG_runerror(S->L,"unknown number format in %s: read %f; expected %f",
-      S->name,x,tx);
+  luaG_runerror(S->L,"unknown number format in %s",S->name);
 }
 
 static Proto* LoadChunk (LoadState* S)
@@ -243,12 +243,11 @@ static Proto* LoadChunk (LoadState* S)
 }
 
 /*
-** load one chunk from a file or buffer
+** load precompiled chunk
 */
-Proto* luaU_undump (lua_State* L, ZIO* Z)
+Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff)
 {
  LoadState S;
- Proto* f;
  const char* s=zname(Z);
  if (*s=='@' || *s=='=')
   S.name=s+1;
@@ -258,10 +257,8 @@ Proto* luaU_undump (lua_State* L, ZIO* Z)
   S.name=s;
  S.L=L;
  S.Z=Z;
- f=LoadChunk(&S);
- if (zgetc(Z)!=EOZ)
-  luaG_runerror(L,"%s apparently contains more than one chunk",S.name);
- return f;
+ S.b=buff;
+ return LoadChunk(&S);
 }
 
 /*
