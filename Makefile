@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.1 1997/09/11 15:57:35 lhf Exp lhf $
+# $Id: Makefile,v 1.2 1998/06/19 21:23:35 lhf Exp lhf $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -53,7 +53,7 @@ opcode.h: lua/lopcodes.h mkopcodeh
 man:	man/cat1/luac.1	luac.html
 
 luac.html:	luac.man
-	man2html luac.man> luac.html
+	man2html luac.man >$@
 
 man/cat1/luac.1:	luac.man
 	nroff -man luac.man >$@
@@ -71,7 +71,6 @@ noparser:
 	make DEFS="-DNOPARSER"
 
 map:	$(OBJS)
-#	@echo luac needs the following modules from liblua.a:
 	@echo -n '* use only '
 	@ld -o /dev/null -M $(OBJS) lua/liblua.a -lc | grep '	' | sort | xargs echo | sed 's/\.o//g'
 	grep 'use only' stubs.c
@@ -96,7 +95,7 @@ ci:
 	ci $(SRCS)
 
 diff:
-	rcsdiff $(SRCS)
+	rcsdiff $(SRCS) Makefile
 
 what:
 	@grep '^[^	].*:	' Makefile | cut -f1 -d:
