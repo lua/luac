@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.3 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: test.c,v 1.4 1999/03/11 17:09:10 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -15,16 +15,10 @@
 
 static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 {
-#if 0
-printf("check in  n=%d tf=%p ss=%d sp=%d at=%d\n",n,tf,ss,sp,at);
-#endif
  if (n==0) return sp;
  sp+=n;
- if (sp<00) UNSAFE("stack underflow"),ATLOC;
- if (sp>ss) UNSAFE("stack overflow"),ATLOC;
-#if 0
-printf("check out n=%d tf=%p ss=%d sp=%d at=%d\n",n,tf,ss,sp,at);
-#endif
+ if (sp<00) UNSAFE("stack underflow (sp=%d)"),sp,ATLOC;
+ if (sp>ss) UNSAFE("stack overflow (sp=%d ss=%d)"),sp,ss,ATLOC;
  return sp;
 }
 
@@ -36,7 +30,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
  Byte* code=tf->code;
  Byte* p=code;
  int longarg=0;
- int ss=*p;
+ int ss=0;
  int sp=0;
  while (1)
  {
@@ -45,11 +39,11 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	int op=OP.class;
 	int i=OP.arg+longarg;
 	int at=p-code;
-
 	longarg=0;
-	SP[at]=sp;
-
-	switch (op)
+#if 0
+printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
+#endif
+	switch (op)			/* test limits too */
 	{
 	case PUSHCONSTANT:
 	case GETGLOBAL:
@@ -58,18 +52,18 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	case SETGLOBAL:
 	case CLOSURE:
 		if (i>=tf->nconsts)
-			UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts,ATLOC;
+			UNSAFE("bad constant #%d (max=%d)"),
+			i,tf->nconsts-1,ATLOC;
 		break;
 	case PUSHLOCAL:
 	case SETLOCAL:
-		if (i>=sp)
-			UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
+		if (i>=sp) UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
 		break;
 	case ONTJMP:
 	case ONFJMP:
 		JP[at]=-(at+i+n);	/* negate to remember ON?JMP */
 		break;
-	case JMP:
+	case JMP:			/* remember JMP targets */
 	case IFFJMP:
 		JP[at]=at+i+n;
 		break;
@@ -79,9 +73,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 		break;
 	}
 
-#if 0
-printf("tf=%p ss=%d sp=%d JP=%d at=%d %s %d %d\n",tf,ss,sp,JP[at],at,OP.name,i,OP.arg2);
-#endif
+	SP[at]=sp;			/* remember depth before instruction */
 
 	switch (op)
 	{
@@ -158,18 +150,12 @@ static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
   {
    int j=i;
    int a,b;
-   while (SP[++j]<0) ;			/* find next instruction */
-
-#if 0
-printf("tf=%p to=%d at=%d next=%d on=%d\n",tf,to,i,j,on);
-printf("SP[%d]=%d SP[%d]=%d\n",j,SP[j],to,SP[to]);
-#endif
-
    if (to<2 || to>=size)
     UNSAFE("invalid jump to %d (range is 2..%d)"),to,size-1,ATLOC;
    a=SP[to];
    if (a<0)
     UNSAFE("invalid jump to %d (not an instruction)"),to,ATLOC;
+   while (SP[++j]<0) ;			/* find next instruction */
    b=SP[j]+on;
    if (a!=b)
     UNSAFE("stack inconsistency in jump to %d (%d x %d)"),to,b,a,ATLOC;
@@ -182,10 +168,8 @@ static void TestCode(TProtoFunc* tf)
  static int* SP=NULL;
  static int* JP=NULL;
  int size=luaU_codesize(tf);
- SP=luaM_reallocvector(SP,size,int);
- JP=luaM_reallocvector(JP,size,int);
- memset(SP,-1,size*sizeof(*SP));
- memset(JP, 0,size*sizeof(*JP));
+ luaM_reallocvector(SP,size,int); memset(SP,-1,size*sizeof(int));
+ luaM_reallocvector(JP,size,int); memset(JP, 0,size*sizeof(int));
  TestStack(tf,size,SP,JP);
  TestJumps(tf,size,SP,JP);
 }
@@ -205,6 +189,7 @@ static void TestConstants(TProtoFunc* tf)
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
+	break;
    case LUA_T_STRING:
 	break;
    case LUA_T_PROTO:
@@ -212,8 +197,8 @@ static void TestConstants(TProtoFunc* tf)
 	break;
    case LUA_T_NIL:
 	break;
-   default:
-	luaL_verror("cannot test constant #%d: type=%d [%s]",
+   default:			/* cannot happen */
+	luaL_verror("cannot test constant #%d: type=%d [%s]"
 		" in %p (\"%s\":%d)",
 		i,ttype(o),luaO_typename(o),
 		tf,tf->source->str,tf->lineDefined);
