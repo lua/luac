@@ -1,5 +1,5 @@
-.\" $Id$
-.TH LUA 1 "$Date$"
+.\" $Id: lua.man,v 1.1 2000/03/29 17:07:36 lhf Exp lhf $
+.TH LUA 1 "$Date: 2000/03/29 17:07:36 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -118,7 +118,7 @@ The default prompt is ``> ''.
 enter interactive mode,
 but without displaying a prompt.
 .TP
-.BI \-S n
+.BI \-s n
 set the stack size to
 .IB n .
 If present,
@@ -126,11 +126,11 @@ this must be the first option.
 Note that
 .I n
 is in the same argument as
-.BR -S .
+.BR -s .
 For example,
 to specify a stack size of 2000,
 use
-.BR -S2000 .
+.BR -s2000 .
 .TP
 .B \-v
 print version information.
