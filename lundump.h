@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.6 1998/06/13 16:54:15 lhf Exp lhf $
+** $Id: lundump.h,v 1.7 1998/06/25 15:50:09 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -48,7 +48,7 @@ TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 */
 
 #ifndef ID_NUMBER
-#define	ID_NUMBER	ID_NATIVE
+#define	ID_NUMBER	ID_REAL8
 #endif
 
 #if 0
