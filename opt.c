@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.21 2000/09/19 18:18:38 lhf Exp lhf $
+** $Id: opt.c,v 1.22 2000/10/31 16:57:23 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -12,16 +12,15 @@
 
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
- const TObject* o=luaH_get(L,t,key);
+ const TObject* o=luaH_get(t,key);
  if (ttype(o)==LUA_TNUMBER)
   return (int) nvalue(o);
  else
  {
   TObject val;
-  ttype(&val)=LUA_TNUMBER;
-  nvalue(&val)=j;
+  setnvalue(&val,j);
   *luaH_set(L,t,key)=val;
-  LUA_ASSERT(j>=0,"MapConstant returns negative!");
+  lua_assert(j>=0);
   return j;
  }
 }
@@ -30,18 +29,18 @@ static int MapConstants(Proto* tf, Hash* map)
 {
  int i,j,k,n,m=0;
  TObject o;
- j=0; n=tf->nknum; ttype(&o)=LUA_TNUMBER;
+ j=0; n=tf->sizeknum;
  for (i=0; i<n; i++)
  {
-  nvalue(&o)=tf->knum[i];
+  setnvalue(&o,tf->knum[i]);
   k=MapConstant(map,j,&o);
   if (k==j) j++;
  }
  m=j;
- j=0; n=tf->nkstr; ttype(&o)=LUA_TSTRING;
+ j=0; n=tf->sizekstr;
  for (i=0; i<n; i++)
  {
-  tsvalue(&o)=tf->kstr[i];
+  setsvalue(&o,tf->kstr[i]);
   k=MapConstant(map,j,&o);
   if (k==j) j++;
  }
@@ -52,43 +51,44 @@ static void PackConstants(Proto* tf, Hash* map)
 {
  int i,j,k,n;
  TObject o;
-#ifdef DEBUG
- printf("%p before pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
+#ifdef LUA_DEBUG
+ printf("%p before pack sizeknum=%d sizekstr=%d\n",tf,tf->sizeknum,tf->sizekstr);
 #endif
- j=0; n=tf->nknum; ttype(&o)=LUA_TNUMBER;
+ j=0; n=tf->sizeknum;
  for (i=0; i<n; i++)
  {
-  nvalue(&o)=tf->knum[i];
+  setnvalue(&o,tf->knum[i]);
   k=MapConstant(map,-1,&o);
   if (k==j) tf->knum[j++]=tf->knum[i];
  }
- tf->nknum=j;
- j=0; n=tf->nkstr; ttype(&o)=LUA_TSTRING;
+ tf->sizeknum=j;
+ j=0; n=tf->sizekstr;
  for (i=0; i<n; i++)
  {
-  tsvalue(&o)=tf->kstr[i];
+  setsvalue(&o,tf->kstr[i]);
   k=MapConstant(map,-1,&o);
   if (k==j) tf->kstr[j++]=tf->kstr[i];
  }
- tf->nkstr=j;
-#ifdef DEBUG
- printf("%p after  pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
+ tf->sizekstr=j;
+#ifdef LUA_DEBUG
+ printf("%p after  pack sizeknum=%d sizekstr=%d\n",tf,tf->sizeknum,tf->sizekstr);
 #endif
 }
 
 static void OptConstants(Proto* tf)
 {
- Instruction* p;
- int n=tf->nknum+tf->nkstr;
+ Instruction* code=tf->code;
+ int pc,ni=tf->sizecode;
+ int n=tf->sizeknum+tf->sizekstr;
  Hash* map=luaH_new(L,n);
  int m=MapConstants(tf,map);
-#ifdef DEBUG
+#ifdef LUA_DEBUG
  printf("%p n=%d m=%d %s\n",tf,n,m,(m==n)?"nothing to optimize":"yes!");
 #endif
  if (m==n) return;
- for (p=tf->code;; p++)
+ for (pc=0; pc<ni; pc++)
  {
-  Instruction i=*p;
+  Instruction i=code[pc];
   int op=GET_OPCODE(i);
   switch (op)
   {
@@ -96,32 +96,30 @@ static void OptConstants(Proto* tf)
    int j,k;
    case OP_PUSHNUM: case OP_PUSHNEGNUM:
     j=GETARG_U(i);
-    ttype(&o)=LUA_TNUMBER; nvalue(&o)=tf->knum[j];
+    setnvalue(&o,tf->knum[j]);
     k=MapConstant(map,-1,&o);
-    if (k!=j) *p=CREATE_U(op,k);
+    if (k!=j) code[pc]=CREATE_U(op,k);
     break;
    case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
    case OP_PUSHSELF:   case OP_SETGLOBAL:
     j=GETARG_U(i);
-    ttype(&o)=LUA_TSTRING; tsvalue(&o)=tf->kstr[j];
+    setsvalue(&o,tf->kstr[j]);
     k=MapConstant(map,-1,&o);
-    if (k!=j) *p=CREATE_U(op,k);
+    if (k!=j) code[pc]=CREATE_U(op,k);
     break;
-   case OP_END:
-    PackConstants(tf,map);
-    luaH_free(L,map);
-    return;
    default:
     break;
   }
  }
+ PackConstants(tf,map);
+ luaH_free(L,map);
 }
 
 #define OptFunction luaU_optchunk
 
 void OptFunction(Proto* tf)
 {
- int i,n=tf->nkproto;
+ int i,n=tf->sizekproto;
  OptConstants(tf);
  for (i=0; i<n; i++) OptFunction(tf->kproto[i]);
 }
