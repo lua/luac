@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.12 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: test.c,v 1.13 1999/12/02 18:51:09 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -55,6 +55,9 @@ static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 	int i=OP.arg+longarg;
 	int at=p-code;
 	longarg=0;
+#if 1
+printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
+#endif
 	switch (op)			/* test sanity of operands */
 	{
 	case PUSHCONSTANT:
@@ -63,11 +66,13 @@ static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 	case PUSHSELF:
 	case SETGLOBAL:
 	case CLOSURE:
+	case SETNAME:
 	{
 		const TObject* o=luaU_getconstant(tf,i,at);
-		if ((op==CLOSURE   && ttype(o)!=LUA_T_PROTO)
+		if ((op==CLOSURE   && ttype(o)!=LUA_T_LPROTO)
 		 || (op==GETGLOBAL && ttype(o)!=LUA_T_STRING)
-		 || (op==SETGLOBAL && ttype(o)!=LUA_T_STRING))
+		 || (op==SETGLOBAL && ttype(o)!=LUA_T_STRING)
+		 || (op==SETNAME   && ttype(o)!=LUA_T_STRING))
 			UNSAFE("bad operand to %s"),OP.name,ATLOC;
 		break;
 	}
@@ -100,7 +105,7 @@ static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 	case VARARGS:					break;
 	case ENDCODE:					return;
 	case RETCODE:		CHECK(i,0); sp=i;	break;
-	case CALL:		CHECK(OP.arg2+1,i);	break;
+	case CALL:		CHECK(OP.arg2,i);	break;
 	case TAILCALL:		CHECK(OP.arg2,0); sp=i;	break;
 	case PUSHNIL:		CHECK(0,i+1);		break;
 	case POP:		CHECK(0,-i);		break;
@@ -142,6 +147,7 @@ static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 	case JMP:					break;
 	case CLOSURE:		CHECK(OP.arg2,1);	break;
 	case SETLINE:					break;
+	case SETNAME:					break;
 	case LONGARG:
 		longarg=i<<16;
 		if (longarg<0) UNSAFE("longarg overflow"),ATLOC;
@@ -195,12 +201,15 @@ static void TestCode(const TProtoFunc* tf)
 static void TestLocals(const TProtoFunc* tf)
 {
  const LocVar* v;
- int l=1;
+ int l=0;
+ int n,at;
  int d=0;
  if (tf->locvars==NULL) return;
- for (v=tf->locvars; v->line>=0; v++)
+ n=tf->code[1]; if (n>=ZEROVARARG) n-=ZEROVARARG;
+ for (at=0,v=tf->locvars; v->line>=0; at++,v++)
  {
-  int at=v-tf->locvars;			/* for ATLOC */
+  if (at<n && v->line!=0)
+   UNSAFE("bad line number %d; expected 0 for argument"),v->line,l,ATLOC;
   if (l>v->line)
    UNSAFE("bad line number %d; expected at least %d"),v->line,l,ATLOC;
   l=v->line;
@@ -227,7 +236,7 @@ static void TestConstants(const TProtoFunc* tf)
 	break;
    case LUA_T_STRING:
 	break;
-   case LUA_T_PROTO:
+   case LUA_T_LPROTO:
 	TestFunction(tfvalue(o));
 	break;
    case LUA_T_NIL:
