@@ -1,5 +1,5 @@
-.\" $Id: lua.man,v 1.1 2000/03/29 17:07:36 lhf Exp lhf $
-.TH LUA 1 "$Date: 2000/03/29 17:07:36 $"
+.\" $Id: lua.man,v 1.2 2000/04/18 00:21:27 lhf Exp lhf $
+.TH LUA 1 "$Date: 2000/04/18 00:21:27 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -61,14 +61,8 @@ that is,
 not interactively,
 even when the standard input is a terminal.
 .TP
-.B \-d
-turn debugging on.
-Individual chunks may
-still control the generation of debug information with
-.B $debug
-and
-.BR $nodebug .
-If debugging is on, then additional information is printed when an error occurs.
+.B \-c
+close Lua before exiting.
 .TP
 .BI \-e " stat"
 execute statement
@@ -85,7 +79,7 @@ and then execute
 The arguments in
 .B arg
 start at 0,
-which contains
+which contains the string
 .RI ` file '.
 The index of the last argument is stored in
 .BR "arg.n" .
