@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.7 1999/03/16 18:17:26 lhf Exp lhf $
+** $Id: opt.c,v 1.8 1999/03/22 21:38:26 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -170,7 +170,7 @@ static int NoDebug(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
- int lop;				/* last opcode */
+ int lop=NOP;				/* last opcode */
  int nop=0;
  while (1)				/* change SETLINE to NOP */
  {
