@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.9 1999/04/17 03:22:01 lhf Exp lhf $
+** $Id: opt.c,v 1.10 1999/04/26 14:02:23 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -11,12 +11,6 @@
 
 static void FixArg(Byte* p, int i, int j, int isconst)
 {
-if (i<=MAX_BYTE && j>MAX_BYTE)
-{
- luaL_verror("internal error: cannot fix arg for %s. i=%d j=%d p=%p\n"
- "\tThis will be corrected in 3.2 final.",
-	isconst?"constant":"jump",i,j,p);
-}
  if (j==i)
   ;
  else if (i<=MAX_BYTE)		/* j<i, so j fits where i did */
@@ -37,8 +31,9 @@ if (i<=MAX_BYTE && j>MAX_BYTE)
  }
  else 				/* previous instruction must've been LONGARG */
  {
-  FixArg(p,i&0x00FFFF,j&0x00FFFF,isconst);
   if (isconst && j<=MAX_WORD) p[-2]=p[-1]=NOP; else p[-1]=j>>16;
+  p[1]=j>>8;
+  p[2]=j;
  }
 }
 
@@ -47,7 +42,7 @@ static void FixConstants(TProtoFunc* tf, int* C)
  Byte* code=tf->code;
  Byte* p=code;
  int longarg=0;
- while (1)
+ for (;;)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
@@ -72,7 +67,7 @@ static void NoUnrefs(TProtoFunc* tf)
  Byte* code=tf->code;
  Byte* p=code;
  int longarg=0;
- while (1)				/* mark all used constants */
+ for (;;)				/* mark all used constants */
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
@@ -178,7 +173,7 @@ static int NoDebug(TProtoFunc* tf)
  Byte* p=code;
  int lop=NOP;				/* last opcode */
  int nop=0;
- while (1)				/* change SETLINE to NOP */
+ for (;;)				/* change SETLINE to NOP */
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
@@ -213,37 +208,12 @@ static int FixJump(TProtoFunc* tf, Byte* a, Byte* b)
  return nop;
 }
 
-static void FixJumpOpcode(Byte* p, int i, int j)
-{
- if (i<=MAX_BYTE)		/* j<i, so j fits where i did */
-  p[1]=j;
- else if (i<=MAX_WORD)
- {
-  if (j<=MAX_BYTE)		/* may use byte variant instead */
-  {
-   p[0]++;			/* byte variant follows word variant */
-   p[1]=j;
-   p[2]=NOP;
-  }
-  else 				/* stuck with word variant */
-  {
-   p[1]=j>>8;
-   p[2]=j;
-  }
- }
- else 				/* previous instruction must've been LONGARG */
- {
-  FixJumpOpcode(p,i&0x00FFFF,j&0x00FFFF);
-  p[-1]=j>>16;
- }
-}
-
 static void FixJumps(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
  int longarg=0;
- while (1)
+ for (;;)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
@@ -274,7 +244,7 @@ static void PackCode(TProtoFunc* tf)
  Byte* code=tf->code;
  Byte* p=code;
  Byte* q=code;
- while (1)
+ for (;;)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
