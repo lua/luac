@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.2 1998/01/12 13:04:24 lhf Exp lhf $
+** $Id: stubs.c,v 1.3 1998/01/13 20:05:24 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include "luac.h"
 
-/* avoid lapi.o lauxlib.o lbuiltin.o ldo.o lgc.o ltable.o ltm.o lvm.o */
-/* use lbuffer.o lfunc.o llex.o lmem.o lobject.o lstring.o lstx.o lzio.o */
+/*
+* avoid lapi.o lauxlib.o lbuiltin.o ldo.o lgc.o ltable.o ltm.o lvm.o
+* use lbuffer.o lfunc.o llex.o lmem.o lobject.o lstate.o lstring.o lstx.o lzio.o
+*/
 
 /* simplified from ldo.c */
 void lua_error(char* s)
@@ -30,48 +32,19 @@ void luaL_verror(char* fmt, ...)
  lua_error(buff);
 }
 
-#if 0
-void luaB_predefine(void){}
+/* avoid runtime modules in lstate.c */
+void luaB_predefine(void) {}
 void luaC_hashcallIM(Hash *l) {}
 void luaC_strcallIM(TaggedString *l) {}
 void luaD_gcIM(TObject *o) {}
 void luaD_init(void) {}
 void luaH_free(Hash *frees) {}
 void luaT_init(void) {}
-#else
-#include "lstate.h"
-#include "lmem.h"
-#include "llex.h"
 
-LState *lua_state = NULL;
-
-void lua_open (void)
-{
-  if (lua_state) return;
-  lua_state = luaM_new(LState);
-  L->numCblocks = 0;
-  L->Cstack.base = 0;
-  L->Cstack.lua2C = 0;
-  L->Cstack.num = 0;
-  L->errorJmp = NULL;
-  L->rootproto.next = NULL;
-  L->rootproto.marked = 0;
-  L->rootcl.next = NULL;
-  L->rootcl.marked = 0;
-  L->rootglobal.next = NULL;
-  L->rootglobal.marked = 0;
-  L->roottable.next = NULL;
-  L->roottable.marked = 0;
-  L->refArray = NULL;
-  L->refSize = 0;
-  L->Mbuffsize = 0;
-  L->Mbuffer = NULL;
-  L->GCthreshold = GARBAGE_BLOCK;
-  L->nblocks = 0;
-  luaS_init();
-  luaX_init();
-}
-#endif
+/*
+* the code below avoids the lexer and the parser.
+* useful if you only want to load binary files. this works for lua.c too.
+*/
 
 #ifdef NOPARSER
 /* avoid llex.o lstx.o */
