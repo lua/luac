@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: lundump.h,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -9,7 +9,6 @@
 
 #include "lobject.h"
 #include "lzio.h"
-#define TFunc TProtoFunc
 
 #define ID_CHUNK	27		/* ESC */
 #define ID_FUNCTION	'#'
@@ -27,6 +26,6 @@
 #define get_word(w,p)	Get_word(w,p), p+=2
 #define get_byte(p)	*p++
 
-TFunc* luaU_undump1(ZIO* Z, char* filename);	/* load one chunk */
+TFunc* luaU_undump1(ZIO* Z);		/* load one chunk */
 
 #endif
