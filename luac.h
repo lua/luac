@@ -1,10 +1,9 @@
 /*
-** $Id: luac.h,v 1.21 2001/07/19 14:34:06 lhf Exp lhf $
+** $Id: luac.h,v 1.22 2001/11/01 08:50:39 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
 
-#define LUA_PRIVATE
 #include "lua.h"
 
 #include "lobject.h"

@@ -1,12 +1,11 @@
 /*
-** $Id: ldumplib.c,v 1.3 2001/07/19 14:34:06 lhf Exp lhf $
+** $Id: ldumplib.c,v 1.4 2001/11/01 08:50:39 lhf Exp lhf $
 ** library access to precompiler
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 
-#define LUA_PRIVATE
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"

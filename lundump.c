@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.37 2001/07/25 20:45:50 lhf Exp lhf $
+** $Id: lundump.c,v 1.38 2001/11/29 01:00:34 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define LUA_PRIVATE
 #include "lua.h"
 
 #include "ldebug.h"
