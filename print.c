@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.44 2003/04/07 20:34:20 lhf Exp lhf $
+** $Id: print.c,v 1.45 2003/12/09 19:22:19 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -46,7 +46,7 @@ static void PrintString(const Proto* f, int n)
 
 static void PrintConstant(const Proto* f, int i)
 {
- const TObject* o=&f->k[i];
+ const TValue* o=&f->k[i];
  switch (ttype(o))
  {
   case LUA_TNUMBER:
