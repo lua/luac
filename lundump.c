@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.14 1999/03/16 18:08:20 lhf Exp lhf $
+** $Id: lundump.c,v 1.15 1999/03/22 21:38:26 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -9,6 +9,7 @@
 #include "lauxlib.h"
 #include "lfunc.h"
 #include "lmem.h"
+#include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
 
@@ -94,11 +95,15 @@ static int LoadInt (ZIO* Z, char* message)
  return i;
 }
 
+#define PAD	5			/* two word operands plus opcode */
+
 static Byte* LoadCode (ZIO* Z)
 {
  int size=LoadInt(Z,"code too long (%ld bytes) in %s");
- void* b=luaM_malloc(size);
+ Byte* b=luaM_malloc(size+PAD);
  LoadBlock(b,size,Z);
+ if (b[size-1]!=ENDCODE) luaL_verror("bad code in %s",zname(Z));
+ memset(b+size,ENDCODE,PAD);		/* pad for safety */
  return b;
 }
 
@@ -235,7 +240,7 @@ TProtoFunc* luaU_undump1(ZIO* Z)
 void luaU_testnumber(void)
 {
  if (sizeof(real)!=SIZEOF_NUMBER)
-   luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
+  luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
 	(int)sizeof(real),SIZEOF_NUMBER);
  else
  {
@@ -266,6 +271,6 @@ void luaU_testnumber(void)
 void luaU_badconstant(char* s, int i, TObject* o, TProtoFunc* tf)
 {
  int t=ttype(o);
- char* name= (t>0 || t<LUA_T_LINE) ? "out of range" : luaO_typenames[-t];
+ char* name= (t>0 || t<LUA_T_LINE) ? "?" : luaO_typenames[-t];
  luaL_verror("cannot %s constant #%d: type=%d [%s]" IN,s,i,t,name,INLOC);
 }
