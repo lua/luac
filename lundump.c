@@ -1,8 +1,10 @@
 /*
-** $Id: lundump.c,v 1.44 2002/10/28 17:42:28 lhf Exp lhf $
+** $Id: lundump.c,v 1.45 2002/12/13 11:12:35 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
+
+#define lundump_c
 
 #include "lua.h"
 

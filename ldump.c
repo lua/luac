@@ -1,10 +1,12 @@
 /*
-** $Id: ldump.c,v 1.1 2002/10/25 21:31:28 roberto Exp $
+** $Id: ldump.c,v 1.1 2002/12/13 11:12:35 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stddef.h>
+
+#define ldump_c
 
 #include "lua.h"
 
