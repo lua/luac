@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.47 2004/03/24 00:25:08 lhf Exp lhf $
+** $Id: luac.c,v 1.48 2004/06/09 21:03:53 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -86,13 +86,14 @@ static int doargs(int argc, char* argv[])
    break;
   }
   else if (IS("-"))			/* end of options; use stdin */
-   return i;
+   break;
   else if (IS("-l"))			/* list */
    ++listing;
   else if (IS("-o"))			/* output file */
   {
    output=argv[++i];
    if (output==NULL || *output==0) usage("`-o' needs argument");
+   if (IS("-")) output=NULL;
   }
   else if (IS("-p"))			/* parse only */
    dumping=0;
@@ -150,34 +151,32 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
  return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
-static int panic(lua_State *L)
-{
- UNUSED(L);
- fatal("not enough memory!");
- return 0;
-}
+void unprint(lua_State* L, const char* name);
 
-int main(int argc, char* argv[])
+struct Smain {
+  int argc;
+  char **argv;
+};
+
+static int pmain(lua_State *L)
 {
- lua_State* L;
+ struct Smain *s = (struct Smain *)lua_touserdata(L, 1);
+ int argc=s->argc;
+ char **argv=s->argv;
  Proto* f;
- int i=doargs(argc,argv);
- argc-=i; argv+=i;
- if (argc<=0) usage("no input files given");
- L=lua_open();
- if (L==NULL) fatal("not enough memory for state");
- lua_atpanic(L,panic);
+ int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  for (i=0; i<argc; i++)
  {
   const char* filename=IS("-") ? NULL : argv[i];
+  if (listing>2) unprint(L,filename); else
   if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
  }
  f=combine(L,argc);
  if (listing) luaU_print(f,listing>1);
  if (dumping)
  {
-  FILE* D=fopen(output,"wb");
+  FILE* D= (output==NULL) ? stdout : fopen(output,"wb");
   if (D==NULL) cannot("open");
   lua_lock(L);
   luaU_dump(L,f,writer,D,stripping);
@@ -185,6 +184,21 @@ int main(int argc, char* argv[])
   if (ferror(D)) cannot("write");
   if (fclose(D)) cannot("close");
  }
+ return 0;
+}
+
+int main(int argc, char* argv[])
+{
+ lua_State* L;
+ struct Smain s;
+ int i=doargs(argc,argv);
+ argc-=i; argv+=i;
+ if (argc<=0) usage("no input files given");
+ L=lua_open();
+ if (L==NULL) fatal("not enough memory for state");
+ s.argc=argc;
+ s.argv=argv;
+ if (lua_cpcall(L,pmain,&s)!=0) fatal(lua_tostring(L,-1));
  lua_close(L);
  return EXIT_SUCCESS;
 }
