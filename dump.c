@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.10 1998/06/25 15:50:09 lhf Exp lhf $
+** $Id: dump.c,v 1.11 1998/07/12 00:17:37 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -28,8 +28,7 @@ static void DumpLong(long i, FILE* D)
  DumpWord(lo,D);
 }
 
-#if ID_NUMBER==ID_REAL4
-/* LUA_NUMBER */
+#if ID_NUMBER==ID_REAL4			/* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
 static void DumpFloat(float f, FILE* D)
 {
@@ -38,8 +37,7 @@ static void DumpFloat(float f, FILE* D)
 }
 #endif
 
-#if ID_NUMBER==ID_REAL8
-/* LUA_NUMBER */
+#if ID_NUMBER==ID_REAL8			/* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
 static void DumpDouble(double f, FILE* D)
 {
@@ -60,11 +58,11 @@ static void DumpDouble(double f, FILE* D)
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
- int size=CodeSize(tf);
+ int size=luaU_codesize(tf);
  if (NotWord(size))
   fprintf(stderr,"luac: warning: "
 	"\"%s\":%d code too long for 16-bit machines (%d bytes)\n",
-	fileName(tf),tf->lineDefined,size);
+	tf->source->str,tf->lineDefined,size);
  DumpLong(size,D);
  DumpBlock(tf->code,size,D);
 }
@@ -109,7 +107,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
-  fputc(-ttype(o),D);
+  fputc(-ttype(o),D);			/* ttype(o) is negative - ORDER LUA_T */
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
@@ -124,8 +122,9 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
    case LUA_T_NIL:
 	break;
    default:				/* cannot happen */
-	luaL_verror("cannot dump constant #%d: type=%d [%s]",
-		i,ttype(o),luaO_typename(o));
+	luaL_verror("cannot dump constant #%d: type=%d [%s]"
+		" in %p (\"%s\":%d)",
+		i,ttype(o),luaO_typename(o),tf,tf->source->str,tf->lineDefined);
 	break;
   }
  }
@@ -134,7 +133,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
 static void DumpFunction(TProtoFunc* tf, FILE* D)
 {
  DumpWord(tf->lineDefined,D);
- DumpTString(tf->fileName,D);
+ DumpTString(tf->source,D);
  DumpCode(tf,D);
  DumpLocals(tf,D);
  DumpConstants(tf,D);
@@ -151,7 +150,7 @@ static void DumpHeader(TProtoFunc* Main, FILE* D)
  DumpNumber(t,D);
 }
 
-void DumpChunk(TProtoFunc* Main, FILE* D)
+void luaU_dumpchunk(TProtoFunc* Main, FILE* D)
 {
  DumpHeader(Main,D);
  DumpFunction(Main,D);
