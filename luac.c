@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.12 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: luac.c,v 1.13 1999/03/16 18:08:20 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -40,7 +40,7 @@ static void usage(char* op)
  " -O\t\toptimize\n"
  " -p\t\tparse only\n"
  " -q\t\tquiet (default for -c)\n"
- " -t\t\ttest code integrity (only with -u)\n"
+ " -t\t\ttest code integrity\n"
  " -u\t\tundump\n"
  " -U name\tundefine 'name' for conditional compilation\n"
  " -v\t\tshow version information\n"
@@ -167,7 +167,7 @@ static void doit(int undump, char* filename)
 {
  FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
  ZIO z;
- char source[255+2];
+ char source[255+2];			/* +2 for '@' and '\0' */
  luaL_filesource(source,filename,sizeof(source));
  zFopen(&z,f,source);
  if (verbose) fprintf(stderr,"%s\n",source+1);
