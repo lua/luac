@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.18 2000/03/29 17:07:36 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2000/03/29 17:07:36 $"
+.\" $Id: luac.man,v 1.19 2000/09/04 21:41:28 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2000/09/04 21:41:28 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -99,6 +99,12 @@ corrupted files will probably generate errors when loaded.
 For a thourough integrity test,
 use
 .BR \-t .
+.TP
+.B \-s
+strip debug information before writing the output file.
+This saves some space in very large chunks,
+but if errors occur when running these chunks,
+then the error messages might not contain the full information they usually do.
 .TP
 .B \-t
 perform a thourough integrity test of precompiled chunks.
