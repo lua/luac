@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.47 2003/01/10 11:08:45 lhf Exp lhf $
+** $Id: lundump.c,v 1.48 2003/02/11 23:52:12 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -104,7 +104,7 @@ static TString* LoadString (LoadState* S)
  {
   char* s=luaZ_openspace(S->L,S->b,size);
   ezread(S,s,size);
-  return luaS_newlstr(S->L,s,size-1);	/* remove trailing '\0' */
+  return luaS_newlstr(S->L,s,size-1);		/* remove trailing '\0' */
  }
 }
 
@@ -226,14 +226,14 @@ static void TestSize (LoadState* S, int s, const char* what)
 static void LoadHeader (LoadState* S)
 {
  int version;
- lua_Number x=0,tx=TEST_NUMBER;
+ lua_Number x,tx=TEST_NUMBER;
  LoadSignature(S);
  version=LoadByte(S);
  if (version>VERSION)
   luaG_runerror(S->L,"%s too new: "
 	"read version %d.%d; expected at most %d.%d",
 	S->name,V(version),V(VERSION));
- if (version<VERSION0)			/* check last major change */
+ if (version<VERSION0)				/* check last major change */
   luaG_runerror(S->L,"%s too old: "
 	"read version %d.%d; expected at least %d.%d",
 	S->name,V(version),V(VERSION0));
