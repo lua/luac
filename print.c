@@ -1,15 +1,12 @@
 /*
-** $Id: print.c,v 1.36 2002/02/28 20:09:28 lhf Exp lhf $
+** $Id: print.c,v 1.37 2002/03/01 01:46:24 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 
-#include "luac.h"
 #include "ldebug.h"
-#include "lfunc.h"
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lundump.h"
@@ -58,12 +55,6 @@ static void PrintConstant(const Proto* f, int i)
  }
 }
 
-static void PrintLocal(const Proto* f, int n, int pc)
-{
- const char* s=luaF_getlocalname(f,n+1,pc);
- if (s!=NULL) printf("\t; $%d [%s]",n,s);
-}
-
 static void PrintCode(const Proto* f)
 {
  const Instruction* code=f->code;
@@ -75,27 +66,29 @@ static void PrintCode(const Proto* f)
   int a=GETARG_A(i);
   int b=GETARG_B(i);
   int c=GETARG_C(i);
-  int bc=GETARG_Bc(i);
-  int sbc=GETARG_sBc(i);
-  int line=luaG_getline(f->lineinfo,pc,1,NULL);
+  int bc=GETARG_Bx(i);
+  int sbc=GETARG_sBx(i);
+  int line=getline(f,pc);
 #if 0
   printf("%0*lX",Sizeof(i)*2,i);
 #endif
   printf("\t%d\t",pc+1);
-  if (line>=0) printf("[%d]\t",line); else printf("[-]\t");
+  if (line>0) printf("[%d]\t",line); else printf("[-]\t");
   printf("%-11s\t",luaP_opnames[o]);
   switch (getOpMode(o))
   {
    case iABC:	printf("%d %d %d",a,b,c); break;
-   case iABc:	printf("%d %d",a,bc); break;
-   case iAsBc:	printf("%d %d",a,sbc); break;
+   case iABx:	printf("%d %d",a,bc); break;
+   case iAsBx:	printf("%d %d",a,sbc); break;
   }
   switch (o)
   {
    case OP_LOADK:
+    printf("\t; "); PrintConstant(f,bc);
+    break;
    case OP_GETGLOBAL:
    case OP_SETGLOBAL:
-    printf("\t; "); PrintConstant(f,bc);
+    printf("\t; %s",svalue(&f->k[bc]));
     break;
    case OP_GETTABLE:
    case OP_SETTABLE:
@@ -105,17 +98,13 @@ static void PrintCode(const Proto* f)
    case OP_MUL:
    case OP_DIV:
    case OP_POW:
-   case OP_TESTEQ:
-   case OP_TESTNE:
-   case OP_TESTLT:
-   case OP_TESTLE:
-   case OP_TESTGT:
-   case OP_TESTGE:
+   case OP_EQ:
+   case OP_CMP:
     if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
     break;
    case OP_JMP:
    case OP_FORLOOP:
-   case OP_TFORLOOP:
+   case OP_TFORPREP:
     printf("\t; to %d",sbc+pc+2);
     break;
    case OP_CLOSURE:
@@ -152,10 +141,11 @@ static void PrintHeader(const Proto* f)
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
 	S(f->nupvalues));
- printf("%d local%s, %d constant%s, %d function%s, %d line%s\n",
-	S(f->sizelocvars),S(f->sizek),S(f->sizep),S(f->sizelineinfo));
+ printf("%d local%s, %d constant%s, %d function%s\n",
+	S(f->sizelocvars),S(f->sizek),S(f->sizep));
 }
 
+#ifdef DEBUG_PRINT
 static void PrintConstants(const Proto* f)
 {
  int i,n=f->sizek;
@@ -178,15 +168,18 @@ static void PrintLocals(const Proto* f)
   i,getstr(f->locvars[i].varname),f->locvars[i].startpc,f->locvars[i].endpc);
  }
 }
+#endif
 
-#define PrintFunction luaU_printchunk
+#define PrintFunction luaU_print
 
 void PrintFunction(const Proto* f)
 {
  int i,n=f->sizep;
  PrintHeader(f);
  PrintCode(f);
+#ifdef DEBUG_PRINT
  PrintConstants(f);
  PrintLocals(f);
+#endif
  for (i=0; i<n; i++) PrintFunction(f->p[i]);
 }
