@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.19 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: lundump.h,v 1.20 2000/09/18 20:03:46 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -12,7 +12,6 @@
 
 /* load one chunk */
 Proto* luaU_undump (lua_State* L, ZIO* Z);
-#define luaU_undump1 luaU_undump
 
 /* find byte order */
 int luaU_endianess (void);
@@ -24,15 +23,10 @@ int luaU_endianess (void);
 #define	SIGNATURE	"Lua"		/* ...followed by this signature */
 
 /* formats for error messages */
-#define xSOURCE		"<%d:%.255s>"
-#define SOURCE		"<%.255s:%d>"
-#define IN		" in %p " SOURCE
-#define INLOC		tf,tf->source->str,tf->lineDefined
-
-/* format for numbers in listings and error messages */
-#ifndef NUMBER_FMT
-#define NUMBER_FMT	"%.16g"		/* LUA_NUMBER */
-#endif
+#define SOURCE_FMT	"<%d:%.99s>"
+#define SOURCE		tf->lineDefined,tf->source->str
+#define IN_FMT		" in %p " SOURCE_FMT
+#define IN		tf,SOURCE
 
 /* a multiple of PI for testing native format */
 /* multiplying by 1E8 gives non-trivial integer values */
