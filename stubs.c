@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.7 1998/06/19 21:20:59 lhf Exp lhf $
+** $Id: stubs.c,v 1.8 1998/07/12 00:17:37 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -43,6 +43,13 @@ int luaL_findstring (char* name, char* list[])
 }
 
 /* avoid runtime modules in lstate.c */
+
+#include "lbuiltin.h"
+#include "ldo.h"
+#include "lgc.h"
+#include "ltable.h"
+#include "ltm.h"
+
 void luaB_predefine(void){}
 void luaC_hashcallIM(Hash *l){}
 void luaC_strcallIM(TaggedString *l){}
@@ -58,6 +65,9 @@ void luaT_init(void){}
 */
 
 #ifdef NOPARSER
+
+#include "llex.h"
+#include "lparser.h"
 
 int lua_debug=0;
 
