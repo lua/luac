@@ -3,14 +3,12 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.18 1997/04/10 18:02:04 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.19 1997/04/14 12:12:40 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
-
-static TFunc* lastF=NULL;		/* list of functions seen in code */
 
 static int SawVar(int i, int at)
 {
@@ -109,24 +107,17 @@ static void ThreadCode(Byte* code, Byte* end)
 	case PUSHFLOAT:
 		p+=5;			/* assumes sizeof(float)==4 */
 		break;
-	case PUSHSELF:
+	case PUSHFUNCTION:
+		p+=sizeof(TFunc*)+1;
+		break;
 	case PUSHSTRING:
+	case PUSHSELF:
 	{
 		Word w;
 		p++;
 		get_word(w,p);
 		w=SawStr(w,at);
 		memcpy(p-2,&w,sizeof(w));
-		break;
-	}
-	case PUSHFUNCTION:
-	{
-		TFunc* tf;
-		p++;
-		get_code(tf,p);
-		tf->marked=at;
-		tf->next=NULL;		/* TODO: remove? */
-		lastF=lastF->next=tf;
 		break;
 	}
 	case PUSHGLOBAL:
@@ -222,7 +213,6 @@ static void DumpStrings(FILE* D)
 
 void DumpFunction(TFunc* tf, FILE* D)
 {
- lastF=tf;
  ThreadCode(tf->code,tf->code+tf->size);
  fputc(ID_FUN,D);
  DumpSize(tf->size,D);
