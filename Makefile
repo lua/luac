@@ -1,5 +1,5 @@
-# $Id: Makefile,v 1.6 1999/04/17 03:22:30 lhf Exp lhf $
-# $(MAKE)file for lua compiler
+# $Id: Makefile,v 1.7 1999/07/02 19:40:36 lhf Exp lhf $
+# makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
 
@@ -18,9 +18,10 @@ WARN= -ansi -fullwarn
 
 # gcc
 CC= gcc
+WARN= -ansi -pedantic -Wall -W
 WARN= -ansi -pedantic -Wall \
- -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
-WARN= -ansi -pedantic -Wall
+-W -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return -Wwrite-strings -Wcast-qual -Wnested-externs -Werror
+# -Wstrict-prototypes -Wmissing-declarations -Wtraditional -Wconversion -Wredundant-decls
 
 # end of configuration -------------------------------------------------------
 
@@ -30,7 +31,7 @@ INCS= -I$(LUA)
 
 OBJS= dump.o luac.o lundump.o opcode.o opt.o print.o stubs.o test.o
 SRCS= dump.c luac.c lundump.c opcode.c opt.c print.c stubs.c test.c \
-      luac.h lundump.h opcode.h luac.man
+      luac.h lundump.h opcode.h
 
 # targets --------------------------------------------------------------------
 
@@ -50,20 +51,11 @@ opcode.h: lua/lopcodes.h mkopcodeh
 	-diff $@,old $@
 	rm -f opcode.o $@,old
 
-man:	man/cat1/luac.1	luac.html
+debug:
+	rm -f print.o luac
+	$(MAKE) DEFS="-DDEBUG"
 
-luac.html:	luac.man
-	man2html luac.man >$@
-
-man/cat1/luac.1:	luac.man
-	nroff -man luac.man >$@
-
-luac.man:
-
-xman:	man
-	env MANPATH=`pwd`/man:$(MANPATH) xman &
-
-debug:	clean
+olddebug:	clean
 	$(MAKE) DEFS="-DDEBUG"
 
 noparser:
@@ -90,6 +82,12 @@ map:	$(OBJS)
 
 MAP:	map
 	nm -o -u $(OBJS) | grep lua._
+
+lmap:	$(OBJS)
+	@#ld -o /dev/null -e main -M $(OBJS) lua/liblua.a -lc | sed -n '/lua.liblua/p;/Memory/q' | sort
+	@echo -n '* use only '
+	@ld -o /dev/null -e main -M $(OBJS) lua/liblua.a -lc | sed -n '/lua.liblua.a(/{s///;s/.o).*//;p;};/Memory/q' | sort | xargs echo
+	grep 'use only' stubs.c
 
 lint:
 	lint -I$(LUA) *.c >lint.out
