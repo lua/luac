@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.3 1996/02/21 17:20:42 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.4 1996/02/22 00:35:43 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -16,8 +16,9 @@ char *rcs_luac="$Id: luac.c,v 1.3 1996/02/21 17:20:42 lhf Exp lhf $";
 #include "mem.h"
 #include "opcode.h"
 
-void PrintFunction(TFunc *tf);
+void DumpHeader(FILE *D);
 void DumpFunction(TFunc *tf, FILE *D);
+void PrintFunction(TFunc *tf);
 
 static void compile(char *filename);
 
@@ -68,11 +69,20 @@ int main(int argc, char *argv[])
  return 0;
 }
 
-void dump(TFunc *tf)
+static void dump(TFunc *tf)
 {
  if (listing) PrintFunction(tf);
  DumpFunction(tf,D);
  luaI_free(tf->code);
+ if (tf->locvars) luaI_free(tf->locvars);
+}
+
+static void do_dump(TFunc *tf)
+{
+ tf->next=NULL;
+ dump(tf);
+ for (tf=tf->next; tf!=NULL; tf=tf->next)
+  dump(tf);
 }
 
 static void do_compile(void)
@@ -88,7 +98,7 @@ static void do_compile(void)
  {
   lua_parse(&tf);
   tf.marked=0;
-  dump(&tf);
+  do_dump(&tf);
  }
  else					/* syntax error */
  {
