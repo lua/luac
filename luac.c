@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.7 1996/02/23 19:03:46 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.8 1996/02/24 21:49:53 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -34,14 +34,16 @@ int main(int argc, char *argv[])
    break;
   else if (IS("-"))			/* use stdin */
    break;
-  else if (IS("-v"))			/* show version */
-   printf("%s  %s\n(written by %s)\n\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
+  else if (IS("-d"))			/* debug */
+   lua_debug=1;
   else if (IS("-l"))			/* list */
    listing=1;
-  else if (IS("-p"))			/* parse only (for timing purposes) */
-   dumping=0;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
+  else if (IS("-p"))			/* parse only (for timing purposes) */
+   dumping=0;
+  else if (IS("-v"))			/* show version */
+   printf("%s  %s\n(written by %s)\n\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
   else					/* unknown option */
    usage();
  }
