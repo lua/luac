@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.9 1998/06/19 21:20:59 lhf Exp lhf $
-.TH LUAC 1 "19 June 1998"
+.\" $Id: luac.man,v 1.10 1998/06/25 15:50:09 lhf Exp lhf $
+.TH LUAC 1 "01 July 1998"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -94,12 +94,19 @@ If no files are given, then luac undumps
 predefine symbol
 .I name
 for conditional compilation.
+By default,
+.B luac
+does
+.I not
+predefine any symbols,
+not even the built-in functions.
 .TP
 .B \-d
 turn debugging on.
 Individual chunks may
 still control the generation of debug information with
 $debug and $nodebug.
+If debugging is on, then listings show the names of the local variables.
 .TP
 .B \-l
 produce a listing of the compiled bytecode for Lua's virtual machine.
