@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.13 1999/12/02 18:51:09 lhf Exp lhf $
+** $Id: test.c,v 1.14 2000/01/28 17:51:09 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -7,18 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "luac.h"
 
 #define AT		"pc=%d"
 #define ATLOC		0)
 #define UNSAFE(s)	\
 	luaL_verror(L,"unsafe code at " AT IN "\n      " s,at,INLOC
-
-const TObject* luaU_getconstant(const TProtoFunc* tf, int i, int at)
-{
- if (i>=tf->nconsts) UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts-1,ATLOC;
- return tf->consts+i;
-}
 
 static int check(int n, const TProtoFunc* tf, int at, int sp, int ss)
 {
@@ -222,40 +217,12 @@ static void TestLocals(const TProtoFunc* tf)
  }
 }
 
-static void TestFunction(const TProtoFunc* tf);
+#define TestFunction luaU_testchunk
 
-static void TestConstants(const TProtoFunc* tf)
+void TestFunction(const TProtoFunc* tf)
 {
- int i,n=tf->nconsts;
- for (i=0; i<n; i++)
- {
-  const TObject* o=tf->consts+i;
-  switch (ttype(o))
-  {
-   case LUA_T_NUMBER:
-	break;
-   case LUA_T_STRING:
-	break;
-   case LUA_T_LPROTO:
-	TestFunction(tfvalue(o));
-	break;
-   case LUA_T_NIL:
-	break;
-   default:				/* cannot happen */
-	luaU_badconstant(L,"print",i,o,tf);
-	break;
-  }
- }
-}
-
-static void TestFunction(const TProtoFunc* tf)
-{
+ int i,n=tf->nkproto;
  TestCode(tf);
  TestLocals(tf);
- TestConstants(tf);
-}
-
-void luaU_testchunk(const TProtoFunc* Main)
-{
- TestFunction(Main);
+ for (i=0; i<n; i++) TestFunction(tf->kproto[i]);
 }
