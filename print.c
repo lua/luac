@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.17 1999/03/16 18:13:56 lhf Exp lhf $
+** $Id: print.c,v 1.18 1999/03/22 21:38:26 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -39,31 +39,26 @@ static void PrintConstants(TProtoFunc* tf)
 }
 #endif
 
-static void PrintConstant(TProtoFunc* tf, int i)
+static void PrintConstant(TProtoFunc* tf, int i, int at)
 {
- if (i>=tf->nconsts)
-  printf("(bad constant #%d: max=%d)",i,tf->nconsts-1);
- else
+ TObject* o=luaU_getconstant(tf,i,at);
+ switch (ttype(o))
  {
-  TObject* o=tf->consts+i;
-  switch (ttype(o))
-  {
-   case LUA_T_NUMBER:
-	printf(NUMBER_FMT,(double)nvalue(o));
-	break;
-   case LUA_T_STRING:
-	printf("\"%s\"",svalue(o));
-	break;
-   case LUA_T_PROTO:
-	printf("function at %p",(void*)tfvalue(o));
-	break;
-   case LUA_T_NIL:
-	printf("(nil)");
-	break;
-   default:				/* cannot happen */
-	luaU_badconstant("print",i,o,tf);
-	break;
-  }
+  case LUA_T_NUMBER:
+       printf(NUMBER_FMT,(double)nvalue(o));
+       break;
+  case LUA_T_STRING:
+       printf("\"%s\"",svalue(o));
+       break;
+  case LUA_T_PROTO:
+       printf("function at %p",(void*)tfvalue(o));
+       break;
+  case LUA_T_NIL:
+       printf("(nil)");
+       break;
+  default:				/* cannot happen */
+       luaU_badconstant("print",i,o,tf);
+       break;
  }
 }
 
@@ -78,8 +73,9 @@ static void PrintCode(TProtoFunc* tf)
 	Opcode OP;
 	int n=INFO(tf,p,&OP);
 	int i=OP.arg+longarg;
+	int at=p-code;
 	longarg=0;
-	printf("%6d  ",(int)(p-code));
+	printf("%6d  ",at);
 	{
 	 Byte* q=p;
 	 int j=n;
@@ -97,11 +93,13 @@ static void PrintCode(TProtoFunc* tf)
 		return;
 
 	case PUSHCONSTANT:
+	case GETGLOBAL:
+	case SETGLOBAL:
 	case GETDOTTED:
 	case PUSHSELF:
 	case CLOSURE:
 		printf("\t; ");
-		PrintConstant(tf,i);
+		PrintConstant(tf,i,at);
 		break;
 
 	case PUSHLOCAL:
@@ -112,11 +110,6 @@ static void PrintCode(TProtoFunc* tf)
 		break;
 	}
 
-	case GETGLOBAL:
-	case SETGLOBAL:
-		printf("\t; %s",svalue(tf->consts+i));
-		break;
-
 	case SETLINE:
 		printf("\t; " SOURCE,tf->source->str,line=i);
 		break;
@@ -126,14 +119,15 @@ static void PrintCode(TProtoFunc* tf)
 		break;
 
 /* suggested by Norman Ramsey <nr@cs.virginia.edu> */
-	case IFTUPJMP:
-	case IFFUPJMP:
-		i=-i;
 	case ONTJMP:
 	case ONFJMP:
 	case JMP:
 	case IFFJMP:
-		printf("\t; to %d",(int)(p-code)+i+n);
+		printf("\t; to %d",at+i+n);
+		break;
+	case IFTUPJMP:
+	case IFFUPJMP:
+		printf("\t; to %d",at-i+n);
 		break;
 
 	}
@@ -169,11 +163,11 @@ static void PrintLocals(TProtoFunc* tf)
  {
   if (v->varname==NULL)
   {
-   printf(")"); --i;
+   --i; if (i<0) luaL_verror("bad locvars[%d]",v-tf->locvars); else printf(")");
   }
   else
   {
-   printf(" (%s",v->varname->str); i++;
+   ++i; printf(" (%s",v->varname->str);
   }
  }
  i-=n;
