@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.13 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: dump.c,v 1.14 1999/03/16 18:08:20 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -84,14 +84,20 @@ static void DumpTString(TaggedString* s, FILE* D)
 
 static void DumpLocals(TProtoFunc* tf, FILE* D)
 {
- int n;
- LocVar* lv;
- for (n=0,lv=tf->locvars; lv && lv->line>=0; lv++) ++n;
- DumpInt(n,D);
- for (lv=tf->locvars; lv && lv->line>=0; lv++)
+ if (tf->locvars==NULL)
+  DumpInt(0,D);
+ else
  {
-  DumpInt(lv->line,D);
-  DumpTString(lv->varname,D);
+  LocVar* v;
+  int n=0;
+  for (v=tf->locvars; v->line>=0; v++)
+   ++n;
+  DumpInt(n,D);
+  for (v=tf->locvars; v->line>=0; v++)
+  {
+   DumpInt(v->line,D);
+   DumpTString(v->varname,D);
+  }
  }
 }
 
@@ -119,9 +125,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
    case LUA_T_NIL:
 	break;
    default:				/* cannot happen */
-	luaL_verror("cannot dump constant #%d: type=%d [%s]"
-		" in %p (\"%s\":%d)",
-		i,ttype(o),luaO_typename(o),tf,tf->source->str,tf->lineDefined);
+	luaU_badconstant("dump",i,o,tf);
 	break;
   }
  }
