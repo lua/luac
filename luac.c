@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.21 2000/01/28 17:51:09 lhf Exp lhf $
+** $Id: luac.c,v 1.22 2000/04/24 17:32:29 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -213,13 +213,6 @@ static FILE* efopen(const char* name, const char* mode)
   exit(1);
  }
  return f; 
-}
-
-void luaU_optchunk(Proto* Main)
-{
- UNUSED(Main);
- fprintf(stderr,"luac: -O not operational in this alpha version\n");
- exit(1);
 }
 
 void luaU_testchunk(const Proto* Main)
