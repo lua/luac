@@ -1,5 +1,5 @@
 /*
-** $Id: ldumplib.c,v 1.4 2001/11/01 08:50:39 lhf Exp lhf $
+** $Id: ldumplib.c,v 1.5 2001/11/29 01:26:28 lhf Exp lhf $
 ** library access to precompiler
 ** See Copyright Notice in lua.h
 */
@@ -14,7 +14,7 @@ LUALIB_API int lua_dumplibopen (lua_State *L);
 
 static void myfputc(int c, luaL_Buffer* B) {
  char b[1];
- b[0]=c;
+ b[0]=(char)c;
  luaL_addlstring(B,b,1);
 }
 
@@ -28,8 +28,12 @@ static void myfwrite(const void* b, size_t size, size_t n, luaL_Buffer* B) {
 #include "dump.c"
 
 static int dump(lua_State *L) {
- if (!lua_isfunction(L,1) || lua_iscfunction(L,1)) {
+ if (!lua_isfunction(L,1)) {
   luaL_typerror(L,1,"Lua function");
+  return 0;
+ }
+ else if (lua_iscfunction(L,1)) {
+  luaL_argerror(L,1,"cannot dump C functions");
   return 0;
  }
  else {
