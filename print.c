@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.5 1998/01/13 20:05:24 lhf Exp lhf $
+** $Id: print.c,v 1.6 1998/01/19 16:10:52 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -33,50 +33,57 @@ int CodeSize(TProtoFunc* tf)		/* also used in dump.c */
  return p-code;
 }
 
+#ifdef DEBUG
+void PrintConstant1(TProtoFunc* tf, int i)
+{
+ TObject* o=tf->consts+i;
+ printf("%6d ",i,o->value.i);
+ switch (ttype(o))
+ {
+  case LUA_T_NUMBER:
+	printf("N %g\n",(double)nvalue(o));	/* LUA_NUMBER */
+	break;
+  case LUA_T_STRING:
+	printf("S %p\t\"%s\"\n",tsvalue(o),svalue(o));
+	break;
+  case LUA_T_PROTO:
+	printf("F %p\n",tfvalue(o));
+	break;
+  default:				/* cannot happen */
+	printf("? %d\n",ttype(o)); 
+  break;
+ }
+}
+
 static void PrintConstants(TProtoFunc* tf)
 {
  int i;
  int n=tf->nconsts;
- printf("constants (%d):",n);
- for (i=0; i<n; i++)
- {
-  TObject* o=tf->consts+i;
-  printf("\n\t%d ",i);
-  switch (ttype(o))
-  {
-   case LUA_T_NUMBER:	printf("N %g",nvalue(o)); break;
-   case LUA_T_STRING:	printf("S \"%s\"",svalue(o)); break;
-   case LUA_T_PROTO:	printf("F %p",tfvalue(o)); break;
-   default:				/* cannot happen */
-#ifdef DEBUG
-			printf("? %d",ttype(o)); 
-#endif
-   break;
-  }
- }
- printf("\n");
+ printf("constants (%d):\n",n);
+ for (i=0; i<n; i++) PrintConstant1(tf,i);
 }
+#endif
 
-static void PrintConstant(TProtoFunc* tf, int n)
+static void PrintConstant(TProtoFunc* tf, int i)
 {
 #ifdef DEBUG
- if (n<0 || n>=tf->nconsts)
+ if (i<0 || i>=tf->nconsts)
  {
-  printf("(bad constant #%d. max=%d)",n,tf->nconsts);
+  printf("(bad constant #%d. max=%d)",i,tf->nconsts);
  }
  else
 #endif
  {
-  TObject* o=tf->consts+n;
+  TObject* o=tf->consts+i;
   switch (ttype(o))
   {
-   case LUA_T_NUMBER:	printf("%g",nvalue(o)); break;
+   case LUA_T_NUMBER:	printf("%g",(double)nvalue(o)); break;	/* LUA_NUMBER */
    case LUA_T_STRING:	printf("\"%s\"",svalue(o)); break;
    case LUA_T_PROTO:	printf("function at %p",tfvalue(o)); break;
    default:				/* cannot happen */
 #ifdef DEBUG
 	luaL_verror("internal error in PrintConstant: "
-		"bad constant #%d type=%d\n",n,ttype(o));
+		"bad constant #%d type=%d\n",i,ttype(o));
 #endif
    break;
   }
@@ -115,10 +122,9 @@ static void PrintCode(TProtoFunc* tf)
 	else if (n==1) i=Opcode[op].arg;
 	else if (n==2) i=p[1];
 	else i=p[1]+(p[2]<<8);
-	op=Opcode[op].class;
 	if (n!=1) printf("\t%d",i); else if (i>=0) printf("\t");
 
-	switch (op)
+	switch (Opcode[op].class)
 	{
 
 	case ENDCODE:
@@ -145,19 +151,6 @@ static void PrintCode(TProtoFunc* tf)
 		printf("\t; %s",VarStr(i));
 		break;
 
-/* suggested by Norman Ramsey <nr@cs.virginia.edu> */
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case IFFJMP:
-		printf("\t; to %d",(int)(p-code)+i+n);
-		break;
-
-	case IFTUPJMP:
-	case IFFUPJMP:
-		printf("\t; to %d",(int)(p-code)-i+n);
-		break;
-
 	case SETLIST:
 		if (n>=3) printf(" %d",p[n-1]);
 		break;
@@ -168,6 +161,17 @@ static void PrintCode(TProtoFunc* tf)
 
 	case SETLINE:
 		printf("\t; \"%s\":%d",tf->fileName->str,line=i);
+		break;
+
+/* suggested by Norman Ramsey <nr@cs.virginia.edu> */
+	case IFTUPJMP:
+	case IFFUPJMP:
+		i=-i;
+	case ONTJMP:
+	case ONFJMP:
+	case JMP:
+	case IFFJMP:
+		printf("\t; to %d",(int)(p-code)+i+n);
 		break;
 
 	}
@@ -259,9 +263,6 @@ static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main)
    printf("%p",Main);
   printf("+%d\n",(int)(p-Main->code));
  }
-#if 0
- printf("needs %d stack positions\n",*tf->code);
-#endif
 }
 
 static void PrintFunction(TProtoFunc* tf, TProtoFunc* Main);
@@ -281,7 +282,7 @@ static void PrintFunction(TProtoFunc* tf, TProtoFunc* Main)
  PrintHeader(tf,Main);
  PrintLocals(tf);
  PrintCode(tf);
-#if 0
+#ifdef DEBUG
  PrintConstants(tf);
 #endif
  PrintFunctions(tf);
