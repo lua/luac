@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.24 1999/12/02 18:51:09 lhf Exp lhf $
+** $Id: print.c,v 1.25 2000/01/28 17:51:09 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -55,29 +55,6 @@ static void PrintLocvars(const TProtoFunc* tf)
 }
 #endif
 
-static void PrintConstant(const TProtoFunc* tf, int i, int at)
-{
- const TObject* o=luaU_getconstant(tf,i,at);
- switch (ttype(o))
- {
-  case LUA_T_NUMBER:
-       printf(NUMBER_FMT,(double)nvalue(o));
-       break;
-  case LUA_T_STRING:
-       printf("\"%s\"",svalue(o));
-       break;
-  case LUA_T_LPROTO:
-       printf("function at %p",tfvalue(o));
-       break;
-  case LUA_T_NIL:
-       printf("(nil)");
-       break;
-  default:				/* cannot happen */
-       luaU_badconstant(L,"print",i,o,tf);
-       break;
- }
-}
-
 static void PrintCode(const TProtoFunc* tf)
 {
  const Byte* code=tf->code;
@@ -108,14 +85,19 @@ static void PrintCode(const TProtoFunc* tf)
 		printf("\n");
 		return;
 
-	case PUSHCONSTANT:
+	case PUSHNUMBER:
+       		printf("\t; " NUMBER_FMT,tf->knum[i]);
+		break;
+
 	case GETGLOBAL:
 	case SETGLOBAL:
 	case GETDOTTED:
+       		printf("\t; \"%s\"",tf->kstr[i]->str);
+		break;
+
 	case PUSHSELF:
 	case CLOSURE:
-		printf("\t; ");
-		PrintConstant(tf,i,at);
+       		printf("\t; %p",tf->kproto[i]);
 		break;
 
 	case PUSHLOCAL:
@@ -132,8 +114,7 @@ static void PrintCode(const TProtoFunc* tf)
 
 	case SETNAME:
 	{
-		printf("\t; %s ",luaO_typenames[OP.arg2]);
-		PrintConstant(tf,i,at);
+		printf("\t; %s \"%s\"",luaO_typenames[OP.arg2],tf->kstr[i]->str);
 		break;
 	}
 
@@ -218,11 +199,8 @@ static void PrintFunctions(const TProtoFunc* Main)
   int op=OP.class;
   int i=OP.arg+longarg;
   longarg=0;
-  if (op==PUSHCONSTANT || op==CLOSURE)
-  {
-   const TObject* o=Main->consts+i;
-   if (ttype(o)==LUA_T_LPROTO) PrintFunction(tfvalue(o),Main,(int)(p-code));
-  }
+  if (op==CLOSURE)
+   PrintFunction(Main->kproto[i],Main,(int)(p-code));
   else if (op==LONGARG) longarg=i<<16;
   else if (op==ENDCODE) break;
   p+=n;
