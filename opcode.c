@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.9 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: opcode.c,v 1.10 1999/09/09 13:24:52 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -27,7 +27,7 @@ static const Opcode Fake[]=		/* ORDER luac.h */
 { "VARARGS", VARARGS, VARARGS, ARGS_B, -1, -1 },
 };
 
-#define NOPCODES	(sizeof(Info)/sizeof(Info[0]))
+#define NOPCODES	(int)(sizeof(Info)/sizeof(Info[0]))
 
 int luaU_opcodeinfo(const TProtoFunc* tf, const Byte* p, Opcode* I, const char* xFILE, int xLINE)
 {
@@ -59,7 +59,7 @@ int luaU_opcodeinfo(const TProtoFunc* tf, const Byte* p, Opcode* I, const char* 
  }
  else if (op>=NOPCODES)			/* cannot happen */
  {
-  luaL_verror("[%s:%d] bad opcode %d at pc=%d" IN,
+  luaL_verror(L,"[%.255s:%d] bad opcode %d at pc=%d" IN,
 	xFILE,xLINE,op,(int)(p-code),INLOC);
   return 0;
  }
@@ -79,7 +79,7 @@ int luaU_opcodeinfo(const TProtoFunc* tf, const Byte* p, Opcode* I, const char* 
    case ARGS_WB:	size=4;	OP.arg=(p[1]<<8)+p[2];	OP.arg2=p[3];
     break;
    default:				/* cannot happen */
-    luaL_verror("[%s:%d] bad args %d for %s at pc=%d" IN,
+    luaL_verror(L,"[%.255s:%d] bad args %d for %s at pc=%d" IN,
 	__FILE__,__LINE__,OP.args,OP.name,(int)(p-code),INLOC);
     break;
   }
