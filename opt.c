@@ -1,12 +1,11 @@
 /*
-** $Id: opt.c,v 1.1 1998/02/06 20:05:39 lhf Exp lhf $
+** $Id: opt.c,v 1.2 1998/03/05 15:45:08 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "luac.h"
 #include "lmem.h"
 
