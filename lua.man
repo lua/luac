@@ -1,5 +1,5 @@
-.\" $Id: lua.man,v 1.5 2002/04/21 21:17:38 lhf Exp lhf $
-.TH LUA 1 "$Date: 2002/04/21 21:17:38 $"
+.\" $Id: lua.man,v 1.6 2002/08/12 20:28:42 lhf Exp lhf $
+.TH LUA 1 "$Date: 2002/08/12 20:28:42 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -8,7 +8,7 @@ lua \- Lua interpreter
 .I options
 ]
 [
-.I prog
+.I script
 [
 .I args
 ]
@@ -30,17 +30,44 @@ The given
 (see below)
 are executed and then
 the Lua program in file
-.I prog
+.I script
 is loaded and executed.
 The given
 .I args
 are available to
-.I prog
+.I script
 as strings in a global table named
 .BR arg .
 If these arguments contain spaces or other characters special to the shell,
 then they should be quoted
-(but note thatthe quotes will be removed by the shell).
+(but note that the quotes will be removed by the shell).
+The arguments in
+.B arg
+start at 0,
+which contains the string
+.RI ` script '.
+The index of the last argument is stored in
+.BR "arg.n" .
+The arguments given in the command line before
+.IR script ,
+including the name of the interpreter,
+are available in negative indices in
+.BR arg .
+.LP
+At the very start,
+before even handling the command line,
+.B lua
+executes the contents of the environment variable
+.BR LUA_INIT ,
+if it is defined.
+If the value of
+.B LUA_INIT
+is of the form
+.RI `@ filename ',
+then
+.I filename
+is executed.
+Otherwise, the string is assumed to be a Lua statement and is executed.
 .LP
 Options start with
 .B \-
@@ -60,7 +87,7 @@ Interactive mode is explained in detail below.
 .SH OPTIONS
 .TP
 .B \-
-load the standard input as a file,
+load and execute the standard input as a file,
 that is,
 not interactively,
 even when the standard input is a terminal.
@@ -73,22 +100,9 @@ You need to quote
 if it contains spaces, quotes,
 or other characters special to the shell.
 .TP
-.BI \-f " file"
-collect all remaining arguments as strings into a global table named
-.B arg
-and then execute
-.IR file .
-The arguments in
-.B arg
-start at 0,
-which contains the string
-.RI ` file '.
-The index of the last argument is stored in
-.BR "arg.n" .
-.TP
 .B \-i
 enter interactive mode after
-.I prog
+.I script
 is executed.
 In this mode,
 .B lua
@@ -105,14 +119,12 @@ adding a
 .B `;' 
 in the middle of a statement is a sure way of forcing a syntax error
 (except inside multiline strings and comments; these must be closed explicitly).
-
 If a line starts with
 .BR `=' ,
 then
 .B lua
 displays the values of all the expressions in the remainder of the
 line. The expressions must be separated by commas.
-
 The primary prompt is the value of the global variable
 .BR _PROMPT ,
 if this value is a string;
@@ -130,16 +142,16 @@ for example.
 The default prompts are ``> '' and ``>> ''.
 .TP
 .BI \-l " file"
-load and execute the given
-.I file
+call
+.BI require( file )
 before executing
-.IR prog.
+.IR script.
 Typically used to load libraries
 (hence the letter
-.IR l)
+.IR l ).
 .TP
 .B \-v
-print version information.
+show version information.
 .SH "SEE ALSO"
 .BR luac (1)
 .br
