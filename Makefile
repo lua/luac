@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.7 1999/07/02 19:40:36 lhf Exp lhf $
+# $Id: Makefile,v 1.8 2000/01/28 17:56:23 lhf Exp lhf $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -20,22 +20,22 @@ WARN= -ansi -fullwarn
 CC= gcc
 WARN= -ansi -pedantic -Wall -W
 WARN= -ansi -pedantic -Wall \
--W -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return -Wwrite-strings -Wcast-qual -Wnested-externs -Werror
-# -Wstrict-prototypes -Wmissing-declarations -Wtraditional -Wconversion -Wredundant-decls
+-W -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return -Wcast-qual -Wnested-externs -Wwrite-strings
 
 # end of configuration -------------------------------------------------------
 
-CFLAGS= -g $(WARN) $(INCS) $(DEFS)
+CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
-#INCS= -I$(LUA) -I/usr/5include
 
 OBJS= dump.o luac.o lundump.o opcode.o opt.o print.o stubs.o test.o
 SRCS= dump.c luac.c lundump.c opcode.c opt.c print.c stubs.c test.c \
-      luac.h lundump.h opcode.h
+      luac.h lundump.h print.h
+
+OBJS= dump.o luac.o lundump.o print.o stubs.o
 
 # targets --------------------------------------------------------------------
 
-all:	opcode.h stubs luac lua
+all:	print.h stubs luac lua
 
 luac:	$(OBJS) $(LUA)/liblua.a
 	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
@@ -45,9 +45,15 @@ lua:	lua/lua
 lua/lua: lundump.c lundump.h
 	cd lua; $(MAKE) update
 
-opcode.h: lua/lopcodes.h mkopcodeh
+print.h: lua/lopcodes.h mkprint.lua
 	-mv -f $@ $@,old
-	nawk -f mkopcodeh lua/lopcodes.h >$@
+	lua mkprint.lua <lua/lopcodes.h >$@
+	-diff $@,old $@
+	rm -f opcode.o $@,old
+
+old,print.h: lua/lopcodes.h mkprint
+	-mv -f $@ $@,old
+	nawk -f mkprint lua/lopcodes.h >$@
 	-diff $@,old $@
 	rm -f opcode.o $@,old
 
@@ -93,7 +99,7 @@ lint:
 	lint -I$(LUA) *.c >lint.out
 
 clean:
-	-rm -f luac *.o luac.out a.out core mon.out
+	-rm -f luac *.o luac.out a.out core mon.out gmon.out 
 	cd test; $(MAKE) $@
 
 co:
@@ -107,6 +113,9 @@ ci:
 
 diff:
 	@-rcsdiff $(SRCS) Makefile 2>&1 | nawk -f rcsdiff.awk
+
+wl:
+	rlog -L -R RCS/*
 
 what:
 	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort
