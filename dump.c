@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.22 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: dump.c,v 1.23 1999/12/02 18:45:03 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -110,7 +110,7 @@ static void DumpConstants(const TProtoFunc* tf, FILE* D, int native)
    case LUA_T_STRING:
 	DumpTString(tsvalue(o),D);
 	break;
-   case LUA_T_PROTO:
+   case LUA_T_LPROTO:
 	DumpFunction(tfvalue(o),D,native);
 	break;
    case LUA_T_NIL:
