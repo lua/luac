@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.12 1999/09/09 13:24:52 lhf Exp lhf $
+** $Id: stubs.c,v 1.13 1999/10/07 12:13:13 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -17,26 +17,30 @@ void luaU_dummy(void){}
 #include <stdlib.h>
 #include "luac.h"
 
+#undef L
+#define	UNUSED(x)	(void)x
+
 /*
 * avoid lapi lauxlib lbuiltin ldo lgc ltable ltm lvm
 * use only lbuffer lfunc llex lmem lobject lparser lstate lstring lzio
 */
 
 /* simplified from ldo.c */
-void lua_error(const char* s)
+void lua_error(lua_State* L, const char* s)
 {
+ UNUSED(L);
  if (s) fprintf(stderr,"luac: %s\n",s);
  exit(1);
 }
 
 /* copied from lauxlib.c */
-void luaL_verror (const char *fmt, ...) {
+void luaL_verror (lua_State *L, const char *fmt, ...) {
   char buff[500];
   va_list argp;
   va_start(argp, fmt);
   vsprintf(buff, fmt, argp);
   va_end(argp);
-  lua_error(buff);
+  lua_error(L, buff);
 }
 
 /* copied from lauxlib.c */
@@ -53,11 +57,11 @@ void luaL_filesource (char *out, const char *filename, int len) {
 #include "ltable.h"
 #include "ltm.h"
 
-void luaB_predefine(void){}
-void luaC_collect(int all){}
-void luaD_gcIM(const TObject *o){}
-void luaH_free(Hash *frees){}
-void luaT_init(void){}
+void luaB_predefine(lua_State *L){ UNUSED(L); }
+void luaC_collect(lua_State *L, int all){ UNUSED(L); UNUSED(all); }
+void luaD_gcIM(lua_State *L, const TObject *o){ UNUSED(L); UNUSED(o); }
+void luaH_free(lua_State *L, Hash *frees){ UNUSED(L); UNUSED(frees); }
+void luaT_init(lua_State *L){ UNUSED(L);}
 
 /*
 * the code below avoids the lexer and the parser (llex lparser).
@@ -70,11 +74,12 @@ void luaT_init(void){}
 #include "llex.h"
 #include "lparser.h"
 
-void luaX_init(void){}
-void luaD_init(void){}
+void luaX_init(lua_State *L){ UNUSED(L); }
+void luaD_init(lua_State *L){ UNUSED(L); }
 
-TProtoFunc* luaY_parser(ZIO *z) {
- lua_error("parser not loaded");
+TProtoFunc* luaY_parser(lua_State *L, ZIO *z) {
+ UNUSED(z);
+ lua_error(L,"parser not loaded");
  return NULL;
 }
 
@@ -104,15 +109,17 @@ void luaL_chunkid (char *out, const char *source, int len) {
   }
 }
 
-void luaD_checkstack(int n){}
+void luaD_checkstack(lua_State *L, int n){ UNUSED(L); UNUSED(n); }
 
-#define STACK_UNIT	128
+#define DEFAULT_STACK_SIZE      1024
+#define EXTRA_STACK     32
 
 /* copied from ldo.c */
-void luaD_init (void) {
-  L->stack.stack = luaM_newvector(STACK_UNIT, TObject);
-  L->stack.top = L->stack.stack;
-  L->stack.last = L->stack.stack+(STACK_UNIT-1);
+void luaD_init (lua_State *L) {
+  L->stack = luaM_newvector(L, DEFAULT_STACK_SIZE+EXTRA_STACK, TObject);
+  L->stack_last = L->stack+(DEFAULT_STACK_SIZE-1);
+  L->Cstack.base = L->Cstack.lua2C = L->top = L->stack;
+  L->Cstack.num = 0;
 }
 
 #endif
