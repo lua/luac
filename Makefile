@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.5 1999/03/11 17:13:53 lhf Exp lhf $
+# $Id: Makefile,v 1.6 1999/04/17 03:22:30 lhf Exp lhf $
 # $(MAKE)file for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -12,21 +12,21 @@ LUA=lua
 CC= acc
 WARN= -Xc -vc #-fast
 
-# gcc
-CC= gcc
-INCS= -I$(LUA) -I/usr/5include
-WARN= -ansi -pedantic -Wall \
- -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
-WARN= -ansi -pedantic -Wall
-
 # SGI cc
 CC= cc
 WARN= -ansi -fullwarn
+
+# gcc
+CC= gcc
+WARN= -ansi -pedantic -Wall \
+ -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
+WARN= -ansi -pedantic -Wall
 
 # end of configuration -------------------------------------------------------
 
 CFLAGS= -g $(WARN) $(INCS) $(DEFS)
 INCS= -I$(LUA)
+#INCS= -I$(LUA) -I/usr/5include
 
 OBJS= dump.o luac.o lundump.o opcode.o opt.o print.o stubs.o test.o
 SRCS= dump.c luac.c lundump.c opcode.c opt.c print.c stubs.c test.c \
