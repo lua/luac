@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: stubs.c,v 1.1 1997/12/02 23:18:50 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -10,7 +10,7 @@
 #include "luac.h"
 
 /* avoid lapi.o lauxlib.o lbuiltin.o ldo.o lgc.o ltable.o ltm.o lvm.o */
-/* use lfunc.o llex.o lmem.o lobject.o lstate.o lstring.o lstx.o lzio.o */
+/* use lbuffer.o lfunc.o llex.o lmem.o lobject.o lstring.o lstx.o lzio.o */
 
 /* simplified from ldo.c */
 void lua_error(char* s)
