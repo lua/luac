@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.16 1996/11/16 20:14:23 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.17 1996/11/18 11:18:29 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -151,8 +151,8 @@ static void ThreadCode(Byte* code, Byte* end)
 		}
 		break;
 	}
-	default:
-		fprintf(stderr,"luac: cannot happen:  opcode=%d",*p);
+	default:			/* cannot happen */
+		fprintf(stderr,"luac: bad opcode %d at %d",*p,(int)(p-code));
 		exit(1);
 		break;
 	}
@@ -186,7 +186,7 @@ static void DumpString(char* s, FILE* D)
  int n=strlen(s)+1;
  if ((Word)n != n)
  {
-  fprintf(stderr,"luac: string too long: \"%.32s...\"\n",s);
+  fprintf(stderr,"luac: string too long (%d bytes): \"%.32s...\"\n",n,s);
   exit(1);
  }
  DumpWord(n,D);
