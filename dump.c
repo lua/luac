@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.8 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: dump.c,v 1.9 1998/06/13 16:54:15 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -11,21 +11,6 @@
 #define NotWord(x)		((unsigned short)x!=x)
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
 #define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
-
-/* LUA_NUMBER */
-/* see comment in lundump.h */
-
-#if   ID_NUMBER==ID_REAL4
-	#define	DumpNumber	DumpFloat
-#elif ID_NUMBER==ID_REAL8
-	#define	DumpNumber	DumpDouble
-#elif ID_NUMBER==ID_INT4
-	#define	DumpNumber	DumpLong
-#elif ID_NUMBER==ID_NATIVE
-	#define	DumpNumber	DumpNative
-#else
-	#define	DumpNumber	DumpWhat
-#endif
 
 static void DumpWord(int i, FILE* D)
 {
