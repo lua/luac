@@ -1,5 +1,5 @@
 /*
-** $Id: ldumplib.c,v 1.2 2001/06/28 13:55:17 lhf Exp lhf $
+** $Id: ldumplib.c,v 1.3 2001/07/19 14:34:06 lhf Exp lhf $
 ** library access to precompiler
 ** See Copyright Notice in lua.h
 */
@@ -30,15 +30,15 @@ static void myfwrite(const void* b, size_t size, size_t n, luaL_Buffer* B) {
 
 static int dump(lua_State *L) {
  if (!lua_isfunction(L,1) || lua_iscfunction(L,1)) {
-  luaL_argerror(L,1,"Lua function expected");
+  luaL_typerror(L,1,"Lua function");
   return 0;
  }
  else {
   luaL_Buffer b;
   const Closure* c=lua_topointer(L,1);
-  if (c->nupvalues>0) luaL_argerror(L,1,"cannot dump closures");
+  if (c->l.nupvalues>0) luaL_argerror(L,1,"cannot dump closures");
   luaL_buffinit(L,&b);
-  luaU_dumpchunk(c->f.l,&b);
+  luaU_dumpchunk(c->l.p,&b);
   luaL_pushresult(&b);
   return 1;
  }
