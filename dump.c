@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.26 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: dump.c,v 1.27 2000/04/24 19:32:58 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -91,11 +91,7 @@ static void DumpConstants(const Proto* tf, FILE* D, int native)
  int i,n;
  DumpInt(n=tf->nkstr,D);
  for (i=0; i<n; i++)
- {
-  TString* s=tf->kstr[i]; 
-  DumpString(s,D);
-  DumpByte(s->u.s.gv!=NULL,D);
- }
+  DumpString(tf->kstr[i],D);
  DumpInt(n=tf->nknum,D);
  if (native)
   DumpBlock(tf->knum,n*sizeof(*tf->knum),D);
