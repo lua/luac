@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.18 1996/11/16 20:14:23 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.19 1997/04/10 18:02:04 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,7 +15,7 @@ static void undump(char* filename);
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
-static int undumping=1;			/* undump bytecodes? */
+static int undumping=0;			/* undump bytecodes? */
 static FILE* D;				/* output file */
 
 static void usage(void)
