@@ -1,43 +1,37 @@
-# $Id: Makefile,v 1.19 2002/12/13 11:14:19 lhf Exp lhf $
+# $Id: Makefile,v 1.20 2003/03/11 23:52:39 lhf Exp lhf $
 # makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
 
 # location of Lua headers and library
-LUA=lua
+LUA=..
 
 # compiler -------------------------------------------------------------------
 
-# SGI cc
-CC= cc
-WARN= -ansi -fullwarn
-
 # gcc
 CC= gcc
-WARN= -ansi -pedantic -Wall -W
 WARN= -ansi -pedantic -Wall \
 -W -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return -Wcast-qual -Wnested-externs -Wwrite-strings
+WARN= -ansi -pedantic -Wall -W
 
 # end of configuration -------------------------------------------------------
 
-CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
+CFLAGS= -O2 $(WARN) $(INCS) $G
 INCS= -I$(LUA)
-LIBS= $(LUA)/liblua.a $(LUA)/liblualib.a -lm
+LIBS= $(LUA)/liblua.a $(LUA)/liblualib.a
 
 OBJS= ldump.o luac.o lundump.o print.o lopcodes.o
 SRCS= ldump.c luac.c lundump.c print.c lundump.h
 
 # targets --------------------------------------------------------------------
 
-all:	luac #lib
+all:	luac
 
-luac:	$(OBJS)
+luac:	$(OBJS) $(LIBS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
-lib:	ldumplib.o
-
-ldumplib.o:	ldumplib.c dump.c
-	$(CC) $(CFLAGS) -c -o $@ ldumplib.c
+$(LIBS):
+	cd $(LUA); make
 
 lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
 	$(CC) $(CFLAGS) -DLUA_OPNAMES -c -o $@ $(LUA)/lopcodes.c
@@ -66,7 +60,7 @@ ci:
 	ci -u $(SRCS)
 
 diff:
-	@-rcsdiff $(SRCS) Makefile 2>&1 | nawk -f rcsdiff.awk
+	@-rcsdiff $(SRCS) Makefile 2>&1 | awk -f rcsdiff.awk
 
 wl:
 	@rlog -L -R RCS/* | sed 's/RCS.//;s/,v//' 
