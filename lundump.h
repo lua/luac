@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.7 1998/06/25 15:50:09 lhf Exp lhf $
+** $Id: lundump.h,v 1.8 1998/07/03 13:17:08 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -15,13 +15,10 @@ TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 #define	SIGNATURE	"Lua"
 #define	VERSION		0x31		/* last format change was in 3.1 */
 #define	VERSION0	0x31		/* last major  change was in 3.1 */
+#define ID_CHUNK	27		/* ESC */
 
 #define IsMain(f)	(f->lineDefined==0)
-
-#define ID_CHUNK	27		/* ESC */
-#define ID_NUM		'N'
-#define ID_STR		'S'
-#define ID_FUN		'F'
+#define luaO_typename(o)	luaO_typenames[-ttype(o)]
 
 /* number representation */
 #define ID_INT4		'l'		/* 4-byte integers */
