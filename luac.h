@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.8 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: luac.h,v 1.9 1999/03/22 21:43:09 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -22,12 +22,22 @@ typedef struct
  int arg2;				/* arg #2 */
 } Opcode;
 
+/* from dump.c */
 void luaU_dumpchunk(TProtoFunc* Main, FILE* D);
-void luaU_printchunk(TProtoFunc* Main);
-void luaU_optchunk(TProtoFunc* Main);
-void luaU_testchunk(TProtoFunc* Main);
+
+/* from opcode.c */
 int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE);
 int luaU_codesize(TProtoFunc* tf);
+
+/* from opt.c */
+void luaU_optchunk(TProtoFunc* Main);
+
+/* from print.c */
+void luaU_printchunk(TProtoFunc* Main);
+
+/* from test.c */
+void luaU_testchunk(TProtoFunc* Main);
+TObject* luaU_getconstant(TProtoFunc* tf, int i, int at);
 
 #define INFO(tf,p,I)	luaU_opcodeinfo(tf,p,I,__FILE__,__LINE__)
 
