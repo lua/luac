@@ -1,5 +1,5 @@
-.\" $Id$
-.TH LUAC 1 "11 March 1996"
+.\" $Id: luac.man,v 1.1 1996/03/12 07:36:31 lhf Exp lhf $
+.TH LUAC 1 "12 March 1996"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -11,23 +11,29 @@ luac \- Lua compiler
 .B \-o 
 .I outputfile
 ]
-[
 .I sourcefile
 \&.\|.\|.
 .SH DESCRIPTION
 .B luac
 is the Lua compiler. 
-It translates programs written in the Lua
-programming language into binary files that can be executed with
-.BR lua_dofile (2).
+It translates programs written in the Lua programming language
+into binary files that can be loaded and executed with
+.B lua_dofile
+in C or
+.B dofile
+in Lua.
 
-By default,
 .BR luac
-produces an output file named
+produces a single output file containing the bytecode
+for all named source files.
+By default,
+the output file is named
 .BR luac.out ,
 but you can change this with the
 .B \-o 
 option.
+
+You can use "-" to indicate stdin as a source file.
 .SH OPTIONS
 .LP
 .TP 1i
@@ -59,11 +65,12 @@ default output file
 .SH "SEE ALSO"
 .BR lua (1)
 .LP
-B. W. Kernighan and D. M. Ritchie,
-.IR "The Lua Programming Language" ,
-Prentice-Hall, 1978
+.IR "Reference Manual of the Programming Language Lua"
 .SH DIAGNOSTICS
+Error messages should be self explanatory.
 .SH BUGS
-.SH AUTHOR
+Inherits any bugs from Lua,
+but Lua has no bugs...
+.SH AUTHORS
 W. Celes, R. Ierusalimschy & L. H. de Figueiredo
 (lua@icad.puc-rio.br)
