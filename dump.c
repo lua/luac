@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.5 1998/01/19 16:10:52 lhf Exp lhf $
+** $Id: dump.c,v 1.6 1998/02/06 20:05:39 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -142,10 +142,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
 	DumpFunction(tfvalue(o),D);
 	break;
    default:				/* cannot happen */
-#ifdef DEBUG
-	luaL_verror("internal error in DumpConstants: bad constant #%d type=%d",
-		i,ttype(o));
-#endif
+	INTERNAL_ERROR("bad constant");
 	break;
   }
  }
@@ -166,10 +163,6 @@ static void DumpHeader(TProtoFunc* Main, FILE* D)
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
-#if ID_NUMBER==ID_NATIVE
-  fprintf(stderr,"luac: warning: "
-	"saving numbers in native format. file may not be portable.\n");
-#endif
  fputc(ID_NUMBER,D);
  fputc(sizeof(t),D);
  DumpNumber(t,D);
