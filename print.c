@@ -1,10 +1,12 @@
 /*
-** $Id: print.c,v 1.37 2002/03/01 01:46:24 lhf Exp lhf $
+** $Id: print.c,v 1.38 2002/06/06 13:22:56 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
+
+#define LUA_OPNAMES
 
 #include "ldebug.h"
 #include "lobject.h"
@@ -99,7 +101,10 @@ static void PrintCode(const Proto* f)
    case OP_DIV:
    case OP_POW:
    case OP_EQ:
-   case OP_CMP:
+   case OP_LT:
+   case OP_LE:
+   case OP_GT:
+   case OP_GE:
     if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
     break;
    case OP_JMP:
@@ -135,8 +140,8 @@ static const char* Source(const Proto* f)
 
 static void PrintHeader(const Proto* f)
 {
- printf("\n%s <%d:%s> (%d instruction%s, %d bytes at %p)\n",
- 	IsMain(f)?"main":"function",f->lineDefined,Source(f),
+ printf("\n%s <%s:%d> (%d instruction%s, %d bytes at %p)\n",
+ 	IsMain(f)?"main":"function",Source(f),f->lineDefined,
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),f);
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
