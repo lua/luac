@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.14 1999/03/22 21:43:09 lhf Exp lhf $
+** $Id: luac.c,v 1.15 1999/04/15 12:30:03 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -30,8 +30,8 @@ static FILE* D;				/* output file */
 static void usage(char* op)
 {
  if (op) fprintf(stderr,"luac: unrecognized option '%s'\n",op);
- fprintf(stderr,"usage: "
- "luac [options] [filenames].  Available options are:\n"
+ fprintf(stderr,
+ "usage: luac [options] [filenames].  Available options are:\n"
  " -c\t\tcompile (default)\n"
  " -d\t\tgenerate debugging information\n"
  " -D name\tpredefine 'name' for conditional compilation\n"
@@ -120,7 +120,7 @@ int main(int argc, char* argv[])
    for (i=1; i<argc; i++)		/* play safe with output file */
     if (IS(d)) luaL_verror("will not overwrite input file \"%s\"",d);
    D=efopen(d,"wb");			/* must open in binary mode */
-#if ID_NUMBER==ID_NATIVE
+#ifdef LUAC_NATIVE
    if (verbose) fprintf(stderr,"luac: warning: "
 	"saving numbers in native format. file may not be portable.\n");
 #endif
@@ -152,7 +152,7 @@ static void do_compile(ZIO* z)
 
 static void do_undump(ZIO* z)
 {
- while (1)
+ for (;;)
  {
   TProtoFunc* Main=luaU_undump1(z);
   if (Main==NULL) break;
