@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.30 2003/04/07 20:34:20 lhf Exp lhf $
+** $Id: lundump.h,v 1.31 2003/08/29 10:41:09 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -23,8 +23,8 @@ int luaU_dump (lua_State* L, const Proto* Main, lua_Chunkwriter w, void* data, i
 void luaU_print (const Proto* Main);
 
 /* definitions for headers of binary files */
-#define	VERSION		0x50		/* last format change was in 5.0 */
-#define	VERSION0	0x50		/* last major  change was in 5.0 */
+#define	VERSION		0x51		/* last format change was in 5.1 */
+#define	VERSION0	0x51		/* last major  change was in 5.1 */
 
 /* a multiple of PI for testing native format */
 /* multiplying by 1E7 gives non-trivial integer values */
