@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.1 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: opcode.c,v 1.2 1998/03/30 11:22:25 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -66,7 +66,7 @@ int OpcodeInfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
    OP.arg2=p[2];
   }
   else if (OP.size==2) OP.arg=p[1];
-  else if (OP.size>=3) OP.arg=p[1]+(p[2]<<8);
+  else if (OP.size>=3) OP.arg=(p[1]<<8)+p[2];
   if (op==SETLISTW || op==CLOSUREW) OP.arg2=p[3];
  }
  *I=OP;

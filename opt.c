@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.2 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: opt.c,v 1.3 1998/03/30 11:22:25 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -44,8 +44,8 @@ static void FixConstants(TProtoFunc* tf, int* C)
     }
     else 
     {
-     p[1]= 0x0000FF &  j;
-     p[2]= 0x0000FF & (j>>8);
+     p[1]= 0x0000FF & (j>>8);
+     p[2]= 0x0000FF &  j;
     }
    }
   }
@@ -165,8 +165,8 @@ static void FixJumps(TProtoFunc* tf)
     else 
 #endif
     {
-     p[1]= 0x0000FF &  j;
-     p[2]= 0x0000FF & (j>>8);
+     p[1]= 0x0000FF & (j>>8);
+     p[2]= 0x0000FF &  j;
     }
 #if 0
    }
