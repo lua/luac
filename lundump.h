@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.16 1999/09/09 13:24:52 lhf Exp lhf $
+** $Id: lundump.h,v 1.17 1999/12/02 18:51:09 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -27,6 +27,7 @@ double luaU_str2d (lua_State* L, const char* b, const char* where);
 #define	SIGNATURE	"Lua"		/* ...followed by this signature */
 
 /* formats for error messages */
+#define xSOURCE		"<%d:%.255s>"
 #define SOURCE		"<%.255s:%d>"
 #define IN		" in %p " SOURCE
 #define INLOC		tf,tf->source->str,tf->lineDefined
