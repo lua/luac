@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.9 1996/03/01 03:41:30 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.10 1996/03/06 15:58:14 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -161,40 +161,6 @@ static void ThreadCode(Byte* code, Byte* end)
  }
 }
 
-#ifdef CHECKTHREAD
-static void CheckThread(Byte* code, int i)
-{
- while (i!=0)
- {
-  CodeWord c;
-  Byte* p=code+i;
-  printf(" %d",i);
-  get_word(c,p);
-  i=c.w;
- }
- printf("\n");
-}
-
-static void CheckThreads(Byte* code)
-{
- int i;
- printf("-- debug: var threads\n");
- for (i=0; i<lua_ntable; i++)
-  if (VarLoc(i)!=0)
-  {
-   printf("%s:",VarStr(i));
-   CheckThread(code,VarLoc(i));
-  }
- printf("-- debug: str threads\n");
- for (i=0; i<lua_nconstant; i++)
-  if (StrLoc(i)!=0)
-  {
-   printf("\"%s\":",StrStr(i));
-   CheckThread(code,StrLoc(i));
-  }
-}
-#endif
-
 static void DumpWord(int i, FILE* D)
 {
  Word w=i;
@@ -204,6 +170,17 @@ static void DumpWord(int i, FILE* D)
 static void DumpBlock(char* b, int size, FILE* D)
 {
  fwrite(b,size,1,D);
+}
+
+static void DumpSize(int i, FILE* D)
+{
+ Word lo=i&0x0FFFF;
+ Word hi=(i>>16)&0x0FFFF;
+ fwrite(&hi,sizeof(hi),1,D);
+ fwrite(&lo,sizeof(lo),1,D);
+ if (hi!=0)
+  fprintf(stderr,
+  "luac: warning: code too long for 16-bit machines (%d bytes)\n",i);
 }
 
 static void DumpString(char* s, FILE* D)
@@ -248,7 +225,7 @@ void DumpFunction(TFunc* tf, FILE* D)
  lastF=tf;
  ThreadCode(tf->code,tf->code+tf->size);
  fputc(ID_FUN,D);
- DumpWord(tf->size,D);			/* TODO: test if too long? */
+ DumpSize(tf->size,D);
  DumpWord(tf->lineDefined,D);
  if (IsMain(tf))
   DumpString(tf->fileName,D);
@@ -256,9 +233,6 @@ void DumpFunction(TFunc* tf, FILE* D)
   DumpWord(tf->marked,D);
  DumpBlock(tf->code,tf->size,D);
  DumpStrings(D);
-#ifdef CHECKTHREAD
-CheckThreads(tf->code);			/* TODO: remove */
-#endif
 }
 
 void DumpHeader(FILE* D)
@@ -268,6 +242,6 @@ void DumpHeader(FILE* D)
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
- fwrite(&w,sizeof(w),1,D);		/* a word for testing byte ordering */
- fwrite(&f,sizeof(f),1,D);		/* a float for testing byte ordering */
+ fwrite(&w,sizeof(w),1,D);
+ fwrite(&f,sizeof(f),1,D);
 }
