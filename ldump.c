@@ -1,12 +1,13 @@
 /*
-** $Id: ldump.c,v 1.5 2003/08/29 10:38:14 lhf Exp lhf $
-** save bytecodes
+** $Id: ldump.c,v 1.6 2004/03/24 00:25:08 lhf Exp lhf $
+** save pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
 
 #include <stddef.h>
 
 #define ldump_c
+#define LUA_CORE
 
 #include "lua.h"
 
@@ -23,13 +24,17 @@ typedef struct {
  lua_Chunkwriter write;
  void* data;
  int strip;
+ int status;
 } DumpState;
 
 static void DumpBlock(const void* b, size_t size, DumpState* D)
 {
- lua_unlock(D->L);
- (*D->write)(D->L,b,size,D->data);
- lua_lock(D->L);
+ if (D->status==0)
+ {
+  lua_unlock(D->L);
+  D->status=(*D->write)(D->L,b,size,D->data);
+  lua_lock(D->L);
+ }
 }
 
 static void DumpByte(int y, DumpState* D)
@@ -155,14 +160,15 @@ static void DumpHeader(DumpState* D)
 /*
 ** dump function as precompiled chunk
 */
-int luaU_dump (lua_State* L, const Proto* Main, lua_Chunkwriter w, void* data, int strip)
+int luaU_dump (lua_State* L, const Proto* f, lua_Chunkwriter w, void* data, int strip)
 {
  DumpState D;
  D.L=L;
  D.write=w;
  D.data=data;
  D.strip=strip;
+ D.status=0;
  DumpHeader(&D);
- DumpFunction(Main,NULL,&D);
- return 1;
+ DumpFunction(f,NULL,&D);
+ return D.status;
 }
