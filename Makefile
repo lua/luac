@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.11 2000/10/31 17:09:23 lhf Exp $
+# $Id: Makefile,v 1.12 2001/03/15 17:36:54 lhf Exp lhf $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -33,7 +33,7 @@ SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c ldumplib.c \
 
 # targets --------------------------------------------------------------------
 
-all:	print.h stubs luac lua
+all:	print.h stubs luac lua lib
 
 luac:	$(OBJS) $(LUA)/liblua.a
 	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
