@@ -1,4 +1,4 @@
-.\" $Id: luac.man,v 1.8 1998/06/13 16:54:15 lhf Exp lhf $
+.\" $Id: luac.man,v 1.9 1998/06/19 21:20:59 lhf Exp lhf $
 .TH LUAC 1 "19 June 1998"
 .SH NAME
 luac \- Lua compiler
@@ -9,17 +9,17 @@ luac \- Lua compiler
 |
 .B \-u
 ] [
+.B \-d
+] [
 .B \-D
 .I name
 ] [
-.B \-d
-] [
 .B \-l
-] [
-.B \-O
 ] [
 .B \-o
 .I filename
+] [
+.B \-O
 ] [
 .B \-p
 ] [
