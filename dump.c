@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char *rcs_dump="$Id: dump.c,v 1.4 1996/02/22 15:33:13 lhf Exp lhf $";
+char *rcs_dump="$Id: dump.c,v 1.5 1996/02/23 19:02:26 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -216,19 +216,25 @@ static void DumpStrings(FILE *D)
 {
  int i;
  for (i=0; i<lua_ntable; i++)
+ {
   if (VarLoc(i)!=0)
   {
    fputc('V',D);
    DumpWord(VarLoc(i),D);
    DumpString(VarStr(i),D);
   }
+  VarLoc(i)=i;
+ }
  for (i=0; i<lua_nconstant; i++)
+ {
   if (StrLoc(i)!=0)
   {
    fputc('S',D);
    DumpWord(StrLoc(i),D);
    DumpString(StrStr(i),D);
   }
+  StrLoc(i)=i;
+ }
 }
 
 void DumpFunction(TFunc *tf, FILE *D)
@@ -242,7 +248,9 @@ void DumpFunction(TFunc *tf, FILE *D)
  DumpString(tf->fileName,D);
  fwrite(tf->code,tf->size,1,D);
  DumpStrings(D);
-CheckThreads(tf->code);
+#if 0
+CheckThreads(tf->code);			/* TODO: remove */
+#endif
 }
 
 void DumpHeader(FILE *D)
@@ -250,8 +258,8 @@ void DumpHeader(FILE *D)
  Word w=TEST_WORD;
  float f=TEST_FLOAT;
  fputc(ESC,D);
- DumpString(SIGNATURE,D);		/* signature */
- fputc(VERSION,D);			/* version */
+ DumpString(SIGNATURE,D);
+ fputc(VERSION,D);
  fwrite(&w,sizeof(w),1,D);		/* a word for testing byte ordering */
  fwrite(&f,sizeof(f),1,D);		/* a float for testing byte ordering */
 }
