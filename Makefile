@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.8 2000/01/28 17:56:23 lhf Exp lhf $
+# $Id: Makefile,v 1.9 2000/04/24 17:43:13 lhf Exp lhf $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -27,11 +27,11 @@ WARN= -ansi -pedantic -Wall \
 CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
 
-OBJS= dump.o luac.o lundump.o opcode.o opt.o print.o stubs.o test.o
-SRCS= dump.c luac.c lundump.c opcode.c opt.c print.c stubs.c test.c \
+OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o test.o
+SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c test.c \
       luac.h lundump.h print.h
 
-OBJS= dump.o luac.o lundump.o print.o stubs.o
+OBJS= dump.o luac.o lundump.o print.o stubs.o opt.o
 
 # targets --------------------------------------------------------------------
 
@@ -119,3 +119,6 @@ wl:
 
 what:
 	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort
+
+ln:
+	ln -s L/*.[ch] .
