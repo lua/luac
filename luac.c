@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.17 1999/07/02 19:34:26 lhf Exp lhf $
+** $Id: luac.c,v 1.18 1999/10/07 12:13:13 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -16,6 +16,7 @@
 
 static FILE* efopen(const char* name, const char* mode);
 static void doit(int undump, const char* filename);
+static void defineglobal(char* name, int define);
 
 static int listing=0;			/* list bytecodes? */
 static int debugging=0;			/* emit debug information? */
@@ -71,11 +72,7 @@ int main(int argc, char* argv[])
    undumping=0;
   }
   else if (IS("-D"))			/* $define */
-  {
-   TaggedString* s=luaS_new(argv[++i]);
-   s->u.s.globalval.ttype=LUA_T_NUMBER;
-   s->u.s.globalval.value.n=1;
-  }
+   defineglobal(argv[++i],1);
   else if (IS("-d"))			/* debug */
    debugging=1;
   else if (IS("-l"))			/* list */
@@ -102,12 +99,12 @@ int main(int argc, char* argv[])
    listing=1;
   }
   else if (IS("-U"))			/* undefine */
-  {
-   TaggedString* s=luaS_new(argv[++i]);
-   s->u.s.globalval.ttype=LUA_T_NIL;
-  }
+   defineglobal(argv[++i],0);
   else if (IS("-v"))			/* show version */
-   printf("%s  %s\n(written by %s)\n\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
+  {
+   printf("%s  %s\n(written by %s)\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
+   if (argc==2) return 0;
+  }
   else if (IS("-V"))			/* verbose */
    verbose=1;
   else					/* unknown option */
@@ -172,6 +169,18 @@ static void doit(int undump, const char* filename)
  if (verbose) fprintf(stderr,"%s\n",source+1);
  if (undump) do_undump(&z); else do_compile(&z);
  if (f!=stdin) fclose(f);
+}
+
+static void defineglobal(char* name, int define)
+{
+ GlobalVar* s=luaS_assertglobalbyname(name);
+ if (define)
+ {
+  s->value.ttype=LUA_T_NUMBER;
+  s->value.value.n=1;
+ }
+ else
+  s->value.ttype=LUA_T_NIL;
 }
 
 static FILE* efopen(const char* name, const char* mode)
