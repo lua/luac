@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.16 2002/01/17 12:35:16 lhf Exp lhf $
+# $Id: Makefile,v 1.17 2002/02/28 20:12:20 lhf Exp lhf $
 # makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -39,19 +39,15 @@ lib:	ldumplib.o
 ldumplib.o:	ldumplib.c dump.c
 	$(CC) $(CFLAGS) -c -o $@ ldumplib.c
 
-lopcodes.o:	../lopcodes.c ../lopcodes.h
-	$(CC) $(CFLAGS) -DLUA_OPNAMES -c -o $@ ../lopcodes.c
+lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
+	$(CC) $(CFLAGS) -DLUA_OPNAMES -c -o $@ $(LUA)/lopcodes.c
 
-print.c:	../lopcodes.h
-	@diff lopcodes.h ..
+print.c:	$(LUA)/lopcodes.h
+	@diff lopcodes.h $(LUA)
 
 debug:
 	$(CC) -c $(CFLAGS) -DLUA_USER_H='"ltests.h"' *.c
 	$(MAKE)
-
-noparser:
-	rm -f luac.o luac
-	$(MAKE) DEFS="-DNOPARSER"
 
 lint:
 	lint -I$(LUA) *.c >lint.out
@@ -92,3 +88,8 @@ tags:	$(SRCS)
 
 depend:
 	@$(CC) -MM $(CFLAGS) $(SRCS)
+
+opp:
+	grep Kst lopcodes.h | grep OP_; echo ''
+	grep R/K lopcodes.h | grep OP_; echo ''
+	grep PC lopcodes.h | grep OP_; echo ''
