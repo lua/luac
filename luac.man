@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.7 1998/02/06 20:05:39 lhf Exp lhf $
-.TH LUAC 1 "06 February 1998"
+.\" $Id: luac.man,v 1.8 1998/06/13 16:54:15 lhf Exp lhf $
+.TH LUAC 1 "19 June 1998"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
