@@ -3,11 +3,10 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.11 1996/03/01 03:45:06 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.12 1996/03/06 15:59:14 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
-#include <setjmp.h>
 #include "luac.h"
 
 static void compile(char* filename);
@@ -82,12 +81,8 @@ static void do_dump(TFunc* tf)		/* only for tf==main */
 static void do_compile(void)
 {
  TFunc tf;				/* TODO: alloc? */
- extern jmp_buf* errorJmp;
- jmp_buf E;
-
  luaI_initTFunc(&tf);
  tf.fileName = lua_parsedfile;
- errorJmp=&E; if (setjmp(E)) exit(1);	/* syntax error */
  lua_parse(&tf);
  if (dumping) do_dump(&tf);
 }
