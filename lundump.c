@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.15 1999/03/22 21:38:26 lhf Exp lhf $
+** $Id: lundump.c,v 1.16 1999/03/24 19:36:29 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -242,26 +242,17 @@ void luaU_testnumber(void)
  if (sizeof(real)!=SIZEOF_NUMBER)
   luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
 	(int)sizeof(real),SIZEOF_NUMBER);
- else
+#if ID_NUMBER==ID_REAL4 || ID_NUMBER==ID_REAL8
+ if (sizeof(long)!=4)
+  luaL_verror("longs have %d bytes; expected %d. see lundump.h",
+	(int)sizeof(long),4);
+#endif
  {
   real t=TEST_NUMBER;
-#if   ID_NUMBER==ID_REAL4
-  float v=TEST_NUMBER;
-  #define EXPECTED	"4-byte float"
-#elif ID_NUMBER==ID_REAL8
-  double v=TEST_NUMBER;
-  #define EXPECTED	"8-byte double"
-#elif ID_NUMBER==ID_INT4
-  int v=TEST_NUMBER;
-  #define EXPECTED	"4-byte int"
-#elif ID_NUMBER==ID_NATIVE
-  #define EXPECTED	"native"
-#else
-  #error	bad ID_NUMBER
-#endif
+  TYPEOF_NUMBER v=TEST_NUMBER;
   if (t!=v)
-   luaL_verror("unsupported number type. "
-		"expected " EXPECTED ". see config and lundump.h");
+   luaL_verror("unsupported number type; expected %d-byte " NAMEOF_NUMBER "."
+	" see config and lundump.h",SIZEOF_NUMBER);
  }
 }
 
