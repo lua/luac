@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.20 2000/10/06 15:11:21 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2000/10/06 15:11:21 $"
+.\" $Id: luac.man,v 1.21 2001/06/06 02:23:00 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2001/06/06 02:23:00 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -17,7 +17,12 @@ into binary files that can be loaded and executed with
 .B lua_dofile
 in C or with
 .B dofile
-in Lua.
+in Lua
+(or loaded with
+.B lua_loadfile
+in C or with
+.B loadfile
+in Lua).
 .LP
 The main advantages of precompiling chunks are:
 faster loading,
@@ -46,7 +51,7 @@ are portable to all architectures with the same word size.
 This means that
 binary files created on a 32-bit platform (such as Intel)
 can be read without change in another 32-bit platform (such as Sparc),
-even if the byte order (``endianess'') is different.
+even if the byte order (``endianness'') is different.
 On the other hand,
 binary files created on a 16-bit platform cannot be read in a 32-bit platform,
 nor vice-versa.
@@ -61,9 +66,7 @@ into a single precompiled chunk.
 .LP
 You can use
 .B "\-"
-to indicate
-.I stdin
-as a source file.
+to indicate the standard input as a source file.
 .LP
 The internal format of the binary files produced by
 .B luac
@@ -88,23 +91,16 @@ output to
 .IR file ,
 instead of the default
 .BR luac.out .
-The output file can be a source file because
+The output file may be a source file because
 all files are loaded before the output file is written.
+Be careful not to overwrite precious files.
 .TP
 .B \-p
 load files but do not generate any output file.
-Used mainly for syntax checking or testing precompiled chunks:
+Used mainly for syntax checking and for testing precompiled chunks:
 corrupted files will probably generate errors when loaded.
-.TP
-.B \-s
-strip debug information before writing the output file.
-This saves some space in very large chunks,
-but if errors occur when running these chunks,
-then the error messages might not contain the full information they usually do.
-.TP
-.B \-t
-perform a thourough integrity test of precompiled chunks.
-Code that passes this test is completely safe,
+Lua always performs a thorough integrity test on precompiled chunks.
+Bytecode that passes this test is completely safe,
 in the sense that it will not break the interpreter.
 However,
 there is no guarantee that such code does anything sensible.
@@ -114,6 +110,14 @@ If no files are given, then
 loads
 .B luac.out
 and tests its contents.
+No messages are displayed if the file passes the integrity test.
+.TP
+.B \-s
+strip debug information before writing the output file.
+This saves some space in very large chunks,
+but if errors occur when running these chunks,
+then the error messages may not contain the full information they usually do
+(line numbers and names of locals are lost).
 .TP
 .B \-v
 print version information.
@@ -124,7 +128,7 @@ default output file
 .SH "SEE ALSO"
 .BR lua (1)
 .br
-http://www.tecgraf.puc-rio.br/lua/
+http://www.lua.org/
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
 .SH AUTHORS
