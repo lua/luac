@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.11 1999/03/16 18:15:53 lhf Exp lhf $
+** $Id: lundump.h,v 1.12 1999/03/22 21:38:26 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -71,18 +71,26 @@ void luaU_badconstant(char* s, int i, TObject* o, TProtoFunc* tf);
 	#define	DumpNumber	DumpFloat
 	#define	LoadNumber	LoadFloat
 	#define SIZEOF_NUMBER	4
+	#define TYPEOF_NUMBER	float
+	#define NAMEOF_NUMBER	"float"
 #elif ID_NUMBER==ID_REAL8
 	#define	DumpNumber	DumpDouble
 	#define	LoadNumber	LoadDouble
 	#define SIZEOF_NUMBER	8
+	#define TYPEOF_NUMBER	double
+	#define NAMEOF_NUMBER	"double"
 #elif ID_NUMBER==ID_INT4
 	#define	DumpNumber	DumpLong
 	#define	LoadNumber	LoadLong
 	#define SIZEOF_NUMBER	4
+	#define TYPEOF_NUMBER	long
+	#define NAMEOF_NUMBER	"long"
 #elif ID_NUMBER==ID_NATIVE
 	#define	DumpNumber	DumpNative
 	#define	LoadNumber	LoadNative
 	#define SIZEOF_NUMBER	sizeof(real)
+	#define TYPEOF_NUMBER	real
+	#define NAMEOF_NUMBER	"native"
 #else
 	#error	bad ID_NUMBER
 #endif
