@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.18 1999/03/22 21:38:26 lhf Exp lhf $
+** $Id: print.c,v 1.19 1999/03/24 19:36:29 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -136,24 +136,10 @@ static void PrintCode(TProtoFunc* tf)
  }
 }
 
-static void DumpLocals(TProtoFunc* tf)
-{
- LocVar* v=tf->locvars;
- int i=0;
- if (v==NULL) return;
- printf("dumplocals:\n");
- do
- {
-  printf("%d line=%d varname=%s [%p]\n",
-	i++,v->line,v->varname?v->varname->str:"",v->varname);
- } while (v++->line>=0);
-}
-
 static void PrintLocals(TProtoFunc* tf)
 {
  LocVar* v=tf->locvars;
  int n,i;
- DumpLocals(tf);
  if (v==NULL || v->line<0) return;
  n=tf->code[1]; if (n>=ZEROVARARG) n-=ZEROVARARG;
  printf("locals:");
