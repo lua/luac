@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.3 1998/01/13 20:05:24 lhf Exp lhf $
+** $Id: stubs.c,v 1.4 1998/01/15 16:07:37 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -33,13 +33,13 @@ void luaL_verror(char* fmt, ...)
 }
 
 /* avoid runtime modules in lstate.c */
-void luaB_predefine(void) {}
-void luaC_hashcallIM(Hash *l) {}
-void luaC_strcallIM(TaggedString *l) {}
-void luaD_gcIM(TObject *o) {}
-void luaD_init(void) {}
-void luaH_free(Hash *frees) {}
-void luaT_init(void) {}
+void luaB_predefine(void){}
+void luaC_hashcallIM(Hash *l){}
+void luaC_strcallIM(TaggedString *l){}
+void luaD_gcIM(TObject *o){}
+void luaD_init(void){}
+void luaH_free(Hash *frees){}
+void luaT_init(void){}
 
 /*
 * the code below avoids the lexer and the parser.
@@ -57,6 +57,6 @@ void luaY_init(void){}
 
 TProtoFunc* luaY_parser(ZIO* z)
 {
- lua_error("no parser loaded");
+ lua_error("parser not loaded");
 }
 #endif
