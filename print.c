@@ -1,12 +1,11 @@
 /*
-** $Id: print.c,v 1.7 1998/02/06 20:05:39 lhf Exp lhf $
+** $Id: print.c,v 1.8 1998/03/05 15:45:08 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "luac.h"
 
 int CodeSize(TProtoFunc* tf)		/* also used in dump.c */
@@ -76,11 +75,8 @@ static void PrintConstant(TProtoFunc* tf, int i)
 	printf("function at %p",tfvalue(o));
 	break;
    default:				/* cannot happen */
-#ifdef DEBUG
-	luaL_verror("internal error in PrintConstant: "
-		"bad constant #%d type=%d\n",i,ttype(o));
-#endif
-   break;
+	LUA_INTERNALERROR("bad constant");
+	break;
   }
  }
 }
@@ -137,6 +133,7 @@ static void PrintCode(TProtoFunc* tf)
 
 	case SETLIST:
 	case CALLFUNC:
+	case CLOSURE:
 		if (n>=3) printf(" %d",OP.arg2);
 		break;
 
