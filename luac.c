@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.30 2001/06/28 13:55:17 lhf Exp lhf $
+** $Id: luac.c,v 1.31 2001/07/19 14:34:06 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -24,7 +24,6 @@ static int doargs(int argc, const char* argv[]);
 static Proto* load(const char* filename);
 static Proto* combine(Proto** P, int n);
 static void strip(Proto* f);
-static FILE* efopen(const char* name, const char* mode);
 static void cannot(const char* name, const char* what, const char* mode);
 static void fatal(const char* message);
 
@@ -55,13 +54,12 @@ int main(int argc, const char* argv[])
  for (i=0; i<argc; i++)
   P[i]=load(IS("-")? NULL : argv[i]);
  f=combine(P,argc);
- if (dumping) luaU_optchunk(L,f);
  if (listing) luaU_printchunk(f);
  if (dumping)
  {
-  FILE* D;
+  FILE* D=fopen(output,"wb");
+  if (D==NULL) cannot(output,"open","out");
   if (stripping) strip(f);
-  D=efopen(output,"wb");
   luaU_dumpchunk(f,D);
   if (ferror(D)) cannot(output,"write","out");
   fclose(D);
@@ -128,11 +126,10 @@ static Proto* load(const char* filename)
  switch (lua_loadfile(L,filename))
  {
   case 0:
+  if (errno!=0) cannot(filename,"read","in");
   {
    const Closure* c=lua_topointer(L,-1);
-   if (errno!=0) cannot(filename,"read","in");
-   return c->f.l;
-   break;
+   return c->l.p;
   }
   case LUA_ERRFILE:
    cannot(filename,"open","in");
@@ -189,13 +186,6 @@ static void strip(Proto* f)
  f->locvars=NULL;
  f->sizelocvars=0;
  for (i=0; i<n; i++) strip(f->p[i]);
-}
-
-static FILE* efopen(const char* name, const char* mode)
-{
- FILE* f=fopen(name,mode);
- if (f==NULL) cannot(name,"open",*mode=='r' ? "in" : "out");
- return f;
 }
 
 static void cannot(const char* name, const char* what, const char* mode)
