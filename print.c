@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.8 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: print.c,v 1.9 1998/03/30 11:22:25 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -97,8 +97,8 @@ static void PrintCode(TProtoFunc* tf)
 	printf("%6d  ",(int)(p-code));
 	{
 	 Byte* q=p;
-	 int i=n;
-	 while (i--) printf("%02X",*q++);
+	 int j=n;
+	 while (j--) printf("%02X",*q++);
 	}
 	printf("%*s%-13s",2*(5-n),"",OP.name);
 
