@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.9 2000/04/24 17:43:13 lhf Exp lhf $
+# $Id: Makefile,v 1.10 2000/09/21 03:15:36 lhf Exp $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -27,11 +27,9 @@ WARN= -ansi -pedantic -Wall \
 CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
 
-OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o test.o
+OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o #test.o
 SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c test.c \
       luac.h lundump.h print.h
-
-OBJS= dump.o luac.o lundump.o print.o stubs.o opt.o
 
 # targets --------------------------------------------------------------------
 
@@ -40,29 +38,24 @@ all:	print.h stubs luac lua
 luac:	$(OBJS) $(LUA)/liblua.a
 	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
 
-lua:	lua/lua
+lua:	$(LUA)/lua
 
-lua/lua: lundump.c lundump.h
-	cd lua; $(MAKE) update
+$(LUA)/lua: lundump.c lundump.h
+	cd $(LUA); $(MAKE) update
 
-print.h: lua/lopcodes.h mkprint.lua
+print.h: $(LUA)/lopcodes.h mkprint.lua
 	-mv -f $@ $@,old
-	lua mkprint.lua <lua/lopcodes.h >$@
+	lua mkprint.lua <$(LUA)/lopcodes.h >$@
 	-diff $@,old $@
-	rm -f opcode.o $@,old
 
-old,print.h: lua/lopcodes.h mkprint
-	-mv -f $@ $@,old
-	nawk -f mkprint lua/lopcodes.h >$@
-	-diff $@,old $@
-	rm -f opcode.o $@,old
+stubs:	$(LUA)/lua
+	diff lstate.c $(LUA)
+	$(LUA)/lua stubs.lua <stubs.c >stubs.new
+	diff stubs.c stubs.new
+	-rm -f stubs.new
 
-debug:
-	rm -f print.o luac
-	$(MAKE) DEFS="-DDEBUG"
-
-olddebug:	clean
-	$(MAKE) DEFS="-DDEBUG"
+debug:	clean
+	$(MAKE) DEFS="-DLUA_DEBUG"
 
 noparser:
 	rm -f stubs.o luac
@@ -72,27 +65,9 @@ nostubs:
 	rm -f stubs.o luac
 	$(MAKE) DEFS="-DNOSTUBS"
 
-stubs:	lua/lua
-	lua/lua stubs.lua < stubs.c >stubs.new
-	diff stubs.c stubs.new
-	-rm -f stubs.new
-
-oldnostubs:
-	rm -f stubs.o luac
-	cat /dev/null >s.c; cc -o stubs.o -c s.c; rm -f s.c; $(MAKE)
-
 map:	$(OBJS)
 	@echo -n '* use only '
-	@ld -o /dev/null -M $(OBJS) lua/liblua.a -lc | grep '	' | sort | xargs echo | sed 's/\.o//g'
-	grep 'use only' stubs.c
-
-MAP:	map
-	nm -o -u $(OBJS) | grep lua._
-
-lmap:	$(OBJS)
-	@#ld -o /dev/null -e main -M $(OBJS) lua/liblua.a -lc | sed -n '/lua.liblua/p;/Memory/q' | sort
-	@echo -n '* use only '
-	@ld -o /dev/null -e main -M $(OBJS) lua/liblua.a -lc | sed -n '/lua.liblua.a(/{s///;s/.o).*//;p;};/Memory/q' | sort | xargs echo
+	@ld -o /dev/null -e main -M $(OBJS) $(LUA)/liblua.a -lc | sed -n '/lua.liblua.a(/{s///;s/.o).*//;p;};/Memory/q' | sort | xargs echo
 	grep 'use only' stubs.c
 
 lint:
@@ -100,7 +75,7 @@ lint:
 
 clean:
 	-rm -f luac *.o luac.out a.out core mon.out gmon.out 
-	cd test; $(MAKE) $@
+	#cd test; $(MAKE) $@
 
 co:
 	co -l -M $(SRCS)
@@ -122,3 +97,9 @@ what:
 
 ln:
 	ln -s L/*.[ch] .
+
+u:	$(OBJS)
+	nm -o $(OBJS) | grep 'U lua'
+
+ls:
+	cp -fp $(LUA)/lstate.c .
