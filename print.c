@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.9 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: print.c,v 1.10 1998/04/02 20:44:08 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -29,7 +29,7 @@ void PrintConstant1(TProtoFunc* tf, int i)
  switch (ttype(o))
  {
   case LUA_T_NUMBER:
-	printf("N %g\n",(double)nvalue(o));	/* LUA_NUMBER */
+	printf("N " NUMBER_FMT "\n",(double)nvalue(o));	/* LUA_NUMBER */
 	break;
   case LUA_T_STRING:
 	printf("S %p\t\"%s\"\n",tsvalue(o),svalue(o));
@@ -66,7 +66,7 @@ static void PrintConstant(TProtoFunc* tf, int i)
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
-	printf("%g",(double)nvalue(o));		/* LUA_NUMBER */
+	printf(NUMBER_FMT,(double)nvalue(o));		/* LUA_NUMBER */
 	break;
    case LUA_T_STRING:
 	printf("\"%s\"",svalue(o));
