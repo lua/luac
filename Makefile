@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.14 2001/07/19 14:42:31 lhf Exp lhf $
+# $Id: Makefile,v 1.15 2001/11/01 08:52:26 lhf Exp lhf $
 # makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -65,7 +65,7 @@ conl:
 	co -M $(SRCS)
 
 ci:
-	ci $(SRCS)
+	ci -u $(SRCS)
 
 diff:
 	@-rcsdiff $(SRCS) Makefile 2>&1 | nawk -f rcsdiff.awk
