@@ -1,5 +1,5 @@
 /*
-** $Id$
+** $Id: dump.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -37,9 +37,9 @@ static void DumpSize(int s, FILE* D)
   "luac: warning: code too long for 16-bit machines (%d bytes)\n",s);
 }
 
-static void DumpCode(TFunc* tf, FILE* D)
+static void DumpCode(TProtoFunc* tf, FILE* D)
 {
- extern int CodeSize(TFunc*);		/* in print.c */
+ extern int CodeSize(TProtoFunc*);		/* in print.c */
  int size=CodeSize(tf)+1;
  DumpSize(size,D);
  DumpBlock(tf->code,size,D);
@@ -64,7 +64,7 @@ static void DumpTString(TaggedString* s, FILE* D)
  DumpString((s==NULL) ? NULL : s->str,D);
 }
 
-static void DumpLocals(TFunc* tf, FILE* D)
+static void DumpLocals(TProtoFunc* tf, FILE* D)
 {
  int n;
  LocVar* lv;
@@ -77,7 +77,7 @@ static void DumpLocals(TFunc* tf, FILE* D)
  }
 }
 
-static void DumpConstants(TFunc* tf, FILE* D)
+static void DumpConstants(TProtoFunc* tf, FILE* D)
 {
  int i,n=tf->nconsts;
  DumpWord(n,D);
@@ -107,9 +107,9 @@ static void DumpConstants(TFunc* tf, FILE* D)
  }
 }
 
-void DumpFunction(TFunc* tf, FILE* D);
+void DumpFunction(TProtoFunc* tf, FILE* D);
 
-static void DumpFunctions(TFunc* tf, FILE* D)
+static void DumpFunctions(TProtoFunc* tf, FILE* D)
 {
  int i,n=tf->nconsts;
  for (i=0; i<n; i++)
@@ -125,16 +125,17 @@ static void DumpFunctions(TFunc* tf, FILE* D)
  fputc(ID_END,D);
 }
 
-void DumpFunction(TFunc* tf, FILE* D)
+void DumpFunction(TProtoFunc* tf, FILE* D)
 {
  DumpWord(tf->lineDefined,D);
+ DumpTString(tf->fileName,D);
  DumpCode(tf,D);
  DumpConstants(tf,D);
  DumpLocals(tf,D);
  DumpFunctions(tf,D);
 }
 
-static void DumpHeader(TFunc* Main, FILE* D)
+static void DumpHeader(TProtoFunc* Main, FILE* D)
 {
  real r=TEST_FLOAT;
  fputc(ID_CHUNK,D);
@@ -142,10 +143,9 @@ static void DumpHeader(TFunc* Main, FILE* D)
  fputc(VERSION,D);
  fputc(sizeof(r),D);
  fwrite(&r,sizeof(r),1,D);
- DumpTString(Main->fileName,D);
 }
 
-void DumpChunk(TFunc* Main, FILE* D)
+void DumpChunk(TProtoFunc* Main, FILE* D)
 {
  DumpHeader(Main,D);
  DumpFunction(Main,D);
