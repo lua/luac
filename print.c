@@ -1,16 +1,18 @@
 /*
-** $Id: print.c,v 1.41 2003/01/10 11:08:45 lhf Exp lhf $
+** $Id: print.c,v 1.42 2003/02/11 23:52:12 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 
-#undef  DEBUG_PRINT
+#if 0
 #define DEBUG_PRINT
+#endif
 
-#undef  LUA_OPNAMES
+#ifndef LUA_OPNAMES
 #define LUA_OPNAMES
+#endif
 
 #include "ldebug.h"
 #include "lobject.h"
