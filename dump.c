@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.12 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: dump.c,v 1.13 1999/03/11 17:09:10 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -10,6 +10,7 @@
 
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
 #define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
+#define	DumpInt			DumpLong
 
 static void DumpWord(int i, FILE* D)
 {
@@ -58,10 +59,6 @@ static void DumpDouble(double f, FILE* D)
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
  int size=luaU_codesize(tf);
- if (size>MAX_WORD)
-  fprintf(stderr,"luac: warning: "
-	"\"%s\":%d code too long for 16-bit machines (%d bytes)\n",
-	tf->source->str,tf->lineDefined,size);
  DumpLong(size,D);
  DumpBlock(tf->code,size,D);
 }
@@ -69,19 +66,20 @@ static void DumpCode(TProtoFunc* tf, FILE* D)
 static void DumpString(char* s, int size, FILE* D)
 {
  if (s==NULL)
-  DumpWord(0,D);
+  DumpLong(0,D);
  else
  {
-  if (size>MAX_WORD)
-   luaL_verror("string too long (%d bytes): \"%.32s...\"",size,s);
-  DumpWord(size,D);
+  DumpLong(size,D);
   DumpBlock(s,size,D);
  }
 }
 
 static void DumpTString(TaggedString* s, FILE* D)
 {
- if (s==NULL) DumpString(NULL,0,D); else DumpString(s->str,s->u.s.len+1,D);
+ if (s==NULL)
+  DumpString(NULL,0,D);
+ else
+  DumpString(s->str,s->u.s.len+1,D);
 }
 
 static void DumpLocals(TProtoFunc* tf, FILE* D)
@@ -89,10 +87,10 @@ static void DumpLocals(TProtoFunc* tf, FILE* D)
  int n;
  LocVar* lv;
  for (n=0,lv=tf->locvars; lv && lv->line>=0; lv++) ++n;
- DumpWord(n,D);
+ DumpInt(n,D);
  for (lv=tf->locvars; lv && lv->line>=0; lv++)
  {
-  DumpWord(lv->line,D);
+  DumpInt(lv->line,D);
   DumpTString(lv->varname,D);
  }
 }
@@ -102,7 +100,7 @@ static void DumpFunction(TProtoFunc* tf, FILE* D);
 static void DumpConstants(TProtoFunc* tf, FILE* D)
 {
  int i,n=tf->nconsts;
- DumpWord(n,D);
+ DumpInt(n,D);
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
@@ -131,7 +129,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
 
 static void DumpFunction(TProtoFunc* tf, FILE* D)
 {
- DumpWord(tf->lineDefined,D);
+ DumpInt(tf->lineDefined,D);
  DumpTString(tf->source,D);
  DumpCode(tf,D);
  DumpLocals(tf,D);
