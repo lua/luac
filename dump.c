@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
+** $Id: dump.c,v 1.4 1998/01/13 20:05:24 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -43,7 +43,7 @@ static void DumpSize(int s, FILE* D)
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
  extern int CodeSize(TProtoFunc*);	/* in print.c */
- int size=CodeSize(tf)+2;		/* CodeSize skips header bytes */
+ int size=CodeSize(tf);
  DumpSize(size,D);
  DumpBlock(tf->code,size,D);
 }
