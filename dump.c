@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.11 1996/03/06 21:39:25 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.12 1996/03/12 20:00:03 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -109,33 +109,31 @@ static void ThreadCode(Byte* code, Byte* end)
 	case PUSHSELF:
 	case PUSHSTRING:
 	{
-		CodeWord c;
+		Word w;
 		p++;
-		get_word(c,p);
-		c.w=SawStr(c.w,at);
-		p[-2]=c.m.c1;
-		p[-1]=c.m.c2;
+		get_word(w,p);
+		w=SawStr(w,at);
+		memcpy(p-2,&w,sizeof(w));
 		break;
 	}
 	case PUSHFUNCTION:
 	{
-		CodeCode c;
+		TFunc* tf;
 		p++;
-		get_code(c,p);
-		c.tf->marked=at;
-		c.tf->next=NULL;	/* TODO: remove? */
-		lastF=lastF->next=c.tf;
+		get_code(tf,p);
+		tf->marked=at;
+		tf->next=NULL;		/* TODO: remove? */
+		lastF=lastF->next=tf;
 		break;
 	}
 	case PUSHGLOBAL:
 	case STOREGLOBAL:
 	{
-		CodeWord c;
+		Word c;
 		p++;
-		get_word(c,p);
-		c.w=SawVar(c.w,at);
-		p[-2]=c.m.c1;
-		p[-1]=c.m.c2;
+		get_word(w,p);
+		w=SawVar(w,at);
+		memcpy(p-2,&w,sizeof(w));
 		break;
 	}
 	case STORERECORD:
@@ -144,12 +142,11 @@ static void ThreadCode(Byte* code, Byte* end)
 		p++;
 		while (n--)
 		{
-			CodeWord c;
+			Word c;
 			at=p-code;
-			get_word(c,p);
-			c.w=SawStr(c.w,at);
-			p[-2]=c.m.c1;
-			p[-1]=c.m.c2;
+			get_word(w,p);
+			w=SawStr(w,at);
+			memcpy(p-2,&w,sizeof(w));
 		}
 		break;
 	}
