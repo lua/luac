@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.15 1999/04/15 12:30:03 lhf Exp lhf $
-.TH LUAC 1 "$Date: 1999/04/15 12:30:03 $"
+.\" $Id: luac.man,v 1.16 1999/07/02 19:34:26 lhf Exp lhf $
+.TH LUAC 1 "$Date: 1999/07/02 19:34:26 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -115,7 +115,7 @@ not even the built-in functions.
 produce a listing of the compiled bytecode for Lua's virtual machine.
 This is the default when undumping.
 .TP
-.BI \-n
+.B \-n
 Save numbers in native format.
 By default,
 numbers are saved in text form,
