@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.7 1999/03/24 19:36:29 lhf Exp lhf $
+** $Id: test.c,v 1.8 1999/04/15 12:30:03 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -47,7 +47,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
  int longarg=0;
  int ss=0;
  int sp=0;
- while (1)
+ for (;;)
  {
 	Opcode OP;
 	int n=INFO(tf,p,&OP);

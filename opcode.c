@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.7 1999/03/22 21:38:26 lhf Exp lhf $
+** $Id: opcode.c,v 1.8 1999/03/24 19:36:29 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -92,7 +92,7 @@ int luaU_codesize(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
- while (1)
+ for (;;)
  {
   Opcode OP;
   p+=INFO(tf,p,&OP);

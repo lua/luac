@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.19 1999/03/24 19:36:29 lhf Exp lhf $
+** $Id: print.c,v 1.20 1999/04/26 14:02:23 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -68,7 +68,7 @@ static void PrintCode(TProtoFunc* tf)
  Byte* p=code;
  int line=0;
  int longarg=0;
- while (1)
+ for (;;)
  {
 	Opcode OP;
 	int n=INFO(tf,p,&OP);
@@ -188,7 +188,7 @@ static void PrintFunctions(TProtoFunc* Main)
  Byte* code=Main->code;
  Byte* p=code;
  int longarg=0;
- while (1)
+ for (;;)
  {
   Opcode OP;
   int n=INFO(Main,p,&OP);
