@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.15 1999/12/02 18:51:09 lhf Exp lhf $
+** $Id: opt.c,v 1.16 2000/01/28 17:51:09 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -9,275 +9,245 @@
 #include <string.h>
 #include "luac.h"
 
-static void FixArg(Byte* p, int i, int j, int isconst)
-{
- if (j==i)
-  ;
- else if (i<=MAX_BYTE)		/* j<i, so j fits where i did */
-  p[1]=j;
- else if (i<=MAX_WORD)
- {
-  if (isconst && j<=MAX_BYTE)	/* may use byte variant instead */
-  {
-   p[0]++;			/* byte variant follows word variant */
-   p[1]=j;
-   p[2]=NOP;
-  }
-  else 				/* stuck with word variant */
-  {
-   p[1]=j>>8;
-   p[2]=j;
-  }
- }
- else 				/* previous instruction must've been LONGARG */
- {
-  if (isconst && j<=MAX_WORD) p[-2]=p[-1]=NOP; else p[-1]=j>>16;
-  p[1]=j>>8;
-  p[2]=j;
- }
-}
+#define OP_NOP	-1UL
 
-static void FixConstants(TProtoFunc* tf, int* C)
+#if 0
+static void FixConstants(Proto* tf, int* C)
 {
- Byte* code=tf->code;
- Byte* p=code;
- int longarg=0;
+ Instruction* code=tf->code;
+ Instruction* p=code;
  for (;;)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
   int op=OP.class;
   int i=OP.arg+longarg;
-  longarg=0;
-  if (op==PUSHCONSTANT || op==GETGLOBAL || op==GETDOTTED ||
-      op==PUSHSELF     || op==SETGLOBAL || op==CLOSURE)
+  if (op==OP_PUSHCONSTANT || op==OP_GETGLOBAL || op==OP_GETDOTTED ||
+      op==OP_PUSHSELF     || op==OP_SETGLOBAL || op==OP_CLOSURE)
    FixArg(p,i,C[i],1);
-  else if (op==LONGARG) longarg=i<<16;
-  else if (op==ENDCODE) break;
+  else if (op==OP_END) break;
   p+=n;
  }
 }
 
-#define	UNREF	1			/* "type" of unused constants */
-#define	BIAS	128			/* mark for used constants */
+static void* V;				/* for sort */
 
-static void NoUnrefs(TProtoFunc* tf)
-{
- Byte* code=tf->code;
- Byte* p=code;
- int longarg=0;
- for (;;)				/* mark all used constants */
- {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  int i=OP.arg+longarg;
-  longarg=0;
-  if (op==PUSHCONSTANT || op==GETGLOBAL || op==GETDOTTED ||
-      op==PUSHSELF     || op==SETGLOBAL || op==CLOSURE)
-  {
-   TObject* o=tf->consts+i;
-   if (ttype(o)<=0) ttype(o)+=BIAS;	/* mark as used */
-  }
-  else if (op==LONGARG) longarg=i<<16;
-  else if (op==ENDCODE) break;
-  p+=n;
- }
-{
- int i,n=tf->nconsts;
- for (i=0; i<n; i++)			/* mark all unused constants */
- {
-  TObject* o=tf->consts+i;
-  if (ttype(o)<=0)
-   ttype(o)=UNREF;			/* mark as unused */
-  else
-   ttype(o)-=BIAS;			/* unmark used constant */
- }
-}
-}
-
-#define CMP(oa,ob,f)	memcmp(&f(oa),&f(ob),sizeof(f(oa)))
-
-static int compare(TProtoFunc* tf, int ia, int ib)
-{
- const TObject* oa=tf->consts+ia;
- const TObject* ob=tf->consts+ib;
- int t=ttype(oa)-ttype(ob);
- if (t) return t;
- switch (ttype(oa))
- {
-  case LUA_T_NUMBER:	return CMP(oa,ob,nvalue);
-  case LUA_T_STRING:	return CMP(oa,ob,tsvalue);
-  case LUA_T_LPROTO:	return CMP(oa,ob,tfvalue);
-  case LUA_T_NIL:	return 0;
-  case UNREF:		return 0;
-  default:		return ia-ib;	/* cannot happen */
- }
-}
-
-static TProtoFunc* TF;			/* for sort */
-
-static int compare1(const void* a, const void* b)
+static int compare_numbers(const void* a, const void* b)
 {
  const int ia=*(const int*)a;
  const int ib=*(const int*)b;
- int t=compare(TF,ia,ib);
- return (t) ? t : ia-ib;
+ Number* v=(Number*) V;
+ Number va=v[ia];
+ Number vb=v[ib];
+ return (va==vb) ? 0 : ia-ib;
 }
 
-static void OptConstants(TProtoFunc* tf)
+static void FixNumbers(Instruction* code, int* map)
 {
- static int* C=NULL;
- static int* D=NULL;
+ Instruction* p;
+ for (p=code;; p++)
+ {
+  Instruction i=*p;
+  int op=GET_OPCODE(i);
+  switch (op)
+  {
+   case OP_PUSHNUM: case OP_PUSHNEGNUM:
+    int j=GETARG_U(i);
+    *p=CREATE_U(o,map[j]);
+    break;
+   case OP_END: return;
+  }
+ }
+}
+
+static void FindNumbers(Instruction* code, int* seen)
+{
+ Instruction* p;
+ for (p=code;; p++)
+ {
+  Instruction i=*p;
+  int op=GET_OPCODE(i);
+  switch (op)
+  {
+   case OP_PUSHNUM: case OP_PUSHNEGNUM:
+    seen[GETARG_U(i)]=1;
+   case OP_END: return;
+  }
+ }
+}
+
+static int OptNumbers(Proto* tf, int* C, int* D)
+{
  int i,k;
- int n=tf->nconsts;
- if (n==0) return;
- luaM_reallocvector(L,C,n,int);
- luaM_reallocvector(L,D,n,int);
- NoUnrefs(tf);
+ int n=tf->nknum;
+ Number* v=tf->knum;
  for (i=0; i<n; i++) C[i]=D[i]=i;	/* group duplicates */
- TF=tf; qsort(C,n,sizeof(C[0]),compare1);
+ V=v; qsort(C,n,sizeof(*C),compare_numbers);
  k=C[0];				/* build duplicate table */
  for (i=1; i<n; i++)
  {
   int j=C[i];
-  if (compare(tf,k,j)==0) D[j]=k; else k=j;
+  if (v[k]==v[j]) D[j]=k; else k=j;
  }
  k=0;					/* build rename map & pack constants */
  for (i=0; i<n; i++)
  {
   if (D[i]==i)				/* new value */
   {
-   const TObject* o=tf->consts+i;
-   if (ttype(o)!=UNREF)
-   {
-    tf->consts[k]=tf->consts[i];
-    C[i]=k++;
-   }
+   v[k]=v[i];
+   C[i]=k++;
   }
   else C[i]=C[D[i]];
  }
- if (k<n)
- {
-printf("\t" SOURCE " reduced constants from %d to %d\n",
-	 tf->source->str,tf->lineDefined,n,k);
-  FixConstants(tf,C);
-  tf->nconsts=k;
- }
+ return k;
 }
 
-static int NoDebug(TProtoFunc* tf)
+static void FindStrings(Instruction* code, int* seen)
 {
- Byte* code=tf->code;
- Byte* p=code;
- int lop=NOP;				/* last opcode */
- int nop=0;
- for (;;)				/* change SETLINE and SETNAME to NOP */
+ Instruction* p;
+ for (p=code;; p++)
  {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  if (op==NOP) ++nop;
-  else if (op==SETLINE || op==SETNAME)
+  Instruction i=*p;
+  int op=GET_OPCODE(i);
+  switch (op)
   {
-   int m;
-   if (lop==LONGARG) m=2; else if (lop==LONGARGW) m=3; else m=0;
-   nop+=n+m; memset(p-m,NOP,n+m);
+   case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
+   case OP_PUSHSELF:   case OP_SETGLOBAL:
+    seen[GETARG_U(i)]=1;
+   case OP_END: return;
   }
-  else if (op==ENDCODE) break;
-  lop=OP.op;
-  p+=n;
  }
- return nop;
 }
 
-static int FixJump(TProtoFunc* tf, Byte* a, Byte* b)
+static int compare_strings(const void* a, const void* b)
 {
- Byte* p;
+ const int ia=*(const int*)a;
+ const int ib=*(const int*)b;
+ TString** v=(TString**) V;
+ TString* va=v[ia];
+ TString* vb=v[ib];
+ return (strcmp(va->str,vb->str)==0) ? 0 : ia-ib;
+}
+
+static void OptConstants(Proto* tf)
+{
+ static int* N=NULL;
+ static int* S=NULL;
+ static int* D=NULL;
+ static int* U=NULL;
+ int n,nnum,nstr;
+ n=tf->nknum;
+ if (n>0) 
+ {
+  luaM_reallocvector(L,N,n,int);
+  luaM_reallocvector(L,D,n,int);
+  nnum=OptNumbers(tf,N,D);
+ }
+ n=tf->nkstr;
+ if (n>0) 
+ {
+  luaM_reallocvector(L,S,n,int);
+  luaM_reallocvector(L,D,n,int);
+  luaM_reallocvector(L,U,n,int);
+  nstr=OptStrings(tf,S,D,U);
+ }
+ if (nnum!=tf->nknum || nstr!=tf->nkstr) FixConstants(tf,C);
+}
+
+#endif
+
+static int FixJump(Instruction* a, Instruction* b)
+{
+ Instruction* p;
  int nop=0;
- for (p=a; p<b; )
+ for (p=a; p<b; p++)
  {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  if (op==NOP) ++nop;
-  else if (op==ENDCODE) break;
-  p+=n;
+  Instruction op=*p;
+  if (op==OP_NOP) ++nop;
+  else if (op==OP_END) break;
  }
  return nop;
 }
 
-static void FixJumps(TProtoFunc* tf)
+static void FixJumps(Instruction* code)
 {
- Byte* code=tf->code;
- Byte* p=code;
- int longarg=0;
+ Instruction* p=code;
  for (;;)
  {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  int i=OP.arg+longarg;
-  int nop=0;
-  longarg=0;
-  if (op==ENDCODE) break;
-  else if (op==IFTUPJMP || op==IFFUPJMP)
-   nop=FixJump(tf,p-i+n,p);
-  else if (op==ONTJMP || op==ONFJMP || op==JMP || op==IFFJMP)
-   nop=FixJump(tf,p,p+i+n);
-  else if (op==LONGARG) longarg=i<<16;
-  if (nop>0) FixArg(p,i,i-nop,0);
-  p+=n;
+  Instruction i=*p;
+  int op=GET_OPCODE(i);
+  int j=GETARG_S(i);
+  if (ISJUMP(op))
+  {
+   int n;
+   if (j>0) n=FixJump(p,p+j+1); else n=FixJump(p+j+1,p);
+   if (n>0) 
+   {
+    if (j>0) j-=n; else j+=n;
+    *p=CREATE_S(op,j);
+   }
+  }
+  else if (op==OP_END) break;
+  ++p;
  }
 }
 
-static void PackCode(TProtoFunc* tf)
+static int FixDebug(Instruction* code)
 {
- Byte* code=tf->code;
- Byte* p=code;
- Byte* q=code;
+ Instruction* p;
+ int nop=0;
+ for (p=code;; p++)
+ {
+  Instruction op=*p;
+  if (GET_OPCODE(op)==OP_SETLINE) { *p=OP_NOP; ++nop; }
+  else if (op==OP_NOP) ++nop;
+  else if (op==OP_END) break;
+ }
+ return nop;
+}
+
+static void PackCode(Instruction* code)
+{
+ Instruction* p=code;
+ Instruction* q=code;
  for (;;)
  {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  if (op!=NOP) { memcpy(q,p,n); q+=n; }
-  p+=n;
-  if (op==ENDCODE) break;
+  Instruction op=*p++;
+  if (op!=OP_NOP) *q++=op;
+  if (op==OP_END) break;
  }
-printf("\t" SOURCE " reduced code from %d to %d\n",
-	tf->source->str,tf->lineDefined,(int)(p-code),(int)(q-code));
 }
 
-static void OptCode(TProtoFunc* tf)
+static void OptCode(Proto* tf)
 {
- if (NoDebug(tf)==0) return;		/* cannot improve code */
- FixJumps(tf);
- PackCode(tf);
-}
-
-static void OptFunction(TProtoFunc* tf);
-
-static void OptFunctions(TProtoFunc* tf)
-{
- int i,n=tf->nconsts;
- for (i=0; i<n; i++)
+ Instruction* code=tf->code;
+ if (FixDebug(code)>0)
  {
-  const TObject* o=tf->consts+i;
-  if (ttype(o)==LUA_T_LPROTO) OptFunction(tfvalue(o));
+  FixJumps(code);
+  PackCode(code);
  }
 }
 
-static void OptFunction(TProtoFunc* tf)
+static void OptFunction(Proto* tf);
+
+static void OptFunctions(Proto* tf)
 {
- OptConstants(tf);
+ int i,n=tf->nkproto;
+ for (i=0; i<n; i++) OptFunction(tf->kproto[i]);
+}
+
+static void OptFunction(Proto* tf)
+{
  OptCode(tf);
+#if 0
+ OptConstants(tf);
+#endif
  OptFunctions(tf);
  tf->source=luaS_new(L,"");
- tf->locvars=NULL;
+ tf->locvars=NULL;			/* lazy! */
 }
 
-void luaU_optchunk(TProtoFunc* Main)
+void luaU_optchunk(Proto* Main)
 {
  OptFunction(Main);
 }
