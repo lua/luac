@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.15 1997/06/19 17:32:08 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.16 1997/06/20 20:34:04 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -123,16 +123,14 @@ void LinkFunctions(TFunc* m)
  }
 }
 
-static LocVar* V=NULL;
+#define LocStr(i)	luaI_getlocalname(tf,i+1,line)
 
-static char* LocStr(int i)
+static void PrintCode(TFunc* tf)
 {
- if (V==NULL) return ""; else return V[i].varname->str;
-}
-
-static void PrintCode(Byte* code, Byte* end)
-{
+ Byte* code=tf->code;
+ Byte* end=code+tf->size;
  Byte* p;
+ int line=0;
  for (p=code; p!=end;)
  {
 	int op=*p;
@@ -180,7 +178,7 @@ static void PrintCode(Byte* code, Byte* end)
 	case PUSHLOCAL9:
 	{
 		int i=op-PUSHLOCAL0;
-		printf("\t\t; %s",LocStr(i));
+		if (tf->locvars) printf("\t\t; %s",LocStr(i));
 		p++;
 		break;
 	}
@@ -196,7 +194,7 @@ static void PrintCode(Byte* code, Byte* end)
 	case STORELOCAL9:
 	{
 		int i=op-STORELOCAL0;
-		printf("\t\t; %s",LocStr(i));
+		if (tf->locvars) printf("\t\t; %s",LocStr(i));
 		p++;
 		break;
 	}
@@ -204,7 +202,7 @@ static void PrintCode(Byte* code, Byte* end)
 	case STORELOCAL:
 	{
 		int i=*(p+1);
-		printf("\t%d\t; %s",i,LocStr(i));
+		if (tf->locvars) printf("\t%d\t; %s",i,LocStr(i));
 		p+=2;
 		break;
 	}
@@ -226,6 +224,7 @@ static void PrintCode(Byte* code, Byte* end)
 		p++;
 		get_word(w,p);
 		printf("\t%d",w);
+		if (op==SETLINE) line=w;
 		break;
 	}
 	case ONTJMP:
@@ -311,6 +310,8 @@ static void PrintCode(Byte* code, Byte* end)
  }
 }
 
+#undef LocStr
+
 static void PrintLocals(LocVar* v, int n)
 {
  int i=0;
@@ -318,13 +319,23 @@ static void PrintLocals(LocVar* v, int n)
  if (n>0)
  {
   printf("parameters:");
-  for (i=0; i<n; v++,i++) printf(" %s",LocStr(i));
+  for (i=0; i<n; v++,i++) printf(" %s[%d@%d]",v->varname->str,i,v->line);
   printf("\n");
  }
  if (v->varname!=NULL)
  {
   printf("locals:");
-  for (; v->varname!=NULL; v++,i++) printf(" %s[%d@%d]",LocStr(i),i,v->line);
+  for (; v->line>=0; v++)
+  {
+   if (v->varname==NULL)
+#if 0
+    printf(" %s[%d@%d]","*",--i,v->line);
+#else
+    --i;
+#endif
+   else
+    printf(" %s[%d@%d]",v->varname->str,i++,v->line);
+  }
   printf("\n");
  }
 }
@@ -336,9 +347,13 @@ void PrintFunction(TFunc* tf, TFunc* Main)
   printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
  {
-  Byte* p=Main->code+tf->marked+sizeof(TFunc*);
+  Byte* p;
+  p=tf->code;				/* get number of parameters */
+  while (*p==SETLINE) p+=3;
+  if (*p==ADJUST) n=p[1];
+  p=Main->code+tf->marked+sizeof(TFunc*);
   printf("\nfunction ");
-  switch (*p)
+  switch (*p)				/* try to get name */
   {
    case STOREGLOBAL:
    {
@@ -351,21 +366,18 @@ void PrintFunction(TFunc* tf, TFunc* Main)
     if (p[-11]==PUSHGLOBAL && p[-8]==PUSHSTRING)
     {
      Word w;
-     Byte* pp=p;
-     p-=11; p++; get_word(w,p); printf("%s.",VarStr(w));
-     p=pp;
-     p-=8;  p++; get_word(w,p); printf("%s defined at ",StrStr(w));
-     p=pp;
+     Byte* op=p;
+     int c=(tf->locvars && n>0 && strcmp(tf->locvars->varname->str,"self")==0)
+		? ':' : '.';
+     p=op-11; p++; get_word(w,p); printf("%s%c",VarStr(w),c);
+     p=op-8;  p++; get_word(w,p); printf("%s defined at ",StrStr(w));
     }
     break;
    }
   }
   printf("\"%s\":%d (%d bytes at %p); used at main+%d\n",
 	tf->fileName,tf->lineDefined,tf->size,tf,tf->marked);
-  p=tf->code;
-  if (*p==ADJUST) n=p[1];
  }
- V=tf->locvars;
- PrintLocals(V,n);
- PrintCode(tf->code,tf->code+tf->size);
+ PrintLocals(tf->locvars,n);
+ PrintCode(tf);
 }
