@@ -20,6 +20,7 @@ char *rcs_dump="$Id$";
 
 extern Word lua_ntable;
 extern Word lua_nconstant;
+static TFunc *lastF=NULL;
 
 static void PrintCode(Byte *code, Byte *end)
 {
@@ -275,6 +276,9 @@ static void ThreadCode(Byte *code, Byte *end)
 		p++;
 		get_code(c,p);
 		c.tf->marked=at;
+		c.tf->next=NULL;
+		lastF->next=c.tf;
+		lastF=c.tf;
 		break;
 	}
 	case PUSHGLOBAL:
@@ -311,106 +315,6 @@ static void ThreadCode(Byte *code, Byte *end)
  }
 }
 
-static void DumpFunctions(Byte *code, Byte *end)
-{
- Byte *p;
- for (p=code; p!=end;)
- {
-	OpCode op=(OpCode)*p;
-	switch (op)
-	{
-	case PUSHNIL:
-	case PUSH0:
-	case PUSH1:
-	case PUSH2:
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-	case PUSHLOCAL8:
-	case PUSHLOCAL9:
-	case PUSHINDEXED:
-	case STORELOCAL0:
-	case STORELOCAL1:
-	case STORELOCAL2:
-	case STORELOCAL3:
-	case STORELOCAL4:
-	case STORELOCAL5:
-	case STORELOCAL6:
-	case STORELOCAL7:
-	case STORELOCAL8:
-	case STORELOCAL9:
-	case STOREINDEXED0:
-	case ADJUST0:
-	case EQOP:
-	case LTOP:
-	case LEOP:
-	case GTOP:
-	case GEOP:
-	case ADDOP:
-	case SUBOP:
-	case MULTOP:
-	case DIVOP:
-	case POWOP:
-	case CONCOP:
-	case MINUSOP:
-	case NOTOP:
-	case POP:
-	case RETCODE0:
-		p++;
-		break;
-	case PUSHBYTE:
-	case PUSHLOCAL:
-	case STORELOCAL:
-	case STOREINDEXED:
-	case STORELIST0:
-	case ADJUST:
-	case RETCODE:
-		p+=2;
-		break;
-	case PUSHWORD:
-	case PUSHSELF:
-	case CREATEARRAY:
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case UPJMP:
-	case IFFJMP:
-	case IFFUPJMP:
-	case SETLINE:
-	case STORELIST:
-	case CALLFUNC:
-	case PUSHSTRING:
-	case PUSHGLOBAL:
-	case STOREGLOBAL:
-		p+=3;
-		break;
-	case PUSHFLOAT:
-		p+=5;
-		break;
-	case PUSHFUNCTION:
-	{
-		CodeCode c;
-		p++;
-		get_code(c,p);
-		dump(c.tf);
-		break;
-	}
-	case STORERECORD:
-		p += *(p+1)*sizeof(Word) + 2;
-		break;
-	default:
-		printf("\tcannot happen:  opcode=%d",*p);
-		p++;
-		break;
-	}
- }
-}
-
 static void CheckThread(Byte *p, int i)
 {
  while (i>0)
@@ -428,12 +332,14 @@ static void CheckThread(Byte *p, int i)
 static void CheckThreads(Byte *code)
 {
  int i;
+ printf("-- debug: var threads\n");
  for (i=0; i<lua_ntable; i++)
   if (VarLoc(i)!=0)
   {
    printf("%s:",VarStr(i));
    CheckThread(code,VarLoc(i));
   }
+ printf("-- debug: str threads\n");
  for (i=0; i<lua_nconstant; i++)
   if (StrLoc(i)!=0)
   {
@@ -483,23 +389,23 @@ static void DumpStrings(FILE *D)
 
 void DumpFunction(TFunc *tf, FILE *D)
 {
+ lastF=tf;
+ ThreadCode(tf->code,tf->code+tf->size);
  fputc('F',D);
  DumpWord(tf->size,D);
  DumpWord(tf->marked,D);
  DumpWord(tf->lineDefined,D);
  DumpString(tf->fileName,D);
- ThreadCode(tf->code,tf->code+tf->size);
  fwrite(tf->code,tf->size,1,D);
  DumpStrings(D);
 CheckThreads(tf->code);
- DumpFunctions(tf->code,tf->code+tf->size);
 }
 
 void DumpHeader(FILE *D)
 {
  Word w=0x1234;
  float f=1.234567890e-23;
- fputs("\033LUA\002\003",D);		/* <ESC> "LUA" version */
+ fputs("\033Lua\002\003",D);		/* <ESC> "Lua" version */
  fwrite(&w,sizeof(w),1,D);		/* a word for testing byte ordering */
  fwrite(&f,sizeof(f),1,D);		/* a float for testing byte ordering */
 }
@@ -507,8 +413,9 @@ void DumpHeader(FILE *D)
 void PrintFunction(TFunc *tf)
 {
  if (tf->lineDefined==0)
-  printf("\nmain function in file \"%s\" (%d bytes)\n",tf->fileName,tf->size);
+  printf("\nmain of \"%s\" (%d bytes)\n",tf->fileName,tf->size);
  else
-  printf("\nfunction defined in file \"%s\" at line %d; used in main at offset %d (%d bytes)\n",tf->fileName,tf->lineDefined,tf->marked,tf->size);
+  printf("\nfunction \"%s\":%d (%d bytes); used at main+%d\n",
+	tf->fileName,tf->lineDefined,tf->size,tf->marked);
  PrintCode(tf->code,tf->code+tf->size);
 }
