@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.12 1998/07/12 01:46:59 lhf Exp lhf $
+** $Id: lundump.c,v 1.13 1999/03/08 11:08:43 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -86,20 +86,25 @@ static double LoadDouble (ZIO* Z)
 }
 #endif
 
+static int LoadInt (ZIO* Z, char* message)
+{
+ unsigned long l=LoadLong(Z);
+ unsigned int i=l;
+ if (i!=l) luaL_verror(message,l,zname(Z));
+ return i;
+}
+
 static Byte* LoadCode (ZIO* Z)
 {
- unsigned long size=LoadLong(Z);
- unsigned int s=size;
- void* b;
- if (s!=size) luaL_verror("code too long (%ld bytes) in %s",size,zname(Z));
- b=luaM_malloc(size);
+ int size=LoadInt(Z,"code too long (%ld bytes) in %s");
+ void* b=luaM_malloc(size);
  LoadBlock(b,size,Z);
  return b;
 }
 
 static TaggedString* LoadTString (ZIO* Z)
 {
- int size=LoadWord(Z);
+ long size=LoadLong(Z);
  if (size==0)
   return NULL;
  else
@@ -112,12 +117,12 @@ static TaggedString* LoadTString (ZIO* Z)
 
 static void LoadLocals (TProtoFunc* tf, ZIO* Z)
 {
- int i,n=LoadWord(Z);
+ int i,n=LoadInt(Z,"too many locals (%ld) in %s");
  if (n==0) return;
  tf->locvars=luaM_newvector(n+1,LocVar);
  for (i=0; i<n; i++)
  {
-  tf->locvars[i].line=LoadWord(Z);
+  tf->locvars[i].line=LoadInt(Z,"too many lines (%ld) in %s");
   tf->locvars[i].varname=LoadTString(Z);
  }
  tf->locvars[i].line=-1;		/* flag end of vector */
@@ -128,7 +133,7 @@ static TProtoFunc* LoadFunction(ZIO* Z);
 
 static void LoadConstants (TProtoFunc* tf, ZIO* Z)
 {
- int i,n=LoadWord(Z);
+ int i,n=LoadInt(Z,"too many constants (%ld) in %s");
  tf->nconsts=n;
  if (n==0) return;
  tf->consts=luaM_newvector(n,TObject);
@@ -152,8 +157,7 @@ static void LoadConstants (TProtoFunc* tf, ZIO* Z)
    default:
 	luaL_verror("bad constant #%d: type=%d [%s]"
 		" in %p (\"%s\":%d)",
-		i,ttype(o),luaO_typename(o),tf,tf->source,tf->lineDefined);
-
+		i,ttype(o),luaO_typename(o),tf,tf->source->str,tf->lineDefined);
 	break;
   }
  }
@@ -162,7 +166,7 @@ static void LoadConstants (TProtoFunc* tf, ZIO* Z)
 static TProtoFunc* LoadFunction (ZIO* Z)
 {
  TProtoFunc* tf=luaF_newproto();
- tf->lineDefined=LoadWord(Z);
+ tf->lineDefined=LoadInt(Z,"lineDefined too large (%ld) in %s");
  tf->source=LoadTString(Z);
  if (tf->source==NULL) tf->source=luaS_new(zname(Z));
  tf->code=LoadCode(Z);
@@ -183,6 +187,7 @@ static void LoadHeader (ZIO* Z)
 {
  int version,id,sizeofR;
  real f=-TEST_NUMBER,tf=TEST_NUMBER;
+ luaU_testnumber();
  LoadSignature(Z);
  version=ezgetc(Z);
  if (version>VERSION)
@@ -196,11 +201,9 @@ static void LoadHeader (ZIO* Z)
  id=ezgetc(Z);				/* test number representation */
  sizeofR=ezgetc(Z);
  if (id!=ID_NUMBER || sizeofR!=sizeof(real))
- {
   luaL_verror("unknown number signature in %s: "
 	"read 0x%02x%02x; expected 0x%02x%02x",
 	zname(Z),id,sizeofR,ID_NUMBER,sizeof(real));
- }
  doLoadNumber(f,Z);
  if (f!=tf)
   luaL_verror("unknown number representation in %s: "
@@ -226,4 +229,35 @@ TProtoFunc* luaU_undump1(ZIO* Z)
  else if (c!=EOZ)
   luaL_verror("%s is not a Lua binary file",zname(Z));
  return NULL;
+}
+
+/*
+** test number representation
+*/
+void luaU_testnumber(void)
+{
+ if (sizeof(real)!=SIZEOF_NUMBER)
+   luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
+	(int)sizeof(real),SIZEOF_NUMBER);
+ else
+ {
+  real t=TEST_NUMBER;
+#if   ID_NUMBER==ID_REAL4
+  float v=TEST_NUMBER;
+  #define EXPECTED	"4-byte float"
+#elif ID_NUMBER==ID_REAL8
+  double v=TEST_NUMBER;
+  #define EXPECTED	"8-byte double"
+#elif ID_NUMBER==ID_INT4
+  int v=TEST_NUMBER;
+  #define EXPECTED	"4-byte int"
+#elif ID_NUMBER==ID_NATIVE
+  #define EXPECTED	"native"
+#else
+  #error	bad ID_NUMBER
+#endif
+  if (t!=v)
+   luaL_verror("unsupported number type. "
+		"expected " EXPECTED ". see config and lundump.h");
+ }
 }
