@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.6 1996/03/12 20:00:24 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.7 1996/11/07 14:47:10 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -24,7 +24,7 @@ static void PrintCode(Byte* code, Byte* end)
  {
 	OpCode op=(OpCode)*p;
 	if (op>SETLINE) op=SETLINE+1;
-	printf("%6d\t%s",p-code,OpCodeName[op]);
+	printf("%6d\t%s",(int)p-code,OpCodeName[op]);
 	switch (op)
 	{
 	case PUSHNIL:
@@ -162,7 +162,7 @@ static void PrintCode(Byte* code, Byte* end)
 		while (n--)
 		{
 			Word w;
-			printf("\n%6d\t      FIELD",p-code);
+			printf("\n%6d\t      FIELD",(int)p-code);
 			get_word(w,p);
 			printf("\t%d\t; \"%s\"",w,StrStr(w));
 		}
