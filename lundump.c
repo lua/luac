@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.9 1998/06/13 16:54:15 lhf Exp lhf $
+** $Id: lundump.c,v 1.10 1998/06/25 15:50:09 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -135,23 +135,23 @@ static void LoadConstants(TProtoFunc* tf, ZIO* Z)
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
-  int c=ezgetc(Z);
-  switch (c)
+  ttype(o)=-ezgetc(Z);
+  switch (ttype(o))
   {
-   case ID_NUM:
-	ttype(o)=LUA_T_NUMBER;
+   case LUA_T_NUMBER:
 	doLoadNumber(nvalue(o),Z);
 	break;
-   case ID_STR:
-	ttype(o)=LUA_T_STRING;	
+   case LUA_T_STRING:
 	tsvalue(o)=LoadTString(Z);
 	break;
-   case ID_FUN:
-	ttype(o)=LUA_T_PROTO;
+   case LUA_T_PROTO:
 	tfvalue(o)=LoadFunction(Z);
 	break;
+   case LUA_T_NIL:
+	break;
    default:
-	luaL_verror("bad constant #%d in %s: type=%d ('%c')",i,zname(Z),c,c);
+	luaL_verror("bad constant #%d in %s: type=%d [%s]",
+		i,zname(Z),ttype(o),luaO_typename(o));
 	break;
   }
  }
@@ -201,8 +201,8 @@ static void LoadHeader(ZIO* Z)
  doLoadNumber(f,Z);
  if (f!=tf)
   luaL_verror("unknown number representation in %s: "
-	"read " NUMBER_FMT "; expected " NUMBER_FMT "",	/* LUA_NUMBER */
-	zname(Z),(double)f,(double)tf);
+	"read " NUMBER_FMT "; expected " NUMBER_FMT,	/* LUA_NUMBER */
+	zname(Z),f,tf);
 }
 
 static TProtoFunc* LoadChunk(ZIO* Z)
