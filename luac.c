@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.31 2001/07/19 14:34:06 lhf Exp lhf $
+** $Id: luac.c,v 1.32 2001/11/01 08:50:39 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -49,7 +49,7 @@ int main(int argc, const char* argv[])
  argc-=i; argv+=i;
  if (argc<=0) usage("no input files given",NULL);
  L=lua_open(0);
- lua_register(L,l_s(LUA_ERRORMESSAGE),ERRORMESSAGE);
+ lua_register(L,LUA_ERRORMESSAGE,ERRORMESSAGE);
  P=luaM_newvector(L,argc,Proto*);
  for (i=0; i<argc; i++)
   P[i]=load(IS("-")? NULL : argv[i]);
