@@ -1,12 +1,12 @@
 #!/usr/bin/nawk
-# $Id: mkopcodeh,v 1.1 1999/02/03 00:05:02 lhf Exp lhf $ 
+# $Id: mkopcodeh,v 1.2 1999/03/08 11:21:16 lhf Exp lhf $ 
 # make opcode.h from lopcodes.h
 
 BEGIN {
  print "/*"
  print "** $" "Id$"
  print "** opcode info to be #included into opcode.c"
- print "** extracted automatically from lopcodes.h by mkopcodeh"
+ print "** extracted automatically from lopcodes.h by mkopcodeh -- DO NOT EDIT"
  print "** See Copyright Notice in lua.h"
  print "*/"
  OFS=", "
