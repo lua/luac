@@ -3,17 +3,12 @@
 ** print bytecodes
 */
 
-char *rcs_print="$Id: print.c,v 1.1 1996/02/23 19:04:13 lhf Exp lhf $";
+char *rcs_print="$Id: print.c,v 1.2 1996/02/24 20:30:13 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
 #include "luac.h"
 #include "print.h"
-
-#if 0
-#define VarStr(i)	""
-#define StrStr(i)	""
-#endif
 
 static void PrintCode(Byte *code, Byte *end)
 {
@@ -159,7 +154,7 @@ static void PrintCode(Byte *code, Byte *end)
 
 void PrintFunction(TFunc *tf)
 {
- if (tf->lineDefined==0)
+ if (IsMain(tf))
   printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
   printf("\nfunction \"%s\":%d (%d bytes at %p); used at main+%d\n",
