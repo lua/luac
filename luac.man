@@ -1,0 +1,69 @@
+.\" $Id$
+.TH LUAC 1 "11 March 1996"
+.SH NAME
+luac \- Lua compiler
+.SH SYNOPSIS
+.B luac
+[
+.B \-dlpv
+]
+[
+.B \-o 
+.I outputfile
+]
+[
+.I sourcefile
+\&.\|.\|.
+.SH DESCRIPTION
+.B luac
+is the Lua compiler. 
+It translates programs written in the Lua
+programming language into binary files that can be executed with
+.BR lua_dofile (2).
+
+By default,
+.BR luac
+produces an output file named
+.BR luac.out ,
+but you can change this with the
+.B \-o 
+option.
+.SH OPTIONS
+.LP
+.TP 1i
+.B \-d
+turns debugging on.
+.TP
+.B \-l
+produces a listing of the compiled bytecode for Lua's virtual machine.
+.TP
+.B \-p
+parses sources files but does not generate any output file.
+.TP
+.B \-v
+prints version information.
+.TP
+.BI \-o " outputfile"
+Name the output file
+.IR output ,
+instead of the default
+.BR luac.out .
+Be careful not to specify a source file as the output file,
+because it will be overwritten.
+.SH FILES
+.PD 0
+.TP 20
+.B luac.out
+default output file
+.PD
+.SH "SEE ALSO"
+.BR lua (1)
+.LP
+B. W. Kernighan and D. M. Ritchie,
+.IR "The Lua Programming Language" ,
+Prentice-Hall, 1978
+.SH DIAGNOSTICS
+.SH BUGS
+.SH AUTHOR
+W. Celes, R. Ierusalimschy & L. H. de Figueiredo
+(lua@icad.puc-rio.br)
