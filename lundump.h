@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.25 2002/06/06 13:22:56 lhf Exp lhf $
+** $Id: lundump.h,v 1.26 2002/08/07 00:36:03 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -10,16 +10,14 @@
 #include "lobject.h"
 #include "lzio.h"
 
-typedef int (*Writer)(const void* p, size_t size, void* u);
-
 /* load one chunk; from lundump.c */
-Proto* luaU_undump (lua_State* L, ZIO* Z);
+Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff);
 
 /* find byte order; from lundump.c */
 int luaU_endianness (void);
 
-/* dump one chunk; from dump.c */
-void luaU_dump (const Proto* Main, Writer w, void* data);
+/* dump one chunk; from ldump.c */
+void luaU_dump (lua_State* L, const Proto* Main, Writer w, void* data);
 
 /* print one chunk; from print.c */
 void luaU_print (const Proto* Main);
