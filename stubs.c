@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.6 1998/06/13 16:54:15 lhf Exp lhf $
+** $Id: stubs.c,v 1.7 1998/06/19 21:20:59 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -39,7 +39,7 @@ int luaL_findstring (char* name, char* list[])
  for (i=0; list[i]; i++)
    if (strcmp(list[i], name) == 0)
      return i;
- return -1;				/* name not found */
+ return -1;
 }
 
 /* avoid runtime modules in lstate.c */
@@ -52,21 +52,17 @@ void luaH_free(Hash *frees){}
 void luaT_init(void){}
 
 /*
-* the code below avoids the lexer and the parser.
-* useful if you only want to load binary files. this works for lua.c too.
+* the code below avoids the lexer and the parser (llex lparser).
+* it is useful if you only want to load binary files.
+* this works for interpreters like lua.c too.
 */
 
 #ifdef NOPARSER
-/* avoid llex.o lstx.o */
-#include "lparser.h"
 
 int lua_debug=0;
 
 void luaX_init(void){}
 void luaY_init(void){}
+void luaY_parser(void) { lua_error("parser not loaded"); }
 
-TProtoFunc* luaY_parser(ZIO* z)
-{
- lua_error("parser not loaded");
-}
 #endif
