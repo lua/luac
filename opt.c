@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.20 2000/09/18 20:03:46 lhf Exp lhf $
+** $Id: opt.c,v 1.21 2000/09/19 18:18:38 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -13,12 +13,12 @@
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
  const TObject* o=luaH_get(L,t,key);
- if (ttype(o)==TAG_NUMBER)
+ if (ttype(o)==LUA_TNUMBER)
   return (int) nvalue(o);
  else
  {
   TObject val;
-  ttype(&val)=TAG_NUMBER;
+  ttype(&val)=LUA_TNUMBER;
   nvalue(&val)=j;
   *luaH_set(L,t,key)=val;
   LUA_ASSERT(j>=0,"MapConstant returns negative!");
@@ -30,7 +30,7 @@ static int MapConstants(Proto* tf, Hash* map)
 {
  int i,j,k,n,m=0;
  TObject o;
- j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
+ j=0; n=tf->nknum; ttype(&o)=LUA_TNUMBER;
  for (i=0; i<n; i++)
  {
   nvalue(&o)=tf->knum[i];
@@ -38,7 +38,7 @@ static int MapConstants(Proto* tf, Hash* map)
   if (k==j) j++;
  }
  m=j;
- j=0; n=tf->nkstr; ttype(&o)=TAG_STRING;
+ j=0; n=tf->nkstr; ttype(&o)=LUA_TSTRING;
  for (i=0; i<n; i++)
  {
   tsvalue(&o)=tf->kstr[i];
@@ -55,7 +55,7 @@ static void PackConstants(Proto* tf, Hash* map)
 #ifdef DEBUG
  printf("%p before pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
 #endif
- j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
+ j=0; n=tf->nknum; ttype(&o)=LUA_TNUMBER;
  for (i=0; i<n; i++)
  {
   nvalue(&o)=tf->knum[i];
@@ -63,7 +63,7 @@ static void PackConstants(Proto* tf, Hash* map)
   if (k==j) tf->knum[j++]=tf->knum[i];
  }
  tf->nknum=j;
- j=0; n=tf->nkstr; ttype(&o)=TAG_STRING;
+ j=0; n=tf->nkstr; ttype(&o)=LUA_TSTRING;
  for (i=0; i<n; i++)
  {
   tsvalue(&o)=tf->kstr[i];
@@ -96,14 +96,14 @@ static void OptConstants(Proto* tf)
    int j,k;
    case OP_PUSHNUM: case OP_PUSHNEGNUM:
     j=GETARG_U(i);
-    ttype(&o)=TAG_NUMBER; nvalue(&o)=tf->knum[j];
+    ttype(&o)=LUA_TNUMBER; nvalue(&o)=tf->knum[j];
     k=MapConstant(map,-1,&o);
     if (k!=j) *p=CREATE_U(op,k);
     break;
    case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
    case OP_PUSHSELF:   case OP_SETGLOBAL:
     j=GETARG_U(i);
-    ttype(&o)=TAG_STRING; tsvalue(&o)=tf->kstr[j];
+    ttype(&o)=LUA_TSTRING; tsvalue(&o)=tf->kstr[j];
     k=MapConstant(map,-1,&o);
     if (k!=j) *p=CREATE_U(op,k);
     break;
