@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.12 1996/03/12 20:00:03 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.13 1996/11/07 14:28:32 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -129,7 +129,7 @@ static void ThreadCode(Byte* code, Byte* end)
 	case PUSHGLOBAL:
 	case STOREGLOBAL:
 	{
-		Word c;
+		Word w;
 		p++;
 		get_word(w,p);
 		w=SawVar(w,at);
@@ -142,7 +142,7 @@ static void ThreadCode(Byte* code, Byte* end)
 		p++;
 		while (n--)
 		{
-			Word c;
+			Word w;
 			at=p-code;
 			get_word(w,p);
 			w=SawStr(w,at);

@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.5 1996/03/06 15:59:55 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.6 1996/03/12 20:00:24 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -109,44 +109,44 @@ static void PrintCode(Byte* code, Byte* end)
 	case IFFUPJMP:
 	case SETLINE:
 	{
-		CodeWord c;
+		Word w;
 		p++;
-		get_word(c,p);
-		printf("\t%d",c.w);
+		get_word(w,p);
+		printf("\t%d",w);
 		break;
 	}
 	case PUSHFLOAT:
 	{
-		CodeFloat c;
+		float f;
 		p++;
-		get_float(c,p);
-		printf("\t%g",c.f);
+		get_float(f,p);
+		printf("\t%g",f);
 		break;
 	}
 	case PUSHSELF:
 	case PUSHSTRING:
 	{
-		CodeWord c;
+		Word w;
 		p++;
-		get_word(c,p);
-		printf("\t%d\t; \"%s\"",c.w,StrStr(c.w));
+		get_word(w,p);
+		printf("\t%d\t; \"%s\"",w,StrStr(w));
 		break;
 	}
 	case PUSHFUNCTION:
 	{
-		CodeCode c;
+		TFunc* tf;
 		p++;
-		get_code(c,p);
-		printf("\t%p\t; \"%s\":%d",c.tf,c.tf->fileName,c.tf->lineDefined);
+		get_code(tf,p);
+		printf("\t%p\t; \"%s\":%d",tf,tf->fileName,tf->lineDefined);
 		break;
 	}
 	case PUSHGLOBAL:
 	case STOREGLOBAL:
 	{
-		CodeWord c;
+		Word w;
 		p++;
-		get_word(c,p);
-		printf("\t%d\t; %s",c.w,VarStr(c.w));
+		get_word(w,p);
+		printf("\t%d\t; %s",w,VarStr(w));
 		break;
 	}
 	case STORELIST:
@@ -161,10 +161,10 @@ static void PrintCode(Byte* code, Byte* end)
 		p++;
 		while (n--)
 		{
-			CodeWord c;
+			Word w;
 			printf("\n%6d\t      FIELD",p-code);
-			get_word(c,p);
-			printf("\t%d\t; \"%s\"",c.w,StrStr(c.w));
+			get_word(w,p);
+			printf("\t%d\t; \"%s\"",w,StrStr(w));
 		}
 		break;
 	}
