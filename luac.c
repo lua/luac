@@ -1,10 +1,9 @@
 /*
-** $Id: luac.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
+** $Id: luac.c,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
 
-#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,8 +12,9 @@
 #include "lzio.h"
 #include "luadebug.h"
 
-void PrintChunk(TProtoFunc* Main);
-void DumpChunk(TProtoFunc* Main, FILE* D);
+extern void PrintChunk(TProtoFunc* Main);
+extern void OptChunk(TProtoFunc* Main);
+extern void DumpChunk(TProtoFunc* Main, FILE* D);
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
@@ -22,6 +22,7 @@ static void doit(int undump, char* filename);
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int undumping=0;			/* undump bytecodes? */
+static int optimizing=0;		/* optimize? */
 static int parsing=0;			/* parse only? */
 static int verbose=0;			/* tell user what is done */
 static FILE* D;				/* output file */
@@ -74,6 +75,8 @@ int main(int argc, char* argv[])
    listing=1;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
+  else if (IS("-O"))			/* optimize */
+   optimizing=1; 
   else if (IS("-p"))			/* parse only (for timing purposes) */
   {
    dumping=0;
@@ -122,6 +125,7 @@ int main(int argc, char* argv[])
 static void do_compile(ZIO* z)
 {
  TProtoFunc* Main=luaY_parser(z);
+ if (optimizing) OptChunk(Main);
  if (listing) PrintChunk(Main);
  if (dumping) DumpChunk(Main,D);
 }
@@ -132,15 +136,23 @@ static void do_undump(ZIO* z)
  {
   TProtoFunc* Main=luaU_undump1(z);
   if (Main==NULL) break;
+  if (optimizing) OptChunk(Main);
   if (listing) PrintChunk(Main);
  }
 }
 
 static void doit(int undump, char* filename)
 {
- FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
+ FILE* f;
  ZIO z;
- if (filename==NULL) filename="(stdin)";
+ if (filename==NULL)
+ {
+  f=stdin; filename="(stdin)";
+ }
+ else
+ {
+  f=efopen(filename, undump ? "rb" : "r");
+ }
  zFopen(&z,f,filename);
  if (verbose) fprintf(stderr,"%s\n",filename);
  if (undump) do_undump(&z); else do_compile(&z);
@@ -152,7 +164,7 @@ static FILE* efopen(char* name, char* mode)
  FILE* f=fopen(name,mode);
  if (f==NULL)
  {
-  fprintf(stderr,"luac: cannot open ");
+  fprintf(stderr,"luac: cannot open %sput file ",mode[0]=='r' ? "in" : "out");
   perror(name);
   exit(1);
  }
