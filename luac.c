@@ -3,22 +3,12 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.5 1996/02/22 15:31:34 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.6 1996/02/22 21:05:57 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
-
-#include "lua.h"
-#include "tree.h"
-#include "func.h"
-#include "inout.h"
-#include "mem.h"
-#include "opcode.h"
-
-void DumpHeader(FILE *D);
-void DumpFunction(TFunc *tf, FILE *D);
-void PrintFunction(TFunc *tf);
+#include "luac.h"
 
 static void compile(char *filename);
 
@@ -80,8 +70,8 @@ if (tf->locvars)		/* to go away soon */
 
 static void do_dump(TFunc *tf)
 {
- tf->next=NULL;
- tf->marked=0;
+ tf->next=NULL;			/* to go away soon */
+ tf->marked=0;			/* to go away soon */
  dump(tf);			/* thread main and build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
   dump(tf);
