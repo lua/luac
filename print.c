@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.28 2000/06/28 14:12:55 lhf Exp lhf $
+** $Id: print.c,v 1.29 2000/09/18 20:03:46 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -88,7 +88,7 @@ static void PrintHeader(const Proto* tf)
  int size=luaU_codesize(tf);
  printf("\n%s " SOURCE " (%d instruction%s/%d bytes at %p)\n",
  	IsMain(tf)?"main":"function",
-	tf->source->str,tf->lineDefined,S(size),size*sizeof(Instruction),tf);
+	tf->source->str,tf->lineDefined,S(size),size*Sizeof(Instruction),tf);
  printf("%d%s param%s, %d stack position%s, ",
 	tf->numparams,tf->is_vararg?"+":"",SS(tf->numparams),S(tf->maxstacksize));
  printf("%d local%s, %d string%s, %d number%s, %d function%s\n",

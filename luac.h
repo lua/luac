@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.15 2000/06/28 14:12:55 lhf Exp lhf $
+** $Id: luac.h,v 1.16 2000/09/18 20:03:46 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -27,3 +27,5 @@ void luaU_printchunk(const Proto* Main);
 
 /* from test.c */
 void luaU_testchunk(const Proto* Main);
+
+#define Sizeof(x)	((int)sizeof(x))

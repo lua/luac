@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.24 2000/06/28 14:12:55 lhf Exp lhf $
+** $Id: luac.c,v 1.25 2000/09/18 20:03:46 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -121,7 +121,7 @@ static Proto* load(const char* filename)
   f=efopen(filename,"rb");
  }
  if (filename==NULL) filename="(stdin)";
- sprintf(source,"@%.*s",(int)sizeof(source)-2,filename);
+ sprintf(source,"@%.*s",Sizeof(source)-2,filename);
  luaZ_Fopen(&z,f,source);
  tf = undump ? luaU_undump(L,&z) : luaY_parser(L,&z);
  if (f!=stdin) fclose(f);
