@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.11 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: dump.c,v 1.12 1999/03/08 11:08:43 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include "luac.h"
 
-#define NotWord(x)		((unsigned short)x!=x)
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
 #define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
 
@@ -59,7 +58,7 @@ static void DumpDouble(double f, FILE* D)
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
  int size=luaU_codesize(tf);
- if (NotWord(size))
+ if (size>MAX_WORD)
   fprintf(stderr,"luac: warning: "
 	"\"%s\":%d code too long for 16-bit machines (%d bytes)\n",
 	tf->source->str,tf->lineDefined,size);
@@ -73,7 +72,7 @@ static void DumpString(char* s, int size, FILE* D)
   DumpWord(0,D);
  else
  {
-  if (NotWord(size))
+  if (size>MAX_WORD)
    luaL_verror("string too long (%d bytes): \"%.32s...\"",size,s);
   DumpWord(size,D);
   DumpBlock(s,size,D);
