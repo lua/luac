@@ -1,7 +1,7 @@
 /*
 ** luac.h
 ** definitions for luac compiler
-** $Id: luac.h,v 1.6 1997/04/14 14:34:45 lhf Exp lhf $
+** $Id: luac.h,v 1.7 1997/06/19 14:56:04 lhf Exp lhf $
 */
 
 #include "inout.h"
@@ -20,6 +20,6 @@ extern Word lua_nconstant;
 extern int lua_debug;
 
 void LinkFunctions(TFunc* tf);
-void PrintFunction(TFunc* tf);
+void PrintFunction(TFunc* tf, TFunc* Main);
 void DumpHeader(FILE* D);
 void DumpFunction(TFunc* tf, FILE* D);

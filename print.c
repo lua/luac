@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.13 1997/05/13 12:31:58 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.14 1997/06/19 14:56:04 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,14 +311,13 @@ static void PrintCode(Byte* code, Byte* end)
  }
 }
 
-void PrintFunction(TFunc* tf)
+void PrintFunction(TFunc* tf, TFunc* Main)
 {
  if (IsMain(tf))
   printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
  {
-  extern TFunc* MAIN;
-  Byte* p=MAIN->code+tf->marked+sizeof(TFunc*);
+  Byte* p=Main->code+tf->marked+sizeof(TFunc*);
   printf("\nfunction ");
   switch (*p)
   {
