@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.28 2000/11/06 20:06:27 lhf Exp lhf $
+** $Id: luac.c,v 1.29 2001/03/15 17:29:16 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -8,10 +8,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "luac.h"
+#include "lfunc.h"
+#include "lmem.h"
+#include "lobject.h"
+#include "lopcodes.h"
 #include "lparser.h"
 #include "lstate.h"
+#include "lstring.h"
+#include "lundump.h"
 #include "lzio.h"
-#include "luac.h"
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
@@ -22,7 +28,8 @@ static FILE* efopen(const char* name, const char* mode);
 static void strip(Proto* tf);
 static Proto* combine(Proto** P, int n);
 
-lua_State* lua_state=NULL;		/* lazy! */
+lua_State* luac_state=NULL;		/* lazy! */
+#define	L	luac_state		/* lazy! */
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
