@@ -3,16 +3,23 @@
 ** print bytecodes
 */
 
-char *rcs_print="$Id: print.c,v 1.3 1996/02/28 23:11:27 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.4 1996/03/01 03:42:39 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
 #include "luac.h"
 #include "print.h"
 
-static void PrintCode(Byte *code, Byte *end)
+static LocVar* V=NULL;
+
+static char* LocStr(int i)
 {
- Byte *p;
+ if (V==NULL) return ""; else return V[i].varname->str;
+}
+
+static void PrintCode(Byte* code, Byte* end)
+{
+ Byte* p;
  for (p=code; p!=end;)
  {
 	OpCode op=(OpCode)*p;
@@ -24,27 +31,7 @@ static void PrintCode(Byte *code, Byte *end)
 	case PUSH0:
 	case PUSH1:
 	case PUSH2:
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-	case PUSHLOCAL8:
-	case PUSHLOCAL9:
 	case PUSHINDEXED:
-	case STORELOCAL0:
-	case STORELOCAL1:
-	case STORELOCAL2:
-	case STORELOCAL3:
-	case STORELOCAL4:
-	case STORELOCAL5:
-	case STORELOCAL6:
-	case STORELOCAL7:
-	case STORELOCAL8:
-	case STORELOCAL9:
 	case STOREINDEXED0:
 	case ADJUST0:
 	case EQOP:
@@ -64,9 +51,47 @@ static void PrintCode(Byte *code, Byte *end)
 	case RETCODE0:
 		p++;
 		break;
-	case PUSHBYTE:
+	case PUSHLOCAL0:
+	case PUSHLOCAL1:
+	case PUSHLOCAL2:
+	case PUSHLOCAL3:
+	case PUSHLOCAL4:
+	case PUSHLOCAL5:
+	case PUSHLOCAL6:
+	case PUSHLOCAL7:
+	case PUSHLOCAL8:
+	case PUSHLOCAL9:
+	{
+		int i=op-PUSHLOCAL0;
+		printf("\t%d\t; %s",i,LocStr(i));
+		p++;
+		break;
+	}
+	case STORELOCAL0:
+	case STORELOCAL1:
+	case STORELOCAL2:
+	case STORELOCAL3:
+	case STORELOCAL4:
+	case STORELOCAL5:
+	case STORELOCAL6:
+	case STORELOCAL7:
+	case STORELOCAL8:
+	case STORELOCAL9:
+	{
+		int i=op-STORELOCAL0;
+		printf("\t%d\t; %s",i,LocStr(i));
+		p++;
+		break;
+	}
 	case PUSHLOCAL:
 	case STORELOCAL:
+	{
+		int i=*(p+1);
+		printf("\t%d\t; %s",i,LocStr(i));
+		p+=2;
+		break;
+	}
+	case PUSHBYTE:
 	case STOREINDEXED:
 	case STORELIST0:
 	case ADJUST:
@@ -145,30 +170,20 @@ static void PrintCode(Byte *code, Byte *end)
 	}
 	default:
 		printf("\tcannot happen:  opcode=%d",*p);
-		p++;
+		exit(1);
 		break;
 	}
 	printf("\n");
  }
 }
 
-static void PrintLocals(LocVar* v)
-{
- int i;
- if (v->varname==NULL) return;
- printf("locals:");
- for (i=0; v->varname!=NULL; v++,i++)
-  printf(" %d:%s,%d",i,LocStr(v),LocLoc(v));
- printf("\n");
-}
-
-void PrintFunction(TFunc *tf)
+void PrintFunction(TFunc* tf)
 {
  if (IsMain(tf))
   printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
   printf("\nfunction \"%s\":%d (%d bytes at %p); used at main+%d\n",
 	tf->fileName,tf->lineDefined,tf->size,tf,tf->marked);
+ V=tf->locvars;
  PrintCode(tf->code,tf->code+tf->size);
- PrintLocals(tf->locvars);
 }
