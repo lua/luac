@@ -1,11 +1,11 @@
 /*
 ** luac.h
 ** definitions for luac compiler
-** $Id: luac.h,v 1.4 1996/03/06 15:59:30 lhf Exp lhf $
+** $Id: luac.h,v 1.5 1996/03/08 21:41:47 lhf Exp lhf $
 */
 
 #include "inout.h"
-#include "mem.h"
+#include "luamem.h"
 #include "opcode.h"
 #include "table.h"
 #include "undump.h"
