@@ -3,30 +3,30 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.10 1996/02/28 23:09:21 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.11 1996/03/01 03:45:06 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
 #include <setjmp.h>
 #include "luac.h"
 
-static void compile(char *filename);
+static void compile(char* filename);
 
-static int listing=0;
-static int dumping=1;
-static FILE *D;				/* output file */
+static int listing=0;			/* list bytecodes? */
+static int dumping=1;			/* dump bytecodes? */
+static FILE* D;				/* output file */
 
 static void usage(void)
 {
- fprintf(stderr,"usage: luac [-dlpv] [-o filename] file ...\n");
+ fprintf(stderr,"usage: luac [-dlpv] [-o output] file ...\n");
  exit(0);
 }
 
 #define	IS(s)	(strcmp(argv[i],s)==0)
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
- char *d="luac.out";			/* default output file */
+ char* d="luac.out";			/* default output file */
  int i;
  for (i=1; i<argc; i++)
  {
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
  argc-=i;
  argv+=i;
  if (argc<2) usage();
- D=fopen(d,"wb");			/* must be binary mode */
+ D=fopen(d,"wb");			/* must open in  binary mode */
  if (D==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
  return 0;
 }
 
-static void dump(TFunc *tf)
+static void dump(TFunc* tf)
 {
  if (listing) PrintFunction(tf);
  DumpFunction(tf,D);
@@ -71,18 +71,18 @@ static void dump(TFunc *tf)
  luaI_free(tf->locvars);
 }
 
-static void do_dump(TFunc *tf)		/* only for tf=main */
+static void do_dump(TFunc* tf)		/* only for tf==main */
 {
  DumpHeader(D);
  dump(tf);				/* thread main; build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
-  dump(tf);				/* TODO: free tf */
+  dump(tf);				/* TODO: free tf (but not main?) */
 }
 
 static void do_compile(void)
 {
- TFunc tf;
- extern jmp_buf *errorJmp;
+ TFunc tf;				/* TODO: alloc? */
+ extern jmp_buf* errorJmp;
  jmp_buf E;
 
  luaI_initTFunc(&tf);
@@ -92,7 +92,7 @@ static void do_compile(void)
  if (dumping) do_dump(&tf);
 }
 
-static void compile(char *filename)
+static void compile(char* filename)
 {
  if (lua_openfile(filename))
  {
