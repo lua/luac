@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.6 1996/02/22 21:05:57 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.7 1996/02/23 19:03:46 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -13,6 +13,7 @@ char *rcs_luac="$Id: luac.c,v 1.6 1996/02/22 21:05:57 lhf Exp lhf $";
 static void compile(char *filename);
 
 static int listing=0;
+static int dumping=1;
 static FILE *D;				/* output file */
 
 static void usage(void)
@@ -37,6 +38,8 @@ int main(int argc, char *argv[])
    printf("%s  %s\n(written by %s)\n\n",LUA_VERSION,LUA_COPYRIGHT,LUA_AUTHORS);
   else if (IS("-l"))			/* list */
    listing=1;
+  else if (IS("-p"))			/* parse only (for timing purposes) */
+   dumping=0;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
   else					/* unknown option */
@@ -53,7 +56,6 @@ int main(int argc, char *argv[])
   perror(d);
   exit(1);
  }
- DumpHeader(D);
  for (i=1; i<argc; i++) compile(IS("-")? NULL : argv[i]);
  fclose(D);
  return 0;
@@ -64,14 +66,14 @@ static void dump(TFunc *tf)
  if (listing) PrintFunction(tf);
  DumpFunction(tf,D);
  luaI_free(tf->code);
-if (tf->locvars)		/* to go away soon */
  luaI_free(tf->locvars);
 }
 
-static void do_dump(TFunc *tf)
+static void do_dump(TFunc *tf)		/* only for tf=main */
 {
- tf->next=NULL;			/* to go away soon */
- tf->marked=0;			/* to go away soon */
+ tf->next=NULL;			/* TODO: remove */
+ tf->marked=0;			/* TODO: remove */
+ DumpHeader(D);
  dump(tf);			/* thread main and build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
   dump(tf);
@@ -87,7 +89,7 @@ static void do_compile(void)
  tf.fileName = lua_parsedfile;
  errorJmp=&E; if (setjmp(E)) exit(1);	/* syntax error */
  lua_parse(&tf);
- do_dump(&tf);
+ if (dumping) do_dump(&tf);
 }
 
 static void compile(char *filename)
