@@ -1,11 +1,12 @@
 /*
-** $Id: luac.h,v 1.6 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: luac.h,v 1.7 1999/03/08 11:08:43 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
 
 #include "lauxlib.h"
 #include "lfunc.h"
+#include "lmem.h"
 #include "lobject.h"
 #include "lopcodes.h"
 #include "lstring.h"
