@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.4 1999/03/08 11:23:16 lhf Exp lhf $
+# $Id: Makefile,v 1.5 1999/03/11 17:13:53 lhf Exp lhf $
 # $(MAKE)file for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -10,7 +10,7 @@ LUA=lua
 
 # Sun acc
 CC= acc
-WARN= #-fast
+WARN= -Xc -vc #-fast
 
 # gcc
 CC= gcc
@@ -108,7 +108,7 @@ ci:
 	ci $(SRCS)
 
 diff:
-	rcsdiff $(SRCS) Makefile
+	@-rcsdiff $(SRCS) Makefile 2>&1 | nawk -f rcsdiff.awk
 
 what:
 	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort
