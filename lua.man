@@ -1,11 +1,17 @@
-.\" $Id: lua.man,v 1.4 2001/07/19 20:06:36 lhf Exp lhf $
-.TH LUA 1 "$Date: 2001/07/19 20:06:36 $"
+.\" $Id: lua.man,v 1.5 2002/04/21 21:17:38 lhf Exp lhf $
+.TH LUA 1 "$Date: 2002/04/21 21:17:38 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
 .B lua
 [
-.I arguments
+.I options
+]
+[
+.I prog
+[
+.I args
+]
 ]
 .SH DESCRIPTION
 .B lua
@@ -19,34 +25,29 @@ the Lua compiler.)
 .B lua
 can be used as a batch interpreter and also interactively.
 .LP
-The
-.I arguments
-can be options, assignments, or filenames,
-and are processed in order,
-from left to right.
+The given
+.I options
+(see below)
+are executed and then
+the Lua program in file
+.I prog
+is loaded and executed.
+The given
+.I args
+are available to
+.I prog
+as strings in a global table named
+.BR arg .
+If these arguments contain spaces or other characters special to the shell,
+then they should be quoted
+(but note thatthe quotes will be removed by the shell).
 .LP
 Options start with
 .B \-
 and are described below.
-.LP
-An assignment is an argument of the form
-.BR a=b ,
-which assigns the string
-.RB ` b '
-to the global variable
-.BR a .
-Note that,
-in this special command-line form,
-no quotes are needed around the string if it does not contain spaces
-or other characters special to the shell.
-This is for convenience only.
-(In general,
-you should be careful when using quotes and spaces on the command line
-because they are usually handled by the shell.)
-.LP
-If the argument is neither an option nor an assignment,
-then it is assumed to be a filename,
-which is then loaded and executed.
+You can use
+.B "\--"
+to signal the end of options.
 .LP
 If no arguments are given,
 then
@@ -63,11 +64,6 @@ load the standard input as a file,
 that is,
 not interactively,
 even when the standard input is a terminal.
-.TP
-.B \-c
-close Lua before exiting
-(that is,
-after all arguments have been processed).
 .TP
 .BI \-e " stat"
 execute statement
@@ -91,11 +87,14 @@ The index of the last argument is stored in
 .BR "arg.n" .
 .TP
 .B \-i
-enter interactive mode,
-displaying a prompt.
+enter interactive mode after
+.I prog
+is executed.
 In this mode,
 .B lua
-reads lines from the standard input and executes them as they are read.
+prompts the user,
+reads lines from the standard input,
+and executes them as they are read.
 If a line does not contain a complete statement,
 then a secondary prompt is displayed and
 lines are read until a complete statement is formed or
@@ -129,7 +128,15 @@ or on the command line with
 for example.
 (Note the need for quotes, because the string contains a space.)
 The default prompts are ``> '' and ``>> ''.
-
+.TP
+.BI \-l " file"
+load and execute the given
+.I file
+before executing
+.IR prog.
+Typically used to load libraries
+(hence the letter
+.IR l)
 .TP
 .B \-v
 print version information.
