@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.10 2000/09/21 03:15:36 lhf Exp $
+# $Id: Makefile,v 1.11 2000/10/31 17:09:23 lhf Exp $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -27,9 +27,9 @@ WARN= -ansi -pedantic -Wall \
 CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
 
-OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o #test.o
-SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c test.c \
-      luac.h lundump.h print.h
+OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o
+SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c ldumplib.c \
+	luac.h lundump.h print.h
 
 # targets --------------------------------------------------------------------
 
@@ -54,6 +54,11 @@ stubs:	$(LUA)/lua
 	diff stubs.c stubs.new
 	-rm -f stubs.new
 
+lib:	ldumplib.o
+
+ldumplib.o:	ldumplib.c dump.c
+	$(CC) $(CFLAGS) -c -o $@ ldumplib.c
+
 debug:	clean
 	$(MAKE) DEFS="-DLUA_DEBUG"
 
@@ -74,7 +79,7 @@ lint:
 	lint -I$(LUA) *.c >lint.out
 
 clean:
-	-rm -f luac *.o luac.out a.out core mon.out gmon.out 
+	-rm -f luac *.o luac.out a.out core mon.out gmon.out tags
 	#cd test; $(MAKE) $@
 
 co:
@@ -103,3 +108,6 @@ u:	$(OBJS)
 
 ls:
 	cp -fp $(LUA)/lstate.c .
+
+tags:	$(SRCS)
+	ctags $(SRCS)
