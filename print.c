@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.32 2000/11/06 20:04:36 lhf Exp lhf $
+** $Id: print.c,v 1.33 2001/03/15 17:29:16 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -8,6 +8,10 @@
 #include <stdlib.h>
 
 #include "luac.h"
+#include "ldebug.h"
+#include "lfunc.h"
+#include "lobject.h"
+#include "lopcodes.h"
 
 /* macros used in print.h, included in PrintCode */
 #define P_OP(x)	printf("%-11s\t",x)
@@ -18,7 +22,7 @@
 #define P_Q	PrintString(tf,GETARG_U(i))
 #define P_K	printf("%d\t; %s",GETARG_U(i),getstr(tf->kstr[GETARG_U(i)]))
 #define P_L	PrintLocal(tf,GETARG_U(i),pc)
-#define P_N	printf("%d\t; " NUMBER_FMT,GETARG_U(i),tf->knum[GETARG_U(i)])
+#define P_N	printf("%d\t; " LUA_NUMBER_FMT,GETARG_U(i),tf->knum[GETARG_U(i)])
 #define P_S	printf("%d",GETARG_S(i))
 #define P_U	printf("%u",GETARG_U(i))
 
@@ -60,10 +64,9 @@ static void PrintCode(const Proto* tf)
  {
   Instruction i=code[pc];
   int line=luaG_getline(tf->lineinfo,pc,1,NULL);
-#if 1
+#if 0
   printf("%0*lX",Sizeof(i)*2,i);
 #endif
-if(0)  printf("  %6d\t",pc+1);
   printf("\t%d\t",pc+1);
   if (line>=0) printf("[%d]\t",line); else printf("[-]\t");
   switch (GET_OPCODE(i))
@@ -81,8 +84,8 @@ if(0)  printf("  %6d\t",pc+1);
 
 static void PrintHeader(const Proto* tf)
 {
- printf("\n%s " SOURCE_FMT " (%d instruction%s/%d bytes at %p)\n",
- 	IsMain(tf)?"main":"function",SOURCE,
+ printf("\n%s <%d:%s> (%d instruction%s, %d bytes at %p)\n",
+ 	IsMain(tf)?"main":"function",tf->lineDefined,getstr(tf->source),
 	S(tf->sizecode),tf->sizecode*Sizeof(Instruction),tf);
  printf("%d%s param%s, %d stack%s, ",
 	tf->numparams,tf->is_vararg?"+":"",SS(tf->numparams),S(tf->maxstacksize));
