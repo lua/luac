@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.6 1999/03/22 21:38:26 lhf Exp lhf $
+** $Id: test.c,v 1.7 1999/03/24 19:36:29 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -31,6 +31,14 @@ static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 
 #define CHECK(before,after)	\
 	sp=check(-(before),tf,at,sp,ss), sp=check(after,tf,at,sp,ss)
+
+static int jmpok(TProtoFunc* tf, int size, int at, int d)
+{
+ int to=at+d;
+ if (to<2 || to>=size)
+  UNSAFE("invalid jump to %d (valid range is 2..%d)"),to,size-1,ATLOC;
+ return to;
+}
 
 static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 {
@@ -67,20 +75,22 @@ printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 		break;
 	}
 	case PUSHLOCAL:
-	case SETLOCAL:
 		if (i>=sp) UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
 		break;
+	case SETLOCAL:
+		if (i>=(sp-1)) UNSAFE("bad local #%d (max=%d)"),i,sp-2,ATLOC;
+		break;
 	case ONTJMP:
-	case ONFJMP:
-		JP[at]=-(at+i+n);	/* negate to remember ON?JMP */
+	case ONFJMP:			/* negate to remember ON?JMP */
+		JP[at]=-jmpok(tf,size,at,i+n);
 		break;
 	case JMP:			/* remember JMP targets */
 	case IFFJMP:
-		JP[at]=at+i+n;
+		JP[at]= jmpok(tf,size,at,i+n);
 		break;
 	case IFTUPJMP:
 	case IFFUPJMP:
-		JP[at]=at-i+n;
+		JP[at]= jmpok(tf,size,at,-i+n);
 		break;
 	}
 
@@ -153,23 +163,22 @@ static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
  int i;
  for (i=0; i<size; i++)
  {
-  int at=i;				/* for ATLOC */
   int to=JP[i];
-  int on=0;
-  if (to<0) { on=1; to=-to; };		/* handle ON?JMP */
   if (to!=0)
   {
-   int j=i;
-   int a,b;
-   if (to<2 || to>=size)
-    UNSAFE("invalid jump to %d (range is 2..%d)"),to,size-1,ATLOC;
+   int at=i;				/* for ATLOC */
+   int a,b,j;
+   int on=(to<0);			/* ON?JMP */
+   if (on) to=-to;
    a=SP[to];
    if (a<0)
     UNSAFE("invalid jump to %d (not an instruction)"),to,ATLOC;
-   while (SP[++j]<0) ;			/* find next instruction */
+   for (j=i; SP[++j]<0; )		/* find next instruction */
+    ;
    b=SP[j]+on;
    if (a!=b)
-    UNSAFE("stack inconsistency in jump to %d (%d x %d)"),to,b,a,ATLOC;
+    UNSAFE("stack inconsistency in jump to %d (expected %d, found %d)"),
+	to,a,b,ATLOC;
   }
  }
 }
