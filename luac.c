@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.4 1996/02/22 00:35:43 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.5 1996/02/22 15:31:34 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -23,9 +23,7 @@ void PrintFunction(TFunc *tf);
 static void compile(char *filename);
 
 static int listing=0;
-static FILE *D;
-
-#define	IS(s)	(strcmp(argv[i],s)==0)
+static FILE *D;				/* output file */
 
 static void usage(void)
 {
@@ -33,9 +31,11 @@ static void usage(void)
  exit(0);
 }
 
+#define	IS(s)	(strcmp(argv[i],s)==0)
+
 int main(int argc, char *argv[])
 {
- char *d="luac.out";
+ char *d="luac.out";			/* default output file */
  int i;
  for (i=1; i<argc; i++)
  {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
    listing=1;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
-  else
+  else					/* unknown option */
    usage();
  }
  --i;					/* fake new argv[0] */
@@ -74,13 +74,15 @@ static void dump(TFunc *tf)
  if (listing) PrintFunction(tf);
  DumpFunction(tf,D);
  luaI_free(tf->code);
- if (tf->locvars) luaI_free(tf->locvars);
+if (tf->locvars)		/* to go away soon */
+ luaI_free(tf->locvars);
 }
 
 static void do_dump(TFunc *tf)
 {
  tf->next=NULL;
- dump(tf);
+ tf->marked=0;
+ dump(tf);			/* thread main and build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
   dump(tf);
 }
@@ -89,22 +91,13 @@ static void do_compile(void)
 {
  TFunc tf;
  extern jmp_buf *errorJmp;
- jmp_buf myErrorJmp;
- jmp_buf *oldErr = errorJmp;
- errorJmp = &myErrorJmp;
+ jmp_buf E;
+
  luaI_initTFunc(&tf);
  tf.fileName = lua_parsedfile;
- if (setjmp(myErrorJmp) == 0)
- {
-  lua_parse(&tf);
-  tf.marked=0;
-  do_dump(&tf);
- }
- else					/* syntax error */
- {
-  exit(1);
- }
- errorJmp = oldErr;
+ errorJmp=&E; if (setjmp(E)) exit(1);	/* syntax error */
+ lua_parse(&tf);
+ do_dump(&tf);
 }
 
 static void compile(char *filename)
