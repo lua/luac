@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.5 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: luac.h,v 1.6 1998/07/12 00:17:37 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -14,20 +14,24 @@
 typedef struct
 {
  char* name;
- int size;
  int op;
  int class;
+ int args;
  int arg;
  int arg2;
 } Opcode;
 
-int OpcodeInfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE);
-int CodeSize(TProtoFunc* tf);
+void luaU_dumpchunk(TProtoFunc* Main, FILE* D);
+void luaU_printchunk(TProtoFunc* Main);
+void luaU_optchunk(TProtoFunc* Main);
+void luaU_testchunk(TProtoFunc* Main);
+int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE);
+int luaU_codesize(TProtoFunc* tf);
 
-#define INFO(tf,p,I)	OpcodeInfo(tf,p,I,__FILE__,__LINE__)
-#define fileName(tf)	( (tf->fileName)==NULL ? NULL : tf->fileName->str )
+#define INFO(tf,p,I)	luaU_opcodeinfo(tf,p,I,__FILE__,__LINE__)
 
+/* fake (but convenient) opcodes */
 #define NOP	255
-#define STACK	-1
-#define ARGS	-2
-#define VARARGS	-3
+#define STACK	(-1)
+#define ARGS	(-2)
+#define VARARGS	(-3)
