@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.32 2001/06/28 13:55:17 lhf Exp lhf $
+** $Id: dump.c,v 1.33 2001/07/19 14:34:06 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -24,6 +24,7 @@
 #define DumpVector(b,n,size,D)	WRITE(b,size,n,D)
 #define DumpLiteral(s,D)	WRITE("" s,(sizeof(s))-1,1,D)
 #define DumpChunk		luaU_dumpchunk
+#define DumpShort		DumpInt
 
 static void DumpInt(int x, WRITETO D)
 {
@@ -107,10 +108,10 @@ static void DumpFunction(const Proto* f, const TString* p, WRITETO D)
 {
  DumpString((f->source==p) ? NULL : f->source,D);
  DumpInt(f->lineDefined,D);
- DumpInt(f->nupvalues,D);
- DumpInt(f->numparams,D);
- DumpByte(f->is_vararg,D);
- DumpInt(f->maxstacksize,D);
+ DumpShort(f->nupvalues,D);
+ DumpShort(f->numparams,D);
+ DumpShort(f->is_vararg,D);
+ DumpShort(f->maxstacksize,D);
  DumpLocals(f,D);
  DumpLines(f,D);
  DumpConstants(f,D);
