@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.19 2000/09/04 21:41:28 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2000/09/04 21:41:28 $"
+.\" $Id: luac.man,v 1.20 2000/10/06 15:11:21 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2000/10/06 15:11:21 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -48,7 +48,8 @@ binary files created on a 32-bit platform (such as Intel)
 can be read without change in another 32-bit platform (such as Sparc),
 even if the byte order (``endianess'') is different.
 On the other hand,
-binary files created on a 16-bit platform cannot be read in a 32-bit platform.
+binary files created on a 16-bit platform cannot be read in a 32-bit platform,
+nor vice-versa.
 .LP
 In the command line,
 you can mix
@@ -66,9 +67,7 @@ as a source file.
 .LP
 The internal format of the binary files produced by
 .B luac
-may change when a new version of Lua is released.
-We try to maintain compatibility even for binary files,
-but it is not always possible.
+is likely to change when a new version of Lua is released.
 So,
 save the source files of all Lua programs that you precompile.
 .LP
@@ -96,9 +95,6 @@ all files are loaded before the output file is written.
 load files but do not generate any output file.
 Used mainly for syntax checking or testing precompiled chunks:
 corrupted files will probably generate errors when loaded.
-For a thourough integrity test,
-use
-.BR \-t .
 .TP
 .B \-s
 strip debug information before writing the output file.
