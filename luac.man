@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.21 2001/06/06 02:23:00 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2001/06/06 02:23:00 $"
+.\" $Id: luac.man,v 1.22 2001/07/19 20:06:36 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2001/07/19 20:06:36 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -28,7 +28,7 @@ The main advantages of precompiling chunks are:
 faster loading,
 protecting source code from user changes,
 and
-off-line syntax error detection.
+off-line syntax check.
 .LP
 Pre-compiling does not imply faster execution
 because in Lua chunks are always compiled into bytecodes before being executed.
