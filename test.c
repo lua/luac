@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.5 1999/03/16 18:13:56 lhf Exp lhf $
+** $Id: test.c,v 1.6 1999/03/22 21:38:26 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -9,9 +9,16 @@
 #include <string.h>
 #include "luac.h"
 
-#define AT		" at %d" IN
-#define ATLOC		at,INLOC)
-#define UNSAFE(s)	luaL_verror("unsafe code: " s AT
+#define AT		"pc=%d"
+#define ATLOC		0)
+#define UNSAFE(s)	\
+	luaL_verror("unsafe code at " AT IN "\n      " s,at,INLOC
+
+TObject* luaU_getconstant(TProtoFunc* tf, int i, int at)
+{
+ if (i>=tf->nconsts) UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts-1,ATLOC;
+ return tf->consts+i;
+}
 
 static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 {
@@ -52,11 +59,7 @@ printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 	case SETGLOBAL:
 	case CLOSURE:
 	{
-		TObject* o;
-		if (i>=tf->nconsts)
-			UNSAFE("bad constant #%d (max=%d)"),
-			i,tf->nconsts-1,ATLOC;
-		o=tf->consts+i;
+		TObject* o=luaU_getconstant(tf,i,at);
 		if ((op==CLOSURE   && ttype(o)!=LUA_T_PROTO)
 		 || (op==GETGLOBAL && ttype(o)!=LUA_T_STRING)
 		 || (op==SETGLOBAL && ttype(o)!=LUA_T_STRING))
@@ -148,9 +151,9 @@ printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
 {
  int i;
-#define at i				/* for ATLOC */
  for (i=0; i<size; i++)
  {
+  int at=i;				/* for ATLOC */
   int to=JP[i];
   int on=0;
   if (to<0) { on=1; to=-to; };		/* handle ON?JMP */
@@ -182,23 +185,26 @@ static void TestCode(TProtoFunc* tf)
  TestJumps(tf,size,SP,JP);
 }
 
+#undef  AT
+#define AT	"locvars[%d]"
 static void TestLocals(TProtoFunc* tf)
 {
- LocVar* v=tf->locvars;
- int i,l,n;
- if (v==NULL) return;
- for (l=n=i=0; v->line>=0; v++,i++)
+ LocVar* v;
+ int l=1;
+ int d=0;
+ if (tf->locvars==NULL) return;
+ for (v=tf->locvars; v->line>=0; v++)
  {
+  int at=v-tf->locvars;			/* for ATLOC */
   if (l>v->line)
-   UNSAFE("bad linenumber %d in locvars[%d]"),v->line,i,ATLOC;
-  else
-   l=v->line;
+   UNSAFE("bad line number %d; expected at least %d"),v->line,l,ATLOC;
+  l=v->line;
   if (v->varname==NULL)
   {
-   if (--n<0) UNSAFE("no scope to close in locvars[%d]"),i,ATLOC;
+   if (--d<0) UNSAFE("no scope to close"),ATLOC;
   }
   else
-   ++n;
+   ++d;
  }
 }
 
