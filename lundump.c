@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.11 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: lundump.c,v 1.12 1998/07/12 01:46:59 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -21,42 +21,41 @@
 	#define doLoadNumber(f,Z)	f=LoadNumber(Z)
 #endif
 
-static void unexpectedEOZ(ZIO* Z)
+static void unexpectedEOZ (ZIO* Z)
 {
  luaL_verror("unexpected end of file in %s",zname(Z));
 }
 
-static int ezgetc(ZIO* Z)
+static int ezgetc (ZIO* Z)
 {
  int c=zgetc(Z);
  if (c==EOZ) unexpectedEOZ(Z);
  return c;
 }
 
-static void ezread(ZIO* Z, void* b, int n)
+static void ezread (ZIO* Z, void* b, int n)
 {
  int r=zread(Z,b,n);
  if (r!=0) unexpectedEOZ(Z);
 }
 
-static unsigned int LoadWord(ZIO* Z)
+static unsigned int LoadWord (ZIO* Z)
 {
  unsigned int hi=ezgetc(Z);
  unsigned int lo=ezgetc(Z);
  return (hi<<8)|lo;
 }
 
-static unsigned long LoadLong(ZIO* Z)
+static unsigned long LoadLong (ZIO* Z)
 {
  unsigned long hi=LoadWord(Z);
  unsigned long lo=LoadWord(Z);
  return (hi<<16)|lo;
 }
 
-#if ID_NUMBER==ID_REAL4
-/* LUA_NUMBER */
+#if ID_NUMBER==ID_REAL4			/* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
-static float LoadFloat(ZIO* Z)
+static float LoadFloat (ZIO* Z)
 {
  unsigned long l=LoadLong(Z);
  float f;
@@ -65,10 +64,9 @@ static float LoadFloat(ZIO* Z)
 }
 #endif
 
-#if ID_NUMBER==ID_REAL8
-/* LUA_NUMBER */
+#if ID_NUMBER==ID_REAL8			/* LUA_NUMBER */
 /* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
-static double LoadDouble(ZIO* Z)
+static double LoadDouble (ZIO* Z)
 {
  unsigned long l[2];
  double f;
@@ -88,7 +86,7 @@ static double LoadDouble(ZIO* Z)
 }
 #endif
 
-static Byte* LoadCode(ZIO* Z)
+static Byte* LoadCode (ZIO* Z)
 {
  unsigned long size=LoadLong(Z);
  unsigned int s=size;
@@ -99,7 +97,7 @@ static Byte* LoadCode(ZIO* Z)
  return b;
 }
 
-static TaggedString* LoadTString(ZIO* Z)
+static TaggedString* LoadTString (ZIO* Z)
 {
  int size=LoadWord(Z);
  if (size==0)
@@ -112,7 +110,7 @@ static TaggedString* LoadTString(ZIO* Z)
  }
 }
 
-static void LoadLocals(TProtoFunc* tf, ZIO* Z)
+static void LoadLocals (TProtoFunc* tf, ZIO* Z)
 {
  int i,n=LoadWord(Z);
  if (n==0) return;
@@ -128,7 +126,7 @@ static void LoadLocals(TProtoFunc* tf, ZIO* Z)
 
 static TProtoFunc* LoadFunction(ZIO* Z);
 
-static void LoadConstants(TProtoFunc* tf, ZIO* Z)
+static void LoadConstants (TProtoFunc* tf, ZIO* Z)
 {
  int i,n=LoadWord(Z);
  tf->nconsts=n;
@@ -137,7 +135,7 @@ static void LoadConstants(TProtoFunc* tf, ZIO* Z)
  for (i=0; i<n; i++)
  {
   TObject* o=tf->consts+i;
-  ttype(o)=-ezgetc(Z);
+  ttype(o)=-ezgetc(Z);			/* ttype(o) is negative - ORDER LUA_T */
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
@@ -152,25 +150,28 @@ static void LoadConstants(TProtoFunc* tf, ZIO* Z)
    case LUA_T_NIL:
 	break;
    default:
-	luaL_verror("bad constant #%d in %s: type=%d [%s]",
-		i,zname(Z),ttype(o),luaO_typename(o));
+	luaL_verror("bad constant #%d: type=%d [%s]"
+		" in %p (\"%s\":%d)",
+		i,ttype(o),luaO_typename(o),tf,tf->source,tf->lineDefined);
+
 	break;
   }
  }
 }
 
-static TProtoFunc* LoadFunction(ZIO* Z)
+static TProtoFunc* LoadFunction (ZIO* Z)
 {
  TProtoFunc* tf=luaF_newproto();
  tf->lineDefined=LoadWord(Z);
- tf->fileName=LoadTString(Z);
+ tf->source=LoadTString(Z);
+ if (tf->source==NULL) tf->source=luaS_new(zname(Z));
  tf->code=LoadCode(Z);
  LoadLocals(tf,Z);
  LoadConstants(tf,Z);
  return tf;
 }
 
-static void LoadSignature(ZIO* Z)
+static void LoadSignature (ZIO* Z)
 {
  char* s=SIGNATURE;
  while (*s!=0 && ezgetc(Z)==*s)
@@ -178,7 +179,7 @@ static void LoadSignature(ZIO* Z)
  if (*s!=0) luaL_verror("bad signature in %s",zname(Z));
 }
 
-static void LoadHeader(ZIO* Z)
+static void LoadHeader (ZIO* Z)
 {
  int version,id,sizeofR;
  real f=-TEST_NUMBER,tf=TEST_NUMBER;
@@ -203,11 +204,11 @@ static void LoadHeader(ZIO* Z)
  doLoadNumber(f,Z);
  if (f!=tf)
   luaL_verror("unknown number representation in %s: "
-	"read " NUMBER_FMT "; expected " NUMBER_FMT,	/* LUA_NUMBER */
+	"read " NUMBER_FMT "; expected " NUMBER_FMT,
 	zname(Z),f,tf);
 }
 
-static TProtoFunc* LoadChunk(ZIO* Z)
+static TProtoFunc* LoadChunk (ZIO* Z)
 {
  LoadHeader(Z);
  return LoadFunction(Z);
