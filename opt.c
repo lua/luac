@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.23 2001/03/15 17:29:16 lhf Exp lhf $
+** $Id: opt.c,v 1.24 2001/06/28 13:55:17 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -13,7 +13,10 @@
 #include "lopcodes.h"
 #include "ltable.h"
 
-#define	L	luac_state		/* lazy! */
+#define LUA_DEBUG
+#undef LUA_DEBUG
+
+static lua_State* L;			/* lazy! */
 
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
@@ -30,65 +33,44 @@ static int MapConstant(Hash* t, int j, const TObject* key)
  }
 }
 
-static int MapConstants(Proto* tf, Hash* map)
+static int MapConstants(Proto* f, Hash* map)
 {
- int i,j,k,n,m=0;
- TObject o;
- j=0; n=tf->sizeknum;
+ int i,j=0,n=f->sizek;
  for (i=0; i<n; i++)
  {
-  setnvalue(&o,tf->knum[i]);
-  k=MapConstant(map,j,&o);
+  int k=MapConstant(map,j,&f->k[i]);
   if (k==j) j++;
  }
- m=j;
- j=0; n=tf->sizekstr;
- for (i=0; i<n; i++)
- {
-  setsvalue(&o,tf->kstr[i]);
-  k=MapConstant(map,j,&o);
-  if (k==j) j++;
- }
- return m+j;
+ return j;
 }
 
-static void PackConstants(Proto* tf, Hash* map)
+static void PackConstants(Proto* f, Hash* map)
 {
- int i,j,k,n;
- TObject o;
+ int i,j=0,n=f->sizek;
 #ifdef LUA_DEBUG
- printf("%p before pack sizeknum=%d sizekstr=%d\n",tf,tf->sizeknum,tf->sizekstr);
+ printf("%p before pack sizek=%d\n",f,f->sizek);
 #endif
- j=0; n=tf->sizeknum;
  for (i=0; i<n; i++)
  {
-  setnvalue(&o,tf->knum[i]);
-  k=MapConstant(map,-1,&o);
-  if (k==j) tf->knum[j++]=tf->knum[i];
+  int k=MapConstant(map,-1,&f->k[i]);
+  if (k==j) f->k[j++]=f->k[i];
  }
- tf->sizeknum=j;
- j=0; n=tf->sizekstr;
- for (i=0; i<n; i++)
- {
-  setsvalue(&o,tf->kstr[i]);
-  k=MapConstant(map,-1,&o);
-  if (k==j) tf->kstr[j++]=tf->kstr[i];
- }
- tf->sizekstr=j;
+ f->sizek=j;				/* TODO: messes up free? */
+for (; j<n; j++) ttype(&f->k[j])=LUA_TNIL;
 #ifdef LUA_DEBUG
- printf("%p after  pack sizeknum=%d sizekstr=%d\n",tf,tf->sizeknum,tf->sizekstr);
+ printf("%p after pack sizek=%d\n",f,f->sizek);
 #endif
 }
 
-static void OptConstants(Proto* tf)
+static void OptConstants(Proto* f)
 {
- Instruction* code=tf->code;
- int pc,ni=tf->sizecode;
- int n=tf->sizeknum+tf->sizekstr;
+ Instruction* code=f->code;
+ int pc,ni=f->sizecode;
+ int n=f->sizek;
  Hash* map=luaH_new(L,n);
- int m=MapConstants(tf,map);
+ int m=MapConstants(f,map);
 #ifdef LUA_DEBUG
- printf("%p n=%d m=%d %s\n",tf,n,m,(m==n)?"nothing to optimize":"yes!");
+ printf("%p n=%d m=%d %s\n",f,n,m,(m==n)?"nothing to optimize":"yes!");
 #endif
  if (m==n) return;
  for (pc=0; pc<ni; pc++)
@@ -97,34 +79,54 @@ static void OptConstants(Proto* tf)
   int op=GET_OPCODE(i);
   switch (op)
   {
-   TObject o;
    int j,k;
-   case OP_PUSHNUM: case OP_PUSHNEGNUM:
-    j=GETARG_U(i);
-    setnvalue(&o,tf->knum[j]);
-    k=MapConstant(map,-1,&o);
-    if (k!=j) code[pc]=CREATE_U(op,k);
+   case OP_LOADK:
+   case OP_GETGLOBAL:
+   case OP_SETGLOBAL:
+    j=GETARG_Bc(i);
+    k=MapConstant(map,-1,&f->k[j]);
+    if (k!=j) code[pc]=CREATE_ABc(op,GETARG_A(i),k);
     break;
-   case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
-   case OP_PUSHSELF:   case OP_SETGLOBAL:
-    j=GETARG_U(i);
-    setsvalue(&o,tf->kstr[j]);
-    k=MapConstant(map,-1,&o);
-    if (k!=j) code[pc]=CREATE_U(op,k);
+   case OP_GETTABLE:
+   case OP_SETTABLE:
+   case OP_SELF:
+   case OP_ADD:
+   case OP_SUB:
+   case OP_MUL:
+   case OP_DIV:
+   case OP_POW:
+   case OP_TESTEQ:
+   case OP_TESTNE:
+   case OP_TESTLT:
+   case OP_TESTLE:
+   case OP_TESTGT:
+   case OP_TESTGE:
+    j=GETARG_C(i);
+    if (j<MAXSTACK) break; else j-=MAXSTACK;
+#ifdef LUA_DEBUG
+printf("a=%d b=%d c=%d\n",GETARG_A(i),GETARG_B(i),GETARG_C(i));
+#endif
+    k=MapConstant(map,-1,&f->k[j]);
+    if (k!=j) code[pc]=CREATE_ABC(op,GETARG_A(i),GETARG_B(i),k+MAXSTACK);
+#ifdef LUA_DEBUG
+i=code[pc];
+printf("a=%d b=%d c=%d\n",GETARG_A(i),GETARG_B(i),GETARG_C(i));
+#endif
     break;
    default:
     break;
   }
  }
- PackConstants(tf,map);
+ PackConstants(f,map);
  luaH_free(L,map);
 }
 
 #define OptFunction luaU_optchunk
 
-void OptFunction(Proto* tf)
+void OptFunction(lua_State* l, Proto* f)
 {
- int i,n=tf->sizekproto;
- OptConstants(tf);
- for (i=0; i<n; i++) OptFunction(tf->kproto[i]);
+ int i,n=f->sizep;
+ L=l;
+ OptConstants(f);
+ for (i=0; i<n; i++) OptFunction(l,f->p[i]);
 }
