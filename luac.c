@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
+** $Id: luac.c,v 1.4 1998/02/06 20:05:39 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -12,6 +12,8 @@
 #include "lzio.h"
 #include "luadebug.h"
 
+#define	OUTPUT	"luac.out"		/* default output file */
+
 extern void PrintChunk(TProtoFunc* Main);
 extern void OptChunk(TProtoFunc* Main);
 extern void DumpChunk(TProtoFunc* Main, FILE* D);
@@ -20,6 +22,7 @@ static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
 
 static int listing=0;			/* list bytecodes? */
+static int debugging=0;			/* debug? */
 static int dumping=1;			/* dump bytecodes? */
 static int undumping=0;			/* undump bytecodes? */
 static int optimizing=0;		/* optimize? */
@@ -36,7 +39,8 @@ static void usage(void)
  " -D\tpredefine symbol for conditional compilation\n"
  " -d\tgenerate debugging information\n"
  " -l\tlist (default for -u)\n"
- " -o\toutput file for -c (default is \"luac.out\")\n"
+ " -o\toutput file for -c (default is \"" OUTPUT "\")\n"
+ " -O\toptimize\n"
  " -p\tparse only\n"
  " -q\tquiet (default for -c)\n"
  " -v\tshow version information\n"
@@ -49,7 +53,7 @@ static void usage(void)
 
 int main(int argc, char* argv[])
 {
- char* d="luac.out";			/* default output file */
+ char* d=OUTPUT;			/* output file name */
  int i;
  lua_open();
  for (i=1; i<argc; i++)
@@ -70,14 +74,14 @@ int main(int argc, char* argv[])
    s->u.globalval.value.n=1;
   }
   else if (IS("-d"))			/* debug */
-   lua_debug=1;
+   debugging=1;
   else if (IS("-l"))			/* list */
    listing=1;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
   else if (IS("-O"))			/* optimize */
    optimizing=1; 
-  else if (IS("-p"))			/* parse only (for timing purposes) */
+  else if (IS("-p"))			/* parse only */
   {
    dumping=0;
    parsing=1;
@@ -108,6 +112,10 @@ int main(int argc, char* argv[])
    for (i=1; i<argc; i++)		/* play safe with output file */
     if (IS(d)) luaL_verror("will not overwrite input file \"%s\"\n",d);
    D=efopen(d,"wb");			/* must open in binary mode */
+#if ID_NUMBER==ID_NATIVE
+   fprintf(stderr,"luac: warning: "
+	"saving numbers in native format. file may not be portable.\n");
+#endif
   }
   for (i=1; i<argc; i++) doit(0,IS("-")? NULL : argv[i]);
   if (dumping) fclose(D);
@@ -115,7 +123,7 @@ int main(int argc, char* argv[])
  if (undumping)
  {
   if (argc<2)
-   doit(1,"luac.out");
+   doit(1,OUTPUT);
   else
    for (i=1; i<argc; i++) doit(1,IS("-")? NULL : argv[i]);
  }
@@ -124,7 +132,10 @@ int main(int argc, char* argv[])
 
 static void do_compile(ZIO* z)
 {
- TProtoFunc* Main=luaY_parser(z);
+ TProtoFunc* Main;
+ if (optimizing) lua_debug=0;		/* set debugging before parsing */
+ if (debugging)  lua_debug=1;
+ Main=luaY_parser(z);
  if (optimizing) OptChunk(Main);
  if (listing) PrintChunk(Main);
  if (dumping) DumpChunk(Main,D);
@@ -156,7 +167,7 @@ static void doit(int undump, char* filename)
  zFopen(&z,f,filename);
  if (verbose) fprintf(stderr,"%s\n",filename);
  if (undump) do_undump(&z); else do_compile(&z);
- if (f!=stdin) fclose(f);
+ if (f!=stdin) fclose(f);		/* TODO: why is stdin special? */
 }
 
 static FILE* efopen(char* name, char* mode)
