@@ -1,12 +1,11 @@
 /*
-** $Id: dump.c,v 1.6 1998/02/06 20:05:39 lhf Exp lhf $
+** $Id: dump.c,v 1.7 1998/03/05 15:45:08 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "luac.h"
 
 #define NotWord(x)		((unsigned short)x!=x)
@@ -86,13 +85,12 @@ static void DumpCode(TProtoFunc* tf, FILE* D)
  DumpBlock(tf->code,size,D);
 }
 
-static void DumpString(char* s, FILE* D)
+static void DumpString(char* s, int size, FILE* D)
 {
  if (s==NULL)
   DumpWord(0,D);
  else
  {
-  int size=strlen(s)+1;			/* includes trailing '\0' */
   if (NotWord(size))
    luaL_verror("string too long (%d bytes): \"%.32s...\"\n",size,s);
   DumpWord(size,D);
@@ -102,7 +100,7 @@ static void DumpString(char* s, FILE* D)
 
 static void DumpTString(TaggedString* s, FILE* D)
 {
- DumpString((s==NULL) ? NULL : s->str,D);
+ if (s==NULL) DumpString(NULL,0,D); else DumpString(s->str,s->u.s.len+1,D);
 }
 
 static void DumpLocals(TProtoFunc* tf, FILE* D)
@@ -135,14 +133,14 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
 	break;
    case LUA_T_STRING:
 	fputc(ID_STR,D);
-	DumpString(svalue(o),D);
+	DumpTString(tsvalue(o),D);
 	break;
    case LUA_T_PROTO:
 	fputc(ID_FUN,D);
 	DumpFunction(tfvalue(o),D);
 	break;
    default:				/* cannot happen */
-	INTERNAL_ERROR("bad constant");
+	LUA_INTERNALERROR("bad constant");
 	break;
   }
  }
