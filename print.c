@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.34 2001/06/28 13:55:17 lhf Exp lhf $
+** $Id: print.c,v 1.35 2001/07/19 14:34:06 lhf Exp $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -48,8 +48,11 @@ static void PrintConstant(const Proto* f, int i)
   case LUA_TSTRING:
 	PrintString(f,i);
 	break;
+  case LUA_TNIL:
+	printf("nil");
+	break;
   default:				/* cannot happen */
-	printf("? type=%d\n",ttype(o));
+	printf("? type=%d",ttype(o));
 	break;
  }
 }
@@ -109,15 +112,10 @@ static void PrintCode(const Proto* f)
    case OP_TESTGE:
     if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
     break;
-   case OP_CJMP:
    case OP_JMP:
    case OP_FORLOOP:
    case OP_TFORLOOP:
     printf("\t; to %d",sbc+pc+2);
-    break;
-   case OP_FORPREP:
-   case OP_TFORPREP:
-    printf("\t; to %d",-sbc+pc+1);
     break;
    case OP_CLOSURE:
     printf("\t; %p",f->p[bc]);
