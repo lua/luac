@@ -1,12 +1,17 @@
 /*
-** $Id: dump.c,v 1.14 1999/03/16 18:08:20 lhf Exp lhf $
+** $Id: dump.c,v 1.15 1999/03/22 21:36:11 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "luac.h"
+
+#ifdef OLD_ANSI
+#define strerror(e)     "(no error message provided by operating system)"
+#endif
 
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
 #define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
@@ -138,6 +143,8 @@ static void DumpFunction(TProtoFunc* tf, FILE* D)
  DumpCode(tf,D);
  DumpLocals(tf,D);
  DumpConstants(tf,D);
+ if (ferror(D))
+  luaL_verror("write error" IN ": %s (errno=%d)",INLOC,strerror(errno),errno);
 }
 
 static void DumpHeader(TProtoFunc* Main, FILE* D)
