@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.13 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: lundump.c,v 1.14 1999/03/16 18:08:20 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -154,10 +154,8 @@ static void LoadConstants (TProtoFunc* tf, ZIO* Z)
 	break;
    case LUA_T_NIL:
 	break;
-   default:
-	luaL_verror("bad constant #%d: type=%d [%s]"
-		" in %p (\"%s\":%d)",
-		i,ttype(o),luaO_typename(o),tf,tf->source->str,tf->lineDefined);
+   default:				/* cannot happen */
+	luaU_badconstant("load",i,o,tf);
 	break;
   }
  }
@@ -260,4 +258,14 @@ void luaU_testnumber(void)
    luaL_verror("unsupported number type. "
 		"expected " EXPECTED ". see config and lundump.h");
  }
+}
+
+/*
+* handle constants that cannot happen
+*/
+void luaU_badconstant(char* s, int i, TObject* o, TProtoFunc* tf)
+{
+ int t=ttype(o);
+ char* name= (t>0 || t<LUA_T_LINE) ? "out of range" : luaO_typenames[-t];
+ luaL_verror("cannot %s constant #%d: type=%d [%s]" IN,s,i,t,name,INLOC);
 }
