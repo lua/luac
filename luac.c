@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.23 2000/04/27 18:17:54 lhf Exp lhf $
+** $Id: luac.c,v 1.24 2000/06/28 14:12:55 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -14,20 +14,18 @@
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
+static Proto* load(const char* filename);
 static FILE* efopen(const char* name, const char* mode);
-static void doit(int undump, const char* filename);
-static void defineglobal(const char* name, int define);
+static void strip(Proto* tf);
+static Proto* combine(Proto** P, int n);
+
+lua_State* lua_state=NULL;		/* lazy! */
 
 static int listing=0;			/* list bytecodes? */
-static int debugging=0;			/* emit debug information? */
 static int dumping=1;			/* dump bytecodes? */
-static int undumping=0;			/* undump bytecodes? */
-static int optimizing=0;		/* optimize? */
-static int parsing=0;			/* parse only? */
+static int stripping=0;			/* strip debug information? */
 static int testing=0;			/* test integrity? */
-static int verbose=0;			/* tell user what is done */
-static int native=0;			/* save numbers in native format? */
-static FILE* D;				/* output file */
+static const char* output=OUTPUT;	/* output file name */
 
 static void usage(const char* message, const char* arg)
 {
@@ -37,173 +35,132 @@ static void usage(const char* message, const char* arg)
  }
  fprintf(stderr,
  "usage: luac [options] [filenames].  Available options are:\n"
- "  -        compile stdin\n"
- "  -c       compile (default)\n"
- "  -d       generate debugging information\n"
- "  -D name  predefine `name' for conditional compilation\n"
- "  -l       list (default for -u)\n"
- "  -n       save numbers in native format (file may not be portable)\n"
- "  -o file  output file for -c (default is \"" OUTPUT "\")\n"
- "  -O       optimize\n"
+ "  -        process stdin\n"
+ "  -l       list\n"
+ "  -o file  output file (default is \"" OUTPUT "\")\n"
  "  -p       parse only\n"
- "  -q       quiet (default for -c)\n"
+ "  -s       strip debug information\n"
  "  -t       test code integrity\n"
- "  -u       undump\n"
- "  -U name  undefine `name' for conditional compilation\n"
  "  -v       show version information\n"
- "  -V       verbose\n"
  );
  exit(1);
 }
 
-static void argument(const char* op)
-{
- usage("missing argument to `%s'",op);
-}
-
 #define	IS(s)	(strcmp(argv[i],s)==0)
 
-int main(int argc, char* argv[])
+static int doargs(int argc, const char* argv[])
 {
- const char* d=OUTPUT;			/* output file name */
  int i;
- L=lua_newstate(NULL);
  for (i=1; i<argc; i++)
  {
   if (*argv[i]!='-')			/* end of options */
    break;
   else if (IS("-"))			/* end of options; use stdin */
-   break;
-  else if (IS("-c"))			/* compile (and dump) */
-  {
-   dumping=1;
-   undumping=0;
-  }
-  else if (IS("-D"))			/* $define */
-  {
-   if (++i>=argc) argument(argv[i-1]);
-   defineglobal(argv[i],1);
-  }
-  else if (IS("-d"))			/* debug */
-   debugging=1;
+   return i;
   else if (IS("-l"))			/* list */
    listing=1;
-  else if (IS("-n"))			/* native */
-   native=1;
   else if (IS("-o"))			/* output file */
   {
-   if (++i>=argc) argument(argv[i-1]);
-   d=argv[i];
+   output=argv[++i];
+   if (output==NULL) usage(NULL,NULL);
   }
-  else if (IS("-O"))			/* optimize */
-   optimizing=1; 
   else if (IS("-p"))			/* parse only */
-  {
    dumping=0;
-   parsing=1;
-  }
-  else if (IS("-q"))			/* quiet */
-   listing=0;
+  else if (IS("-s"))			/* strip debug information */
+   stripping=1;
   else if (IS("-t"))			/* test */
   {
    testing=1;
-   if (argc==2) { dumping=0; undumping=1; }
-  }
-  else if (IS("-u"))			/* undump */
-  {
    dumping=0;
-   undumping=1;
-   listing=1;
-  }
-  else if (IS("-U"))			/* undefine */
-  {
-   if (++i>=argc) argument(argv[i-1]);
-   defineglobal(argv[i],0);
   }
   else if (IS("-v"))			/* show version */
   {
    printf("%s  %s\n",LUA_VERSION,LUA_COPYRIGHT);
-   if (argc==2) return 0;
+   if (argc==2) exit(0);
   }
-  else if (IS("-V"))			/* verbose */
-   verbose=1;
   else					/* unknown option */
    usage("unrecognized option `%s'",argv[i]);
  }
- --i;					/* fake new argv[0] */
- argc-=i;
- argv+=i;
- if (dumping || parsing)
+ if (i==argc && (listing || testing)) argv[--i]=OUTPUT;
+ return i;
+}
+
+int main(int argc, const char* argv[])
+{
+ Proto** P,*tf;
+ int i=doargs(argc,argv);
+ argc-=i; argv+=i;
+ if (argc<=0) usage("no input files given",NULL);
+ L=lua_open(0);
+ P=luaM_newvector(L,argc,Proto*);
+ for (i=0; i<argc; i++)
+  P[i]=load(IS("-")? NULL : argv[i]);
+ tf=combine(P,argc);
+ if (dumping) luaU_optchunk(tf);
+ if (listing) luaU_printchunk(tf);
+ if (testing) luaU_testchunk(tf);
+ if (dumping)
  {
-  if (argc<2) usage("no input files given",NULL);
-  if (dumping)
-  {
-   for (i=1; i<argc; i++)		/* play safe with output file */
-    if (IS(d)) luaL_verror(L,"will not overwrite input file \"%s\"",d);
-   D=efopen(d,"wb");			/* must open in binary mode */
-  }
-  for (i=1; i<argc; i++) doit(0,IS("-")? NULL : argv[i]);
-  if (dumping) fclose(D);
- }
- if (undumping)
- {
-  if (argc<2)
-   doit(1,OUTPUT);
-  else
-   for (i=1; i<argc; i++) doit(1,IS("-")? NULL : argv[i]);
+  if (stripping) strip(tf);
+  luaU_dumpchunk(tf,efopen(output,"wb"));
  }
  return 0;
 }
 
-static void do_compile(ZIO* z)
+static Proto* load(const char* filename)
 {
- Proto* Main;
- if (optimizing) L->debug=0;
- if (debugging)  L->debug=1;
- Main=luaY_parser(L,z);
- if (optimizing) luaU_optchunk(Main);
- if (listing) luaU_printchunk(Main);
- if (testing) luaU_testchunk(Main);
- if (dumping) luaU_dumpchunk(Main,D,native);
-}
-
-static void do_undump(ZIO* z)
-{
- for (;;)
- {
-  Proto* Main=luaU_undump1(L,z);
-  if (Main==NULL) break;
-  if (optimizing) luaU_optchunk(Main);
-  if (listing) luaU_printchunk(Main);
-  if (testing) luaU_testchunk(Main);
- }
-}
-
-static void doit(int undump, const char* filename)
-{
- FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
+ Proto* tf;
  ZIO z;
- char source[255+2];			/* +2 for '@' and '\0' */
- luaL_filesource(source,filename,sizeof(source));
+ char source[MAXFILENAME];
+ FILE* f= (filename==NULL) ? stdin : efopen(filename,"r");
+ int c=ungetc(fgetc(f),f);
+ int undump=(c==ID_CHUNK);
+ if (undump && f!=stdin)
+ {
+  fclose(f);
+  f=efopen(filename,"rb");
+ }
+ if (filename==NULL) filename="(stdin)";
+ sprintf(source,"@%.*s",(int)sizeof(source)-2,filename);
  luaZ_Fopen(&z,f,source);
- if (verbose) fprintf(stderr,"%s\n",source+1);
- if (undump) do_undump(&z); else do_compile(&z);
+ tf = undump ? luaU_undump(L,&z) : luaY_parser(L,&z);
  if (f!=stdin) fclose(f);
+ return tf;
 }
 
-static void defineglobal(const char* name, int define)
+static Proto* combine(Proto** P, int n)
 {
- TObject key,value;
- ttype(&key)=TAG_STRING;
- tsvalue(&key)=luaS_new(L,name);
- if (define)
- {
-  ttype(&value)=TAG_NUMBER;
-  nvalue(&value)=1;
- }
+ if (n==1)
+  return P[0];
  else
-  ttype(&value)=TAG_NIL;
- *luaH_set(L,L->gt,&key)=value;
+ {
+  int i,pc=0;
+  Proto* tf=luaF_newproto(L);
+  tf->source=luaS_new(L,"(luac)");
+  tf->numparams=0;
+  tf->is_vararg=0;
+  tf->maxstacksize=1;
+  tf->kproto=P;
+  tf->nkproto=n;
+  tf->code=luaM_newvector(L,2*n+1,Instruction);
+  for (i=0; i<n; i++)
+  {
+   tf->code[pc++]=CREATE_AB(OP_CLOSURE,i,0);
+   tf->code[pc++]=CREATE_AB(OP_CALL,1,0);
+  }
+  tf->code[pc++]=OP_END;
+  return tf;
+ }
+}
+
+static void strip(Proto* tf)
+{
+ int i,n=tf->nkproto;
+ tf->lineinfo=NULL;
+ tf->source=luaS_new(L,"");
+ tf->locvars=NULL;
+ tf->nlocvars=0;
+ for (i=0; i<n; i++) strip(tf->kproto[i]);
 }
 
 static FILE* efopen(const char* name, const char* mode)
@@ -221,6 +178,6 @@ static FILE* efopen(const char* name, const char* mode)
 void luaU_testchunk(const Proto* Main)
 {
  UNUSED(Main);
- fprintf(stderr,"luac: -t not operational in this alpha version\n");
+ fprintf(stderr,"luac: -t not operational in this beta version\n");
  exit(1);
 }
