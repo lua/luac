@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.38 2002/08/07 00:36:03 lhf Exp lhf $
+** $Id: luac.c,v 1.39 2002/10/28 17:42:28 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -54,12 +54,12 @@ static void usage(const char* message, const char* arg)
  fprintf(stderr,
  "usage: %s [options] [filenames].  Available options are:\n"
  "  -        process stdin\n"
- "  --       signal end of options\n"
  "  -l       list\n"
- "  -o file  output file (default is \"" OUTPUT "\")\n"
+ "  -o name  output to file `name' (default is \"" OUTPUT "\")\n"
  "  -p       parse only\n"
  "  -s       strip debug information\n"
- "  -v       show version information\n",
+ "  -v       show version information\n"
+ "  --       stop handling options\n",
  progname);
  exit(EXIT_FAILURE);
 }
@@ -150,8 +150,9 @@ static void strip(lua_State* L, Proto* f)
  for (i=0; i<n; i++) strip(L,f->p[i]);
 }
 
-static int writer(const void* p, size_t size, void* u)
+static int writer(lua_State* L, const void* p, size_t size, void* u)
 {
+ UNUSED(L);
  return fwrite(p,size,1,(FILE*)u)==1;
 }
 
@@ -176,7 +177,7 @@ int main(int argc, char* argv[])
   FILE* D=fopen(output,"wb");
   if (D==NULL) cannot(output,"open","out");
   if (stripping) strip(L,f);
-  luaU_dump(f,writer,D);
+  luaU_dump(L,f,writer,D);
   if (ferror(D)) cannot(output,"write","out");
   fclose(D);
  }
