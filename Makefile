@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.15 2001/11/01 08:52:26 lhf Exp lhf $
+# $Id: Makefile,v 1.16 2002/01/17 12:35:16 lhf Exp lhf $
 # makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -22,6 +22,7 @@ WARN= -ansi -pedantic -Wall \
 
 CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
+LIBS= $(LUA)/liblua.a $(LUA)/liblualib.a -lm
 
 OBJS= dump.o luac.o lundump.o print.o lopcodes.o
 SRCS= dump.c luac.c lundump.c print.c luac.h ldumplib.c lundump.h
@@ -30,8 +31,8 @@ SRCS= dump.c luac.c lundump.c print.c luac.h ldumplib.c lundump.h
 
 all:	luac lib
 
-luac:	$(OBJS) $(LUA)/liblua.a
-	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
+luac:	$(OBJS)
+	$(CC) -o $@ $(OBJS) $(LIBS)
 
 lib:	ldumplib.o
 
@@ -44,8 +45,9 @@ lopcodes.o:	../lopcodes.c ../lopcodes.h
 print.c:	../lopcodes.h
 	@diff lopcodes.h ..
 
-debug:	clean
-	$(MAKE) DEFS="-DLUA_DEBUG"
+debug:
+	$(CC) -c $(CFLAGS) -DLUA_USER_H='"ltests.h"' *.c
+	$(MAKE)
 
 noparser:
 	rm -f luac.o luac
