@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes in files)
 */
 
-char *rcs_luac="$Id$";
+char *rcs_luac="$Id: luac.c,v 1.1 1996/02/20 16:39:40 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
 static void dump(TFunc *tf)
 {
   printf("dump: %s:%d %d bytes\n",tf->fileName,tf->lineDefined,tf->size);
+  PrintCode(tf->code,tf->code+tf->size);
+  ThreadCode(tf->code,tf->code+tf->size);
   PrintCode(tf->code,tf->code+tf->size);
 }
 
