@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.18 2000/04/27 18:17:54 lhf Exp lhf $
+** $Id: opt.c,v 1.19 2000/06/28 14:12:55 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -7,10 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#define DEBUG
-#include "luac.h"
 
-#define OP_NOP	-1UL
+#include "luac.h"
 
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
@@ -23,14 +21,14 @@ static int MapConstant(Hash* t, int j, const TObject* key)
   ttype(&val)=TAG_NUMBER;
   nvalue(&val)=j;
   *luaH_set(L,t,key)=val;
-  LUA_ASSERT(L,j>=0,"MapConstant returns negative!");
+  LUA_ASSERT(j>=0,"MapConstant returns negative!");
   return j;
  }
 }
 
-static void MapConstants(Proto* tf, Hash* map)
+static int MapConstants(Proto* tf, Hash* map)
 {
- int i,j,k,n;
+ int i,j,k,n,m=0;
  TObject o;
  j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
  for (i=0; i<n; i++)
@@ -39,6 +37,7 @@ static void MapConstants(Proto* tf, Hash* map)
   k=MapConstant(map,j,&o);
   if (k==j) j++;
  }
+ m=j;
  j=0; n=tf->nkstr; ttype(&o)=TAG_STRING;
  for (i=0; i<n; i++)
  {
@@ -46,13 +45,16 @@ static void MapConstants(Proto* tf, Hash* map)
   k=MapConstant(map,j,&o);
   if (k==j) j++;
  }
+ return m+j;
 }
 
 static void PackConstants(Proto* tf, Hash* map)
 {
  int i,j,k,n;
  TObject o;
+#ifdef DEBUG
  printf("%p before pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
+#endif
  j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
  for (i=0; i<n; i++)
  {
@@ -69,14 +71,21 @@ static void PackConstants(Proto* tf, Hash* map)
   if (k==j) tf->kstr[j++]=tf->kstr[i];
  }
  tf->nkstr=j;
+#ifdef DEBUG
  printf("%p after  pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
+#endif
 }
 
 static void OptConstants(Proto* tf)
 {
  Instruction* p;
- Hash* map=luaH_new(L,tf->nknum+tf->nkstr);
- MapConstants(tf,map);
+ int n=tf->nknum+tf->nkstr;
+ Hash* map=luaH_new(L,n);
+ int m=MapConstants(tf,map);
+#ifdef DEBUG
+ printf("%p n=%d m=%d %s\n",tf,n,m,(m==n)?"nothing to optimize":"yes!");
+#endif
+ if (m==n) return;
  for (p=tf->code;; p++)
  {
   Instruction i=*p;
@@ -108,96 +117,11 @@ static void OptConstants(Proto* tf)
  }
 }
 
-static int FixJump(Instruction* a, Instruction* b)
-{
- Instruction* p;
- int nop=0;
- for (p=a; p<b; p++)
- {
-  Instruction op=*p;
-  if (op==OP_NOP) ++nop;
-  else if (op==OP_END) break;
- }
- return nop;
-}
+#define OptFunction luaU_optchunk
 
-static void FixJumps(Instruction* code)
-{
- Instruction* p=code;
- for (;;)
- {
-  Instruction i=*p;
-  int op=GET_OPCODE(i);
-  int j=GETARG_S(i);
-  if (ISJUMP(op))
-  {
-   int n;
-   if (j>0) n=FixJump(p,p+j+1); else n=FixJump(p+j+1,p);
-   if (n>0) 
-   {
-    if (j>0) j-=n; else j+=n;
-    *p=CREATE_S(op,j);
-   }
-  }
-  else if (op==OP_END) break;
-  ++p;
- }
-}
-
-static int FixDebug(Instruction* code)
-{
- Instruction* p;
- int nop=0;
- for (p=code;; p++)
- {
-  Instruction op=*p;
-  if (GET_OPCODE(op)==OP_SETLINE) { *p=OP_NOP; ++nop; }
-  else if (op==OP_NOP) ++nop;
-  else if (op==OP_END) break;
- }
- return nop;
-}
-
-static void PackCode(Instruction* code)
-{
- Instruction* p=code;
- Instruction* q=code;
- for (;;)
- {
-  Instruction op=*p++;
-  if (op!=OP_NOP) *q++=op;
-  if (op==OP_END) break;
- }
-}
-
-static void OptCode(Proto* tf)
-{
- Instruction* code=tf->code;
- if (FixDebug(code)>0)
- {
-  FixJumps(code);
-  PackCode(code);
- }
-}
-
-static void OptFunction(Proto* tf);
-
-static void OptFunctions(Proto* tf)
+void OptFunction(Proto* tf)
 {
  int i,n=tf->nkproto;
- for (i=0; i<n; i++) OptFunction(tf->kproto[i]);
-}
-
-static void OptFunction(Proto* tf)
-{
- OptCode(tf);
  OptConstants(tf);
- OptFunctions(tf);
- tf->source=luaS_new(L,"");
- tf->locvars=NULL;			/* lazy! */
-}
-
-void luaU_optchunk(Proto* Main)
-{
- OptFunction(Main);
+ for (i=0; i<n; i++) OptFunction(tf->kproto[i]);
 }
