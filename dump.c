@@ -3,6 +3,8 @@
 ** print,thread,and saves bytecodes to files
 */
 
+char *rcs_dump="$Id$";
+
 #include <stdio.h>
 #include <string.h>
 #include "opcode.h"
@@ -11,15 +13,13 @@
 #include "types.h"
 #include "dump.h"
 
-static char* GlobalVar(int i)
-{
- return lua_table[i].varname->str;
-}
+#define VarStr(i)	(lua_table[i].varname->str)
+#define VarLoc(i)	(lua_table[i].varname->varindex)
+#define StrStr(i)	(lua_constant[i]->str)
+#define StrLoc(i)	(lua_constant[i]->constindex)
 
-static char* GlobalStr(int i)
-{
- return lua_constant[i]->str;
-}
+extern Word lua_ntable;
+extern Word lua_nconstant;
 
 static void PrintCode(Byte *code, Byte *end)
 {
@@ -115,7 +115,7 @@ static void PrintCode(Byte *code, Byte *end)
 		CodeWord c;
 		p++;
 		get_word(c,p);
-		printf("\t%d\t; \"%s\"",c.w,GlobalStr(c.w));
+		printf("\t%d\t; \"%s\"",c.w,StrStr(c.w));
 		break;
 	}
 	case PUSHFUNCTION:
@@ -132,7 +132,7 @@ static void PrintCode(Byte *code, Byte *end)
 		CodeWord c;
 		p++;
 		get_word(c,p);
-		printf("\t%d\t; %s",c.w,GlobalVar(c.w));
+		printf("\t%d\t; %s",c.w,VarStr(c.w));
 		break;
 	}
 	case STORELIST:
@@ -150,7 +150,7 @@ static void PrintCode(Byte *code, Byte *end)
 			CodeWord c;
 			printf("\n%8d\tFIELD",p-code);
 			get_word(c,p);
-			printf("\t%d\t; \"%s\"",c.w,GlobalStr(c.w));
+			printf("\t%d\t; \"%s\"",c.w,StrStr(c.w));
 		}
 		break;
 	}
@@ -163,49 +163,26 @@ static void PrintCode(Byte *code, Byte *end)
  }
 }
 
-#define marked varindex
-
 static int SawVar(int i, int at)
 {
- int old=lua_table[i].varname->marked;
- lua_table[i].varname->marked=at;
+ int old=VarLoc(i);
+ VarLoc(i)=at;
  return old;
 }
-
-#define marked constindex
 
 static int SawStr(int i, int at)
 {
- int old=lua_constant[i]->marked;
- lua_constant[i]->marked=at;
+ int old=StrLoc(i);
+ StrLoc(i)=at;
  return old;
-}
-
-static void CheckThread(Byte *p, int i)
-{
- while (i>0)
- {
-  CodeWord c;
-  Byte *q;
-  q=p+i;
-  printf(" %d",i);
-  get_word(c,q);
-  i=c.w;
- }
- printf("\n");
 }
 
 static void ThreadCode(Byte *code, Byte *end)
 {
  Byte *p;
  int i;
- extern Word lua_ntable;
- extern Word lua_nconstant;
-#define marked varindex
- for (i=0; i<lua_ntable; i++) lua_table[i].varname->marked=0;
-#define marked constindex
- for (i=0; i<lua_nconstant; i++) lua_constant[i]->marked=0;
-#undef marked
+ for (i=0; i<lua_ntable; i++) VarLoc(i)=0;
+ for (i=0; i<lua_nconstant; i++) StrLoc(i)=0;
  for (p=code; p!=end;)
  {
 	OpCode op=(OpCode)*p;
@@ -309,251 +286,6 @@ static void ThreadCode(Byte *code, Byte *end)
 		c.w=SawVar(c.w,at);
 		p[-2]=c.m.c1;
 		p[-1]=c.m.c2;
-		break;
-	}
-	case STORERECORD:
-	{
-		int n=*++p;
-		p++;
-		while (n--)
-		{
-			CodeWord c;
-			at=p-code;
-			get_word(c,p);
-			c.w=SawStr(c.w,at);
-			p[-2]=c.m.c1;
-			p[-1]=c.m.c2;
-		}
-		break;
-	}
-	default:
-		printf("\tcannot happen:  opcode=%d",*p);
-		p++;
-		break;
-	}
- }
-}
-
-static void ThreadVar(Byte *code, Byte *end)
-{
- Byte *p;
- int i;
- extern Word lua_ntable;
- extern Word lua_nconstant;
-#define marked varindex
- for (i=0; i<lua_ntable; i++) lua_table[i].varname->marked=0;
-#define marked constindex
- for (i=0; i<lua_nconstant; i++) lua_constant[i]->marked=0;
-#undef marked
- for (p=code; p!=end;)
- {
-	OpCode op=(OpCode)*p;
-	int at=p-code+1;
-	switch (op)
-	{
-	case PUSHNIL:
-	case PUSH0:
-	case PUSH1:
-	case PUSH2:
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-	case PUSHLOCAL8:
-	case PUSHLOCAL9:
-	case PUSHINDEXED:
-	case STORELOCAL0:
-	case STORELOCAL1:
-	case STORELOCAL2:
-	case STORELOCAL3:
-	case STORELOCAL4:
-	case STORELOCAL5:
-	case STORELOCAL6:
-	case STORELOCAL7:
-	case STORELOCAL8:
-	case STORELOCAL9:
-	case STOREINDEXED0:
-	case ADJUST0:
-	case EQOP:
-	case LTOP:
-	case LEOP:
-	case GTOP:
-	case GEOP:
-	case ADDOP:
-	case SUBOP:
-	case MULTOP:
-	case DIVOP:
-	case POWOP:
-	case CONCOP:
-	case MINUSOP:
-	case NOTOP:
-	case POP:
-	case RETCODE0:
-		p++;
-		break;
-	case PUSHBYTE:
-	case PUSHLOCAL:
-	case STORELOCAL:
-	case STOREINDEXED:
-	case STORELIST0:
-	case ADJUST:
-	case RETCODE:
-		p+=2;
-		break;
-	case PUSHWORD:
-	case PUSHSELF:
-	case CREATEARRAY:
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case UPJMP:
-	case IFFJMP:
-	case IFFUPJMP:
-	case SETLINE:
-	case STORELIST:
-	case CALLFUNC:
-	case PUSHSTRING:
-		p+=3;
-		break;
-	case PUSHFLOAT:
-		p+=5;
-		break;
-	case PUSHFUNCTION:
-	{
-		CodeCode c;
-		p++;
-		get_code(c,p);
-		c.tf->marked=at;
-		break;
-	}
-	case PUSHGLOBAL:
-	case STOREGLOBAL:
-	{
-		CodeWord c;
-		p++;
-		get_word(c,p);
-		c.w=SawVar(c.w,at);
-		p[-2]=c.m.c1;
-		p[-1]=c.m.c2;
-		break;
-	}
-	case STORERECORD:
-		p += *(p+1)*sizeof(Word) + 2;
-		break;
-	default:
-		printf("\tcannot happen:  opcode=%d",*p);
-		p++;
-		break;
-	}
- }
-}
-
-static void ThreadStr(Byte *code, Byte *end)
-{
- Byte *p;
- int i;
- extern Word lua_ntable;
- extern Word lua_nconstant;
- for (i=0; i<lua_ntable; i++) lua_table[i].varname->marked=0;
- for (i=0; i<lua_nconstant; i++) lua_constant[i]->marked=0;
- for (p=code; p!=end;)
- {
-	OpCode op=(OpCode)*p;
-	int at=p-code+1;
-	switch (op)
-	{
-	case PUSHNIL:
-	case PUSH0:
-	case PUSH1:
-	case PUSH2:
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-	case PUSHLOCAL8:
-	case PUSHLOCAL9:
-	case PUSHINDEXED:
-	case STORELOCAL0:
-	case STORELOCAL1:
-	case STORELOCAL2:
-	case STORELOCAL3:
-	case STORELOCAL4:
-	case STORELOCAL5:
-	case STORELOCAL6:
-	case STORELOCAL7:
-	case STORELOCAL8:
-	case STORELOCAL9:
-	case STOREINDEXED0:
-	case ADJUST0:
-	case EQOP:
-	case LTOP:
-	case LEOP:
-	case GTOP:
-	case GEOP:
-	case ADDOP:
-	case SUBOP:
-	case MULTOP:
-	case DIVOP:
-	case POWOP:
-	case CONCOP:
-	case MINUSOP:
-	case NOTOP:
-	case POP:
-	case RETCODE0:
-		p++;
-		break;
-	case PUSHBYTE:
-	case PUSHLOCAL:
-	case STORELOCAL:
-	case STOREINDEXED:
-	case STORELIST0:
-	case ADJUST:
-	case RETCODE:
-		p+=2;
-		break;
-	case PUSHWORD:
-	case PUSHSELF:
-	case CREATEARRAY:
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case UPJMP:
-	case IFFJMP:
-	case IFFUPJMP:
-	case SETLINE:
-	case STORELIST:
-	case CALLFUNC:
-	case PUSHGLOBAL:
-	case STOREGLOBAL:
-		p+=3;
-		break;
-	case PUSHFLOAT:
-		p+=5;
-		break;
-	case PUSHSTRING:
-	{
-		CodeWord c;
-		p++;
-		get_word(c,p);
-		c.w=SawStr(c.w,at);
-		p[-2]=c.m.c1;
-		p[-1]=c.m.c2;
-		break;
-	}
-	case PUSHFUNCTION:
-	{
-		CodeCode c;
-		p++;
-		get_code(c,p);
-		c.tf->marked=at;
 		break;
 	}
 	case STORERECORD:
@@ -679,6 +411,37 @@ static void DumpFunctions(Byte *code, Byte *end)
  }
 }
 
+static void CheckThread(Byte *p, int i)
+{
+ while (i>0)
+ {
+  CodeWord c;
+  Byte *q;
+  q=p+i;
+  printf(" %d",i);
+  get_word(c,q);
+  i=c.w;
+ }
+ printf("\n");
+}
+
+static void CheckThreads(Byte *code)
+{
+ int i;
+ for (i=0; i<lua_ntable; i++)
+  if (VarLoc(i)!=0)
+  {
+   printf("%s:",VarStr(i));
+   CheckThread(code,VarLoc(i));
+  }
+ for (i=0; i<lua_nconstant; i++)
+  if (StrLoc(i)!=0)
+  {
+   printf("\"%s\":",StrStr(i));
+   CheckThread(code,StrLoc(i));
+  }
+}
+
 static void DumpWord(int i, FILE *D)
 {
  Word w=i;
@@ -702,48 +465,22 @@ static void DumpString(char *s, FILE *D)
 static void DumpStrings(FILE *D)
 {
  int i;
- extern Word lua_ntable;
- extern Word lua_nconstant;
-#define marked varindex
  for (i=0; i<lua_ntable; i++)
-  if (lua_table[i].varname->marked>0)
+  if (VarLoc(i)!=0)
   {
    fputc('V',D);
-   DumpWord(lua_table[i].varname->marked,D);
-   DumpString(lua_table[i].varname->str,D);
+   DumpWord(VarLoc(i),D);
+   DumpString(VarStr(i),D);
   }
-#define marked constindex
  for (i=0; i<lua_nconstant; i++)
-  if (lua_constant[i]->marked>0)
+  if (StrLoc(i)!=0)
   {
    fputc('S',D);
-   DumpWord(lua_constant[i]->marked,D);
-   DumpString(lua_constant[i]->str,D);
+   DumpWord(StrLoc(i),D);
+   DumpString(StrStr(i),D);
   }
 }
 
-static void DumpThreads(Byte *code, FILE *D)
-{
- int i;
- extern Word lua_ntable;
- extern Word lua_nconstant;
-#define marked varindex
- for (i=0; i<lua_ntable; i++)
-  if (lua_table[i].varname->marked>0)
-  {
-   printf("%s:",lua_table[i].varname->str);
-   CheckThread(code,lua_table[i].varname->marked);
-  }
-#define marked constindex
- for (i=0; i<lua_nconstant; i++)
-  if (lua_constant[i]->marked>0)
-  {
-   printf("\"%s\":",lua_constant[i]->str);
-   CheckThread(code,lua_constant[i]->marked);
-  }
-}
-
-#undef marked
 void DumpFunction(TFunc *tf, FILE *D)
 {
  fputc('F',D);
@@ -751,16 +488,10 @@ void DumpFunction(TFunc *tf, FILE *D)
  DumpWord(tf->marked,D);
  DumpWord(tf->lineDefined,D);
  DumpString(tf->fileName,D);
-#if 1
  ThreadCode(tf->code,tf->code+tf->size);
-#else
- ThreadVar(tf->code,tf->code+tf->size);
- DumpThreads(tf->code,D);
- ThreadStr(tf->code,tf->code+tf->size);
-#endif
  fwrite(tf->code,tf->size,1,D);
  DumpStrings(D);
- DumpThreads(tf->code,D);
+CheckThreads(tf->code);
  DumpFunctions(tf->code,tf->code+tf->size);
 }
 
