@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.24 2000/01/28 17:51:09 lhf Exp lhf $
+** $Id: dump.c,v 1.25 2000/02/17 19:17:44 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "luac.h"
 
 #ifdef OLD_ANSI
@@ -15,13 +16,14 @@
 
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
 #define	DumpInt			DumpLong
+#define	DumpByte		fputc
 
 static void DumpWord(int i, FILE* D)
 {
  int hi= 0x0000FF & (i>>8);
  int lo= 0x0000FF &  i;
- fputc(hi,D);
- fputc(lo,D);
+ DumpByte(hi,D);
+ DumpByte(lo,D);
 }
 
 static void DumpLong(long i, FILE* D)
@@ -32,48 +34,38 @@ static void DumpLong(long i, FILE* D)
  DumpWord(lo,D);
 }
 
-static void DumpNumber(real x, FILE* D, int native, const TProtoFunc* tf)
+static void DumpNumber(Number x, FILE* D, const Proto* tf)
 {
- if (native)
-  DumpBlock(&x,sizeof(x),D);
- else
- {
-  char b[256];
-  int n;
-  sprintf(b,NUMBER_FMT"%n",x,&n);
-  luaU_str2d(L,b,tf->source->str);	/* help lundump not to fail */
-  fputc(n,D);
-  DumpBlock(b,n,D);
- }
+ char b[256];
+ int n;
+ sprintf(b,NUMBER_FMT"%n",x,&n);
+ luaU_str2d(L,b,tf->source->str);	/* help lundump not to fail */
+ DumpByte(n,D);
+ DumpBlock(b,n,D);
 }
 
-static void DumpCode(const TProtoFunc* tf, FILE* D)
+static void DumpString(TString* s, FILE* D)
 {
- int size=luaU_codesize(tf);
- DumpLong(size,D);
- DumpBlock(tf->code,size,D);
-}
-
-static void DumpString(const char* s, int size, FILE* D)
-{
- if (s==NULL)
+ if (s==NULL || s->str==NULL)
   DumpLong(0,D);
  else
  {
+  long size=s->u.s.len+1;		/* include trailing '\0' */
   DumpLong(size,D);
-  DumpBlock(s,size,D);
+  DumpBlock(s->str,size,D);
  }
 }
 
-static void DumpTString(TaggedString* s, FILE* D)
+static void DumpCode(const Proto* tf, FILE* D)
 {
- if (s==NULL)
-  DumpString(NULL,0,D);
- else
-  DumpString(s->str,s->u.s.len+1,D);
+ int size=luaU_codesize(tf);
+ Instruction t=TEST_CODE;
+ DumpLong(size,D);
+ DumpBlock(tf->code,size*sizeof(*tf->code),D);
+ DumpBlock(&t,sizeof(t),D);
 }
 
-static void DumpLocals(const TProtoFunc* tf, FILE* D)
+static void DumpLocals(const Proto* tf, FILE* D)
 {
  if (tf->locvars==NULL)
   DumpInt(0,D);
@@ -87,28 +79,34 @@ static void DumpLocals(const TProtoFunc* tf, FILE* D)
   for (v=tf->locvars; v->line>=0; v++)
   {
    DumpInt(v->line,D);
-   DumpTString(v->varname,D);
+   DumpString(v->varname,D);
   }
  }
 }
 
-static void DumpFunction(const TProtoFunc* tf, FILE* D, int native);
+static void DumpFunction(const Proto* tf, FILE* D, int native);
 
-static void DumpConstants(const TProtoFunc* tf, FILE* D, int native)
+static void DumpConstants(const Proto* tf, FILE* D, int native)
 {
  int i,n;
- n=tf->nkstr;
- DumpInt(n,D); for (i=0; i<n; i++) DumpTString(tf->kstr[i],D);
- n=tf->nknum;
- DumpInt(n,D); for (i=0; i<n; i++) DumpNumber(tf->knum[i],D,native,tf);
- n=tf->nkproto;
- DumpInt(n,D); for (i=0; i<n; i++) DumpFunction(tf->kproto[i],D,native);
+ DumpInt(n=tf->nkstr,D);
+ for (i=0; i<n; i++) DumpString(tf->kstr[i],D);
+ DumpInt(n=tf->nknum,D);
+ if (native)
+  DumpBlock(tf->knum,n*sizeof(*tf->knum),D);
+ else
+  for (i=0; i<n; i++) DumpNumber(tf->knum[i],D,tf);
+ DumpInt(n=tf->nkproto,D);
+ for (i=0; i<n; i++) DumpFunction(tf->kproto[i],D,native);
 }
 
-static void DumpFunction(const TProtoFunc* tf, FILE* D, int native)
+static void DumpFunction(const Proto* tf, FILE* D, int native)
 {
+ DumpString(tf->source,D);
  DumpInt(tf->lineDefined,D);
- DumpTString(tf->source,D);
+ DumpInt(tf->numparams,D);
+ DumpByte(tf->is_vararg,D);
+ DumpInt(tf->maxstacksize,D);
  DumpCode(tf,D);
  DumpLocals(tf,D);
  DumpConstants(tf,D,native);
@@ -116,22 +114,27 @@ static void DumpFunction(const TProtoFunc* tf, FILE* D, int native)
   luaL_verror(L,"write error" IN ": %s (errno=%d)",INLOC,strerror(errno),errno);
 }
 
-static void DumpHeader(const TProtoFunc* Main, FILE* D, int native)
+static void DumpHeader(FILE* D, int native)
 {
- fputc(ID_CHUNK,D);
+ DumpByte(ID_CHUNK,D);
  fputs(SIGNATURE,D);
- fputc(VERSION,D);
+ DumpByte(VERSION,D);
+ DumpByte(sizeof(Instruction),D);
+ DumpByte(SIZE_INSTRUCTION,D);
+ DumpByte(SIZE_OP,D);
+ DumpByte(SIZE_B,D);
  if (native)
  {
-  fputc(sizeof(real),D);
-  DumpNumber(TEST_NUMBER,D,native,Main);
+  Number f=TEST_NUMBER;
+  DumpByte(sizeof(Number),D);
+  DumpBlock(&f,sizeof(f),D);
  }
  else
-  fputc(0,D);
+  DumpByte(0,D);
 }
 
-void luaU_dumpchunk(const TProtoFunc* Main, FILE* D, int native)
+void luaU_dumpchunk(const Proto* Main, FILE* D, int native)
 {
- DumpHeader(Main,D,native);
+ DumpHeader(D,native);
  DumpFunction(Main,D,native);
 }
