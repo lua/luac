@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.8 1999/03/22 21:38:26 lhf Exp lhf $
+** $Id: opt.c,v 1.9 1999/04/17 03:22:01 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -9,15 +9,21 @@
 #include <string.h>
 #include "luac.h"
 
-static void FixConstant(Byte* p, int i, int j)
+static void FixArg(Byte* p, int i, int j, int isconst)
 {
+if (i<=MAX_BYTE && j>MAX_BYTE)
+{
+ luaL_verror("internal error: cannot fix arg for %s. i=%d j=%d p=%p\n"
+ "\tThis will be corrected in 3.2 final.",
+	isconst?"constant":"jump",i,j,p);
+}
  if (j==i)
   ;
  else if (i<=MAX_BYTE)		/* j<i, so j fits where i did */
   p[1]=j;
  else if (i<=MAX_WORD)
  {
-  if (j<=MAX_BYTE)		/* may use byte variant instead */
+  if (isconst && j<=MAX_BYTE)	/* may use byte variant instead */
   {
    p[0]++;			/* byte variant follows word variant */
    p[1]=j;
@@ -25,14 +31,14 @@ static void FixConstant(Byte* p, int i, int j)
   }
   else 				/* stuck with word variant */
   {
-   p[1]= 0x0000FF & (j>>8);
-   p[2]= 0x0000FF &  j;
+   p[1]=j>>8;
+   p[2]=j;
   }
  }
  else 				/* previous instruction must've been LONGARG */
  {
-  FixConstant(p,i&0x00FFFF,j&0x00FFFF);
-  if (j<=MAX_WORD) p[-2]=p[-1]=NOP; else p[-1]=0x0000FF & (j>>16);
+  FixArg(p,i&0x00FFFF,j&0x00FFFF,isconst);
+  if (isconst && j<=MAX_WORD) p[-2]=p[-1]=NOP; else p[-1]=j>>16;
  }
 }
 
@@ -50,7 +56,7 @@ static void FixConstants(TProtoFunc* tf, int* C)
   longarg=0;
   if (op==PUSHCONSTANT || op==GETGLOBAL || op==GETDOTTED ||
       op==PUSHSELF     || op==SETGLOBAL || op==CLOSURE)
-   FixConstant(p,i,C[i]);
+   FixArg(p,i,C[i],1);
   else if (op==LONGARG) longarg=i<<16;
   else if (op==ENDCODE) break;
   p+=n;
@@ -207,35 +213,58 @@ static int FixJump(TProtoFunc* tf, Byte* a, Byte* b)
  return nop;
 }
 
+static void FixJumpOpcode(Byte* p, int i, int j)
+{
+ if (i<=MAX_BYTE)		/* j<i, so j fits where i did */
+  p[1]=j;
+ else if (i<=MAX_WORD)
+ {
+  if (j<=MAX_BYTE)		/* may use byte variant instead */
+  {
+   p[0]++;			/* byte variant follows word variant */
+   p[1]=j;
+   p[2]=NOP;
+  }
+  else 				/* stuck with word variant */
+  {
+   p[1]=j>>8;
+   p[2]=j;
+  }
+ }
+ else 				/* previous instruction must've been LONGARG */
+ {
+  FixJumpOpcode(p,i&0x00FFFF,j&0x00FFFF);
+  p[-1]=j>>16;
+ }
+}
+
 static void FixJumps(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
+ int longarg=0;
  while (1)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
   int op=OP.class;
-  int i=OP.arg;
-  int nop;
+  int i=OP.arg+longarg;
+  int nop=0;
+  longarg=0;
+#if 1
+printf("%6d   %-14s  %d %d\n",p-code,OP.name,OP.arg,OP.arg2);
+#endif
   if (op==ENDCODE) break;
   else if (op==IFTUPJMP || op==IFFUPJMP)
    nop=FixJump(tf,p-i+n,p);
   else if (op==ONTJMP || op==ONFJMP || op==JMP || op==IFFJMP)
    nop=FixJump(tf,p,p+i+n);
-  else
-   nop=0;
+  else if (op==LONGARG) longarg=i<<16;
+  if (nop>0) FixArg(p,i,i-nop,0);
+#if 1
   if (nop>0)
-  {
-   int j=i-nop;
-   if (i<=MAX_BYTE)			/* j<i, so j fits where i did */
-    p[1]=j;
-   else 				/* stuck with word variant */
-   {
-    p[1]= 0x0000FF & (j>>8);
-    p[2]= 0x0000FF &  j;
-   }
-  }
+printf("%6d   %-14s  %d %d\n",p-code,OP.name,OP.arg,OP.arg2);
+#endif
   p+=n;
  }
 }
@@ -261,7 +290,9 @@ printf("\t" SOURCE " reduced code from %d to %d\n",
 static void OptCode(TProtoFunc* tf)
 {
  if (NoDebug(tf)==0) return;		/* cannot improve code */
-return;
+#if 0
+luaU_printchunk(tf);
+#endif
  FixJumps(tf);
  PackCode(tf);
 }
