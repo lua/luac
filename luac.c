@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.13 1999/03/16 18:08:20 lhf Exp lhf $
+** $Id: luac.c,v 1.14 1999/03/22 21:43:09 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
  char* d=OUTPUT;			/* output file name */
  int i;
  lua_open();
- luaU_testnumber();
  for (i=1; i<argc; i++)
  {
   if (argv[i][0]!='-')			/* end of options */
