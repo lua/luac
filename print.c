@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
+** $Id: print.c,v 1.3 1998/01/05 13:37:07 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -10,7 +10,7 @@
 #include "luac.h"
 #include "print.h"
 
-static void PrintConstants(TFunc* tf)
+static void PrintConstants(TProtoFunc* tf)
 {
  int i;
  int n=tf->nconsts;
@@ -34,7 +34,7 @@ static void PrintConstants(TFunc* tf)
  printf("\n");
 }
 
-static void PrintConstant(TFunc* tf, int n)
+static void PrintConstant(TProtoFunc* tf, int n)
 {
  if (n<0 || n>=tf->nconsts)
  {
@@ -59,7 +59,7 @@ static void PrintConstant(TFunc* tf, int n)
 
 #define VarStr(i)       svalue(tf->consts+i)
 
-static void PrintCode(TFunc* tf)
+static void PrintCode(TProtoFunc* tf)
 {
  Byte* code=tf->code+1;
  Byte* p=code;
@@ -73,16 +73,18 @@ static void PrintCode(TFunc* tf)
 	 luaL_verror("internal error in PrintCode: "
 		"bad opcode %d at %d (NOPCODES=%d)\n",op,(int)(p-code),NOPCODES);
 #endif
-	n=OpcodeSize[op];
+	n=Opcode[op].size;
 	printf("%6d  ",(int)(p-code));
 	{
 	 Byte* q=p;
-	 i=n;
+	 int i=n;
 	 while (i--) printf("%02X",*q++);
 	}
-	printf("\t%-13s",OpcodeName[op]);
-	if (n==1) i=-1; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
+	printf("\t%-13s",Opcode[op].name);
+	if (n==1) i=Opcode[op].arg; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
+	op=Opcode[op].class;
 	if (n!=1 && op!=SETLIST && op!=CALLFUNC) printf("\t%d",i);
+	if (n==1 && i>=0) printf("\t");
 
 	switch (op)
 	{
@@ -94,129 +96,36 @@ static void PrintCode(TFunc* tf)
 		printf("\n");
 		return;
 
-	case PUSHCONSTANT0:
-	case PUSHCONSTANT1:
-	case PUSHCONSTANT2:
-	case PUSHCONSTANT3:
-	case PUSHCONSTANT4:
-	case PUSHCONSTANT5:
-	case PUSHCONSTANT6:
-	case PUSHCONSTANT7:
-		i=op-PUSHCONSTANT0;
-		printf("\t");
 	case PUSHCONSTANT:
-	case PUSHCONSTANTW:
-		goto PRINTCONSTANT;
-
-	case GETDOTTED0:
-	case GETDOTTED1:
-	case GETDOTTED2:
-	case GETDOTTED3:
-	case GETDOTTED4:
-	case GETDOTTED5:
-	case GETDOTTED6:
-	case GETDOTTED7:
-		i=op-GETDOTTED0;
-		printf("\t");
 	case GETDOTTED:
-	case GETDOTTEDW:
-		goto PRINTCONSTANT;
-
-	case PUSHSELF0:
-	case PUSHSELF1:
-	case PUSHSELF2:
-	case PUSHSELF3:
-	case PUSHSELF4:
-	case PUSHSELF5:
-	case PUSHSELF6:
-	case PUSHSELF7:
-		i=op-PUSHSELF0;
-		printf("\t");
 	case PUSHSELF:
-	case PUSHSELFW:
-		goto PRINTCONSTANT;
-
 	case CLOSURE:
-PRINTCONSTANT:
 		printf("\t; ");
 		PrintConstant(tf,i);
 		break;
 
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-		i=op-PUSHLOCAL0;
-		printf("\t");
 	case PUSHLOCAL:
-		goto PRINTLOCAL;
-
-	case SETLOCAL0:
-	case SETLOCAL1:
-	case SETLOCAL2:
-	case SETLOCAL3:
-	case SETLOCAL4:
-	case SETLOCAL5:
-	case SETLOCAL6:
-	case SETLOCAL7:
-		i=op-SETLOCAL0;
-		printf("\t");
 	case SETLOCAL:
-PRINTLOCAL:
 	{
 		char* s=luaF_getlocalname(tf,i+1,line);
 		if (s) printf("\t; %s",s);
 		break;
 	}
 
-	case GETGLOBAL0:
-	case GETGLOBAL1:
-	case GETGLOBAL2:
-	case GETGLOBAL3:
-	case GETGLOBAL4:
-	case GETGLOBAL5:
-	case GETGLOBAL6:
-	case GETGLOBAL7:
-		i=op-GETGLOBAL0;
-		printf("\t");
 	case GETGLOBAL:
-	case GETGLOBALW:
-		goto PRINTGLOBAL;
-
-	case SETGLOBAL0:
-	case SETGLOBAL1:
-	case SETGLOBAL2:
-	case SETGLOBAL3:
-	case SETGLOBAL4:
-	case SETGLOBAL5:
-	case SETGLOBAL6:
-	case SETGLOBAL7:
-		i=op-SETGLOBAL0;
-		printf("\t");
 	case SETGLOBAL:
-	case SETGLOBALW:
-
-PRINTGLOBAL:
 		printf("\t; %s",VarStr(i));
 		break;
 
 /* suggested by Norman Ramsey <nr@cs.virginia.edu> */
 	case ONTJMP:
 	case ONFJMP:
-	case JMPW:
 	case JMP:
-	case IFFJMPW:
 	case IFFJMP:
 		printf("\t; to %d",(int)(p-code)+i+n);
 		break;
 
-	case IFTUPJMPW:
 	case IFTUPJMP:
-	case IFFUPJMPW:
 	case IFFUPJMP:
 		printf("\t; to %d",(int)(p-code)-i+n);
 		break;
@@ -227,7 +136,6 @@ PRINTGLOBAL:
 		break;
 
 	case SETLINE:
-	case SETLINEW:
 		printf("\t; \"%s\":%d",tf->fileName->str,line=i);
 		break;
 
@@ -245,7 +153,7 @@ PRINTGLOBAL:
  }
 }
 
-static void PrintLocals(TFunc* tf)
+static void PrintLocals(TProtoFunc* tf)
 {
  LocVar* v=tf->locvars;
  int n=0;
@@ -256,7 +164,9 @@ static void PrintLocals(TFunc* tf)
   if (*p==SETLINE) p+=2; else if (*p==SETLINEW) p+=3; else break;
  if (*p==ARGS || *p==VARARGS) n=p[1]; else
  if (*p>ARGS && *p<VARARGS) n=*p-ARGS0;
- printf("PrintLocals: %d %s n=%d\n",(int)(p-tf->code)-1,OpcodeName[*p],n);
+#if 0
+ printf("PrintLocals: %d %s n=%d\n",(int)(p-tf->code)-1,Opcode[*p].name,n);
+#endif
 
  printf("locals:");
  if (n>0)
@@ -292,7 +202,7 @@ static void PrintLocals(TFunc* tf)
  printf("\n");
 }
 
-static Byte* FindFunction(TFunc* tf, TFunc* Main)
+static Byte* FindFunction(TProtoFunc* tf, TProtoFunc* Main)
 {
  Byte* code=Main->code+1;
  Byte* p=code;
@@ -308,7 +218,7 @@ static Byte* FindFunction(TFunc* tf, TFunc* Main)
   if (op==ENDCODE) break;
   else if (op==PUSHCONSTANT) i=p[1];
   else if (op>PUSHCONSTANT && op<PUSHCONSTANTW) i=op-PUSHCONSTANT0;
-  p+=OpcodeSize[op];
+  p+=Opcode[op].size;
   if (i>=0)
   {
    TObject* o=Main->consts+i;
@@ -318,7 +228,7 @@ static Byte* FindFunction(TFunc* tf, TFunc* Main)
  return NULL;				/* to avoid warnings */
 }
 
-int CodeSize(TFunc* tf)
+int CodeSize(TProtoFunc* tf)
 {
  Byte* code=tf->code+1;
  Byte* p=code;
@@ -330,7 +240,7 @@ int CodeSize(TFunc* tf)
    luaL_verror("internal error in CodeSize: bad opcode %d at %d\n",
 	op,(int)(p-code));
 #endif
-  p+=OpcodeSize[op];
+  p+=Opcode[op].size;
   if (op==ENDCODE) break;
  }
  return p-code;
@@ -339,7 +249,7 @@ int CodeSize(TFunc* tf)
 #undef VarStr
 #define VarStr(i)       svalue(Main->consts+i)
 
-static void PrintHeader(TFunc* tf, TFunc* Main)
+static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main)
 {
  int size=CodeSize(tf);
  if (IsMain(tf))
@@ -406,9 +316,9 @@ printf("t=%d m=%d\n",t,m);
 #endif
 }
 
-static void PrintFunction(TFunc* tf, TFunc* Main);
+static void PrintFunction(TProtoFunc* tf, TProtoFunc* Main);
 
-static void PrintFunctions(TFunc* tf)
+static void PrintFunctions(TProtoFunc* tf)
 {
  int i,n=tf->nconsts;
  for (i=0; i<n; i++)
@@ -418,7 +328,7 @@ static void PrintFunctions(TFunc* tf)
  }
 }
 
-static void PrintFunction(TFunc* tf, TFunc* Main)
+static void PrintFunction(TProtoFunc* tf, TProtoFunc* Main)
 {
  PrintHeader(tf,Main);
  PrintLocals(tf);
@@ -429,7 +339,7 @@ static void PrintFunction(TFunc* tf, TFunc* Main)
  PrintFunctions(tf);
 }
 
-void PrintChunk(TFunc* Main)
+void PrintChunk(TProtoFunc* Main)
 {
  PrintFunction(Main,0);
 }
