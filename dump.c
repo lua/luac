@@ -1,135 +1,13 @@
 /*
-** $Id: $
+** $Id$
 ** save bytecodes to file
-** Copyrightnotice
+** See Copyright Notice in lua.h
 */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
-
-/*
-** VarLoc(i) is the place of the last occurence of global #i.
-** It must be an integer to support long codes.
-** Using the "marked" field of the variable name is ok for luac,
-** but it is NOT SAFE if dump.c is used during runtime.
-*/
-
-#define VarLoc(i)	(luaG_global[i].varname->marked)
-
-static int SawVar(int i, int at)
-{
- int old=VarLoc(i);
- int d=at-old;
- VarLoc(i)=at;
- if (old==0) return 0;
- if (NotWord(d))
-  luaL_verror("occurences of global #%d (%s) too far apart (%d-%d=%d)\n",
-	i,VarStr(i),at,old,d);
- return d;
-}
-
-static int Thread(TFunc* tf)
-{
- Byte* code=tf->code;
- Byte* p=code;
- int i;
- for (i=0; i<luaG_nglobal; i++) VarLoc(i)=0;
- while (1)
- {
-	int op=*p;
-	int at=p-code+1;
-	switch (op)
-	{
-	case ENDCODE:	return at;
-	case PUSHNIL:
-	case PUSH0:
-	case PUSH1:
-	case PUSH2:
-	case PUSHLOCAL0:
-	case PUSHLOCAL1:
-	case PUSHLOCAL2:
-	case PUSHLOCAL3:
-	case PUSHLOCAL4:
-	case PUSHLOCAL5:
-	case PUSHLOCAL6:
-	case PUSHLOCAL7:
-	case PUSHLOCAL8:
-	case PUSHLOCAL9:
-	case PUSHINDEXED:
-	case SETLOCAL0:
-	case SETLOCAL1:
-	case SETLOCAL2:
-	case SETLOCAL3:
-	case SETLOCAL4:
-	case SETLOCAL5:
-	case SETLOCAL6:
-	case SETLOCAL7:
-	case SETLOCAL8:
-	case SETLOCAL9:
-	case SETINDEXED0:
-	case EQOP:
-	case LTOP:
-	case LEOP:
-	case GTOP:
-	case GEOP:
-	case ADDOP:
-	case SUBOP:
-	case MULTOP:
-	case DIVOP:
-	case POWOP:
-	case CONCOP:
-	case MINUSOP:
-	case NOTOP:
-	case RETCODE0:
-		p++;
-		break;
-	case PUSHNILS:
-	case PUSHBYTE:
-	case PUSHCONSTANTB:
-	case PUSHLOCAL:
-	case SETLOCAL:
-	case SETINDEXED:
-	case SETLIST0:
-	case SETMAP:
-	case RETCODE:
-	case ADJUST:
-	case POPS:
-	case VARARGS:
-		p+=2;
-		break;
-	case PUSHWORD:
-	case PUSHCONSTANT:
-	case PUSHSELF:
-	case CREATEARRAY:
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case UPJMP:
-	case IFFJMP:
-	case IFFUPJMP:
-	case SETLINE:
-	case SETLIST:
-	case CALLFUNC:
-		p+=3;
-		break;
-	case PUSHGLOBAL:
-	case SETGLOBAL:
-	{
-		Word w;
-		p++;
-		get_word(w,p);
-		w=SawVar(w,at);
-		p[-2]=w; p[-1]=w>>8;
-		break;
-	}
-	default:			/* cannot happen */
-		luaL_verror("bad opcode %d at %d\n",*p,(int)(p-code));
-		break;
-	}
- }
-}
 
 static void DumpWord(int i, FILE* D)
 {
@@ -159,6 +37,14 @@ static void DumpSize(int s, FILE* D)
   "luac: warning: code too long for 16-bit machines (%d bytes)\n",s);
 }
 
+static void DumpCode(TFunc* tf, FILE* D)
+{
+ extern int CodeSize(TFunc*);		/* in print.c */
+ int size=CodeSize(tf)+1;
+ DumpSize(size,D);
+ DumpBlock(tf->code,size,D);
+}
+
 static void DumpString(char* s, FILE* D)
 {
  if (s==NULL)
@@ -176,21 +62,6 @@ static void DumpString(char* s, FILE* D)
 static void DumpTString(TaggedString* s, FILE* D)
 {
  DumpString((s==NULL) ? NULL : s->str,D);
-}
-
-static void DumpGlobals(int longcode, TFunc* tf, FILE* D)
-{
- int i,n=0;
- for (i=0; i<luaG_nglobal; i++) if (VarLoc(i)!=0) ++n;
- DumpWord(n,D);
- for (i=0; i<luaG_nglobal; i++)
- {
-  if (VarLoc(i)!=0)
-  {
-   if (longcode) DumpLong(VarLoc(i),D); else DumpWord(VarLoc(i),D);
-   DumpString(VarStr(i),D);
-  }
- }
 }
 
 static void DumpLocals(TFunc* tf, FILE* D)
@@ -223,33 +94,47 @@ static void DumpConstants(TFunc* tf, FILE* D)
 	fputc(ID_STR,D);
 	DumpString(svalue(o),D);
 	break;
-   case LUA_T_FUNCTION:
+   case LUA_T_PROTO:
 	fputc(ID_FUN,D);
 	break;
    default:				/* cannot happen */
-	luaL_verror("bad constant #%d type=%d\n",i,ttype(o));
+#ifdef DEBUG
+	luaL_verror("internal error in DumpConstants: "
+		"bad constant #%d type=%d\n",i,ttype(o));
+#endif
 	break;
   }
  }
 }
 
-void DumpFunction(TFunc* tf, FILE* D)
+void DumpFunction(TFunc* tf, FILE* D);
+
+static void DumpFunctions(TFunc* tf, FILE* D)
 {
- int size=Thread(tf);
- fputc(ID_FUNCTION,D);
- DumpSize(size,D);
- DumpWord(tf->lineDefined,D);
- if (IsMain(tf))
-  DumpTString(tf->fileName,D);
- else
-  DumpWord(tf->marked,D);
- DumpBlock(tf->code,size,D);
- DumpGlobals(NotWord(size),tf,D);
- DumpConstants(tf,D);
- DumpLocals(tf,D);
+ int i,n=tf->nconsts;
+ for (i=0; i<n; i++)
+ {
+  TObject* o=tf->consts+i;
+  if (ttype(o)==LUA_T_PROTO)
+  {
+   fputc(ID_FUNCTION,D);
+   DumpWord(i,D);
+   DumpFunction(tfvalue(o),D);
+  }
+ }
+ fputc(ID_END,D);
 }
 
-void DumpHeader(FILE* D)
+void DumpFunction(TFunc* tf, FILE* D)
+{
+ DumpWord(tf->lineDefined,D);
+ DumpCode(tf,D);
+ DumpConstants(tf,D);
+ DumpLocals(tf,D);
+ DumpFunctions(tf,D);
+}
+
+static void DumpHeader(TFunc* Main, FILE* D)
 {
  real r=TEST_FLOAT;
  fputc(ID_CHUNK,D);
@@ -257,4 +142,11 @@ void DumpHeader(FILE* D)
  fputc(VERSION,D);
  fputc(sizeof(r),D);
  fwrite(&r,sizeof(r),1,D);
+ DumpTString(Main->fileName,D);
+}
+
+void DumpChunk(TFunc* Main, FILE* D)
+{
+ DumpHeader(Main,D);
+ DumpFunction(Main,D);
 }
