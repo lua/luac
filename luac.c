@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files; also list binary files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.21 1997/06/19 14:56:04 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.22 1997/06/19 17:32:08 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -150,7 +150,7 @@ static void compile(char* filename)
  {
   ZIO z;
   zFopen(&z,f);
-  lua_parsedfile=filename;		/* TODO: is this ok? */
+  luaI_setparsedfile(filename?filename:"(stdin)");
   do_compile(&z);
   fclose(f);
  }
