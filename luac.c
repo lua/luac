@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.7 1998/06/13 16:54:15 lhf Exp lhf $
+** $Id: luac.c,v 1.8 1998/06/25 15:50:09 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
   if (dumping)
   {
    for (i=1; i<argc; i++)		/* play safe with output file */
-    if (IS(d)) luaL_verror("will not overwrite input file \"%s\"\n",d);
+    if (IS(d)) luaL_verror("will not overwrite input file \"%s\"",d);
    D=efopen(d,"wb");			/* must open in binary mode */
 #if ID_NUMBER==ID_NATIVE
    if (verbose) fprintf(stderr,"luac: warning: "
@@ -150,7 +150,9 @@ static void do_compile(ZIO* z)
  Main=luaY_parser(z);
  if (optimizing) OptChunk(Main);
  if (listing) PrintChunk(Main);
+#ifndef TestChunk
  if (testing) TestChunk(Main);
+#endif
  if (dumping) DumpChunk(Main,D);
 }
 
@@ -162,7 +164,9 @@ static void do_undump(ZIO* z)
   if (Main==NULL) break;
   if (optimizing) OptChunk(Main);
   if (listing) PrintChunk(Main);
+#ifndef TestChunk
   if (testing) TestChunk(Main);
+#endif
  }
 }
 
@@ -194,11 +198,4 @@ static FILE* efopen(char* name, char* mode)
   exit(1);
  }
  return f; 
-}
-
-void testnumber(int verbose)
-{
- if (sizeof(real)!=SIZEOF_NUMBER)
-  luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
-	(int)sizeof(real),SIZEOF_NUMBER);
 }
