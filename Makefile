@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.17 2002/02/28 20:12:20 lhf Exp lhf $
+# $Id: Makefile,v 1.18 2002/06/06 13:30:21 lhf Exp lhf $
 # makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -24,12 +24,12 @@ CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
 LIBS= $(LUA)/liblua.a $(LUA)/liblualib.a -lm
 
-OBJS= dump.o luac.o lundump.o print.o lopcodes.o
-SRCS= dump.c luac.c lundump.c print.c luac.h ldumplib.c lundump.h
+OBJS= ldump.o luac.o lundump.o print.o lopcodes.o
+SRCS= ldump.c luac.c lundump.c print.c lundump.h
 
 # targets --------------------------------------------------------------------
 
-all:	luac lib
+all:	luac #lib
 
 luac:	$(OBJS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
@@ -72,7 +72,7 @@ wl:
 	rlog -L -R RCS/*
 
 what:
-	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort
+	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort | column
 
 ln:
 	ln -s L/*.[ch] .
@@ -90,6 +90,6 @@ depend:
 	@$(CC) -MM $(CFLAGS) $(SRCS)
 
 opp:
-	grep Kst lopcodes.h | grep OP_; echo ''
-	grep R/K lopcodes.h | grep OP_; echo ''
-	grep PC lopcodes.h | grep OP_; echo ''
+	grep Kst lopcodes.h | grep ^OP_; echo ''
+	grep RK  lopcodes.h | grep ^OP_; echo ''
+	grep PC  lopcodes.h | grep ^OP_; echo ''
