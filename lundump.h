@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.10 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: lundump.h,v 1.11 1999/03/16 18:15:53 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -43,6 +43,8 @@
 
 TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 void luaU_testnumber(void);		/* test number representation */
+void luaU_badconstant(char* s, int i, TObject* o, TProtoFunc* tf);
+					/* handle cases that cannot happen */
 
 /* definitions for headers of binary files */
 #define	VERSION		0x32		/* last format change was in 3.2 */
@@ -84,5 +86,10 @@ void luaU_testnumber(void);		/* test number representation */
 #else
 	#error	bad ID_NUMBER
 #endif
+
+/* formats for error messages */
+#define SOURCE		"<%s:%d>"
+#define IN		" in %p " SOURCE
+#define INLOC		tf,tf->source->str,tf->lineDefined
 
 #endif
