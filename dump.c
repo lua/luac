@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.4 1998/01/13 20:05:24 lhf Exp lhf $
+** $Id: dump.c,v 1.5 1998/01/19 16:10:52 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -9,42 +9,80 @@
 #include <string.h>
 #include "luac.h"
 
-#define NotWord(x)    ((unsigned short)x!=x)
+#define NotWord(x)		((unsigned short)x!=x)
+#define DumpBlock(b,size,D)	fwrite(b,size,1,D)
+#define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
+
+/* LUA_NUMBER */
+/* if you change the definition of real, make sure you set ID_NUMBER
+* accordingly lundump.h, specially if sizeof(long)!=4.
+* for types other than the ones listed below, you'll have to write your own
+* dump and undump routines.
+*/
+
+#if   ID_NUMBER==ID_REAL4
+	#define	DumpNumber	DumpFloat
+#elif ID_NUMBER==ID_REAL8
+	#define	DumpNumber	DumpDouble
+#elif ID_NUMBER==ID_INT4
+	#define	DumpNumber	DumpLong
+#elif ID_NUMBER==ID_NATIVE
+	#define	DumpNumber	DumpNative
+#else
+	#define	DumpNumber	DumpWhat
+#endif
 
 static void DumpWord(int i, FILE* D)
 {
- int hi=(i>>8)&0x0FF;
- int lo=i&0x0FF;
+ int hi= 0x0000FF & (i>>8);
+ int lo= 0x0000FF &  i;
  fputc(hi,D);
  fputc(lo,D);
 }
 
-static void DumpLong(int i, FILE* D)
+static void DumpLong(long i, FILE* D)
 {
- int hi=(i>>16)&0x0FFFF;
- int lo=i&0x0FFFF;
+ int hi= 0x00FFFF & (i>>16);
+ int lo= 0x00FFFF & i;
  DumpWord(hi,D);
  DumpWord(lo,D);
 }
 
-static void DumpBlock(void* b, int size, FILE* D)
+/* LUA_NUMBER */
+/* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
+static void DumpFloat(float f, FILE* D)
 {
- fwrite(b,size,1,D);
+ long l=*(long*)&f;
+ DumpLong(l,D);
 }
 
-static void DumpSize(int s, FILE* D)
+/* LUA_NUMBER */
+/* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
+static void DumpDouble(double f, FILE* D)
 {
- DumpLong(s,D);
- if (NotWord(s))
-  fprintf(stderr,
-  "luac: warning: code too long for 16-bit machines (%d bytes)\n",s);
+ long* l=(long*)&f;
+ int x=1;
+ if (*(char*)&x==1)			/* little-endian */
+ {
+  DumpLong(l[1],D);
+  DumpLong(l[0],D);
+ }
+ else					/* big-endian */
+ {
+  DumpLong(l[0],D);
+  DumpLong(l[1],D);
+ }
 }
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
  extern int CodeSize(TProtoFunc*);	/* in print.c */
  int size=CodeSize(tf);
- DumpSize(size,D);
+ if (NotWord(size))
+  fprintf(stderr,"luac: warning: "
+	"\"%s\":%d code too long for 16-bit machines (%d bytes)\n",
+	tf->fileName->str,tf->lineDefined,size);
+ DumpLong(size,D);
  DumpBlock(tf->code,size,D);
 }
 
@@ -54,11 +92,11 @@ static void DumpString(char* s, FILE* D)
   DumpWord(0,D);
  else
  {
-  int n=strlen(s)+1;
-  if (NotWord(n))
-   luaL_verror("string too long (%d bytes): \"%.32s...\"\n",n,s);
-  DumpWord(n,D);
-  DumpBlock(s,n,D);
+  int size=strlen(s)+1;			/* includes trailing '\0' */
+  if (NotWord(size))
+   luaL_verror("string too long (%d bytes): \"%.32s...\"\n",size,s);
+  DumpWord(size,D);
+  DumpBlock(s,size,D);
  }
 }
 
@@ -80,6 +118,8 @@ static void DumpLocals(TProtoFunc* tf, FILE* D)
  }
 }
 
+static void DumpFunction(TProtoFunc* tf, FILE* D);
+
 static void DumpConstants(TProtoFunc* tf, FILE* D)
 {
  int i,n=tf->nconsts;
@@ -91,7 +131,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
   {
    case LUA_T_NUMBER:
 	fputc(ID_NUM,D);
-	DumpBlock(&nvalue(o),sizeof(nvalue(o)),D);
+	DumpNumber(nvalue(o),D);
 	break;
    case LUA_T_STRING:
 	fputc(ID_STR,D);
@@ -99,53 +139,40 @@ static void DumpConstants(TProtoFunc* tf, FILE* D)
 	break;
    case LUA_T_PROTO:
 	fputc(ID_FUN,D);
+	DumpFunction(tfvalue(o),D);
 	break;
    default:				/* cannot happen */
 #ifdef DEBUG
-	luaL_verror("internal error in DumpConstants: "
-		"bad constant #%d type=%d\n",i,ttype(o));
+	luaL_verror("internal error in DumpConstants: bad constant #%d type=%d",
+		i,ttype(o));
 #endif
 	break;
   }
  }
 }
 
-void DumpFunction(TProtoFunc* tf, FILE* D);
-
-static void DumpFunctions(TProtoFunc* tf, FILE* D)
-{
- int i,n=tf->nconsts;
- for (i=0; i<n; i++)
- {
-  TObject* o=tf->consts+i;
-  if (ttype(o)==LUA_T_PROTO)
-  {
-   fputc(ID_FUNCTION,D);
-   DumpWord(i,D);
-   DumpFunction(tfvalue(o),D);
-  }
- }
- fputc(ID_END,D);
-}
-
-void DumpFunction(TProtoFunc* tf, FILE* D)
+static void DumpFunction(TProtoFunc* tf, FILE* D)
 {
  DumpWord(tf->lineDefined,D);
  DumpTString(tf->fileName,D);
  DumpCode(tf,D);
- DumpConstants(tf,D);
  DumpLocals(tf,D);
- DumpFunctions(tf,D);
+ DumpConstants(tf,D);
 }
 
 static void DumpHeader(TProtoFunc* Main, FILE* D)
 {
- real r=TEST_FLOAT;
+ real t=TEST_NUMBER;
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
- fputc(sizeof(r),D);
- fwrite(&r,sizeof(r),1,D);
+#if ID_NUMBER==ID_NATIVE
+  fprintf(stderr,"luac: warning: "
+	"saving numbers in native format. file may not be portable.\n");
+#endif
+ fputc(ID_NUMBER,D);
+ fputc(sizeof(t),D);
+ DumpNumber(t,D);
 }
 
 void DumpChunk(TProtoFunc* Main, FILE* D)
