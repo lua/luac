@@ -1,4 +1,4 @@
-.\" $Id: luac.man,v 1.1 1996/03/12 07:36:31 lhf Exp lhf $
+.\" $Id: luac.man,v 1.2 1996/03/12 15:58:59 lhf Exp lhf $
 .TH LUAC 1 "12 March 1996"
 .SH NAME
 luac \- Lua compiler
@@ -54,8 +54,7 @@ Name the output file
 .IR output ,
 instead of the default
 .BR luac.out .
-Be careful not to specify a source file as the output file,
-because it will be overwritten.
+The output file cannot be a source file.
 .SH FILES
 .PD 0
 .TP 20
