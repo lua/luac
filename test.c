@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.8 1999/04/15 12:30:03 lhf Exp lhf $
+** $Id: test.c,v 1.9 1999/05/25 19:58:55 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -55,9 +55,6 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	int i=OP.arg+longarg;
 	int at=p-code;
 	longarg=0;
-#if 0
-printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
-#endif
 	switch (op)			/* test sanity of operands */
 	{
 	case PUSHCONSTANT:

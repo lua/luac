@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.10 1999/04/26 14:02:23 lhf Exp lhf $
+** $Id: opt.c,v 1.11 1999/05/25 19:58:55 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -144,9 +144,6 @@ static void OptConstants(TProtoFunc* tf)
  k=0;					/* build rename map & pack constants */
  for (i=0; i<n; i++)
  {
-#if 0
-printf("%d\tC[%d]=%d\tD[%d]=%d\n",i,i,C[i],i,D[i]);
-#endif
   if (D[i]==i)				/* new value */
   {
    TObject* o=tf->consts+i;
@@ -221,9 +218,6 @@ static void FixJumps(TProtoFunc* tf)
   int i=OP.arg+longarg;
   int nop=0;
   longarg=0;
-#if 1
-printf("%6d   %-14s  %d %d\n",p-code,OP.name,OP.arg,OP.arg2);
-#endif
   if (op==ENDCODE) break;
   else if (op==IFTUPJMP || op==IFFUPJMP)
    nop=FixJump(tf,p-i+n,p);
@@ -231,10 +225,6 @@ printf("%6d   %-14s  %d %d\n",p-code,OP.name,OP.arg,OP.arg2);
    nop=FixJump(tf,p,p+i+n);
   else if (op==LONGARG) longarg=i<<16;
   if (nop>0) FixArg(p,i,i-nop,0);
-#if 1
-  if (nop>0)
-printf("%6d   %-14s  %d %d\n",p-code,OP.name,OP.arg,OP.arg2);
-#endif
   p+=n;
  }
 }
@@ -260,9 +250,6 @@ printf("\t" SOURCE " reduced code from %d to %d\n",
 static void OptCode(TProtoFunc* tf)
 {
  if (NoDebug(tf)==0) return;		/* cannot improve code */
-#if 0
-luaU_printchunk(tf);
-#endif
  FixJumps(tf);
  PackCode(tf);
 }
