@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.38 2002/06/06 13:22:56 lhf Exp lhf $
+** $Id: print.c,v 1.39 2002/06/20 14:46:51 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #define LUA_OPNAMES
+#define DEBUG_PRINT
 
 #include "ldebug.h"
 #include "lobject.h"
@@ -14,6 +15,7 @@
 #include "lundump.h"
 
 #define Sizeof(x)	((int)sizeof(x))
+#define VOID(p)		((const void*)(p))
 
 static void PrintString(const Proto* f, int n)
 {
@@ -76,7 +78,7 @@ static void PrintCode(const Proto* f)
 #endif
   printf("\t%d\t",pc+1);
   if (line>0) printf("[%d]\t",line); else printf("[-]\t");
-  printf("%-11s\t",luaP_opnames[o]);
+  printf("%-9s\t",luaP_opnames[o]);
   switch (getOpMode(o))
   {
    case iABC:	printf("%d %d %d",a,b,c); break;
@@ -93,8 +95,10 @@ static void PrintCode(const Proto* f)
     printf("\t; %s",svalue(&f->k[bc]));
     break;
    case OP_GETTABLE:
-   case OP_SETTABLE:
    case OP_SELF:
+    if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
+    break;
+   case OP_SETTABLE:
    case OP_ADD:
    case OP_SUB:
    case OP_MUL:
@@ -103,9 +107,12 @@ static void PrintCode(const Proto* f)
    case OP_EQ:
    case OP_LT:
    case OP_LE:
-   case OP_GT:
-   case OP_GE:
-    if (c>=MAXSTACK) { printf("\t; "); PrintConstant(f,c-MAXSTACK); }
+    if (b>=MAXSTACK || c>=MAXSTACK) {
+     printf("\t; ");
+    if (b>=MAXSTACK) PrintConstant(f,b-MAXSTACK); else printf("-");
+    printf(" ");
+    if (c>=MAXSTACK) PrintConstant(f,c-MAXSTACK);
+    }
     break;
    case OP_JMP:
    case OP_FORLOOP:
@@ -113,7 +120,7 @@ static void PrintCode(const Proto* f)
     printf("\t; to %d",sbc+pc+2);
     break;
    case OP_CLOSURE:
-    printf("\t; %p",f->p[bc]);
+    printf("\t; %p",VOID(f->p[bc]));
     break;
    default:
     break;
@@ -142,7 +149,7 @@ static void PrintHeader(const Proto* f)
 {
  printf("\n%s <%s:%d> (%d instruction%s, %d bytes at %p)\n",
  	IsMain(f)?"main":"function",Source(f),f->lineDefined,
-	S(f->sizecode),f->sizecode*Sizeof(Instruction),f);
+	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
 	S(f->nupvalues));
@@ -154,7 +161,7 @@ static void PrintHeader(const Proto* f)
 static void PrintConstants(const Proto* f)
 {
  int i,n=f->sizek;
- printf("constants (%d) for %p:\n",n,f);
+ printf("constants (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t",i);
@@ -166,7 +173,7 @@ static void PrintConstants(const Proto* f)
 static void PrintLocals(const Proto* f)
 {
  int i,n=f->sizelocvars;
- printf("locals (%d) for %p:\n",n,f);
+ printf("locals (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t%s\t%d\t%d\n",
