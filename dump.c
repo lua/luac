@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.15 1999/03/22 21:36:11 lhf Exp lhf $
+** $Id: dump.c,v 1.16 1999/03/24 19:36:29 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -37,7 +37,8 @@ static void DumpLong(long i, FILE* D)
 /* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
 static void DumpFloat(float f, FILE* D)
 {
- long l=*(long*)&f;
+ long l;
+ memcpy(&l,&f,sizeof(l));
  DumpLong(l,D);
 }
 #endif
@@ -46,8 +47,9 @@ static void DumpFloat(float f, FILE* D)
 /* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
 static void DumpDouble(double f, FILE* D)
 {
- long* l=(long*)&f;
+ long l[2];
  int x=1;
+ memcpy(&l,&f,sizeof(l));
  if (*(char*)&x==1)			/* little-endian */
  {
   DumpLong(l[1],D);
