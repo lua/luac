@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.17 1999/04/09 02:51:31 lhf Exp lhf $
+** $Id: dump.c,v 1.18 1999/04/15 12:30:03 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -34,7 +34,7 @@ static void DumpLong(long i, FILE* D)
 
 static void DumpNumber(real x, FILE* D)
 {
-#if LUAC_NATIVE
+#ifdef LUAC_NATIVE
  DumpBlock(&x,sizeof(x),D);
 #else
  char b[256];
@@ -136,7 +136,7 @@ static void DumpHeader(TProtoFunc* Main, FILE* D)
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
-#if LUAC_NATIVE
+#ifdef LUAC_NATIVE
  fputc(sizeof(real),D);
  DumpNumber(TEST_NUMBER,D);
 #else
