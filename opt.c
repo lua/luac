@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.16 2000/01/28 17:51:09 lhf Exp lhf $
+** $Id: opt.c,v 1.17 2000/04/24 17:32:29 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -7,154 +7,65 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "ltable.h"
 #include "luac.h"
 
 #define OP_NOP	-1UL
 
-#if 0
-static void FixConstants(Proto* tf, int* C)
+static int MapConstant(Hash* t, int j, const TObject* key)
 {
- Instruction* code=tf->code;
- Instruction* p=code;
- for (;;)
+ const TObject* o=luaH_get(L,t,key);
+ if (o!=&luaO_nilobject) 
+  return nvalue(o);
+ else
  {
-  Opcode OP;
-  int n=INFO(tf,p,&OP);
-  int op=OP.class;
-  int i=OP.arg+longarg;
-  if (op==OP_PUSHCONSTANT || op==OP_GETGLOBAL || op==OP_GETDOTTED ||
-      op==OP_PUSHSELF     || op==OP_SETGLOBAL || op==OP_CLOSURE)
-   FixArg(p,i,C[i],1);
-  else if (op==OP_END) break;
-  p+=n;
+  TObject val;
+  ttype(&val)=TAG_NUMBER;
+  nvalue(&val)=j;
+  luaH_set(L,t,key,&val);
+  return j;
  }
-}
-
-static void* V;				/* for sort */
-
-static int compare_numbers(const void* a, const void* b)
-{
- const int ia=*(const int*)a;
- const int ib=*(const int*)b;
- Number* v=(Number*) V;
- Number va=v[ia];
- Number vb=v[ib];
- return (va==vb) ? 0 : ia-ib;
-}
-
-static void FixNumbers(Instruction* code, int* map)
-{
- Instruction* p;
- for (p=code;; p++)
- {
-  Instruction i=*p;
-  int op=GET_OPCODE(i);
-  switch (op)
-  {
-   case OP_PUSHNUM: case OP_PUSHNEGNUM:
-    int j=GETARG_U(i);
-    *p=CREATE_U(o,map[j]);
-    break;
-   case OP_END: return;
-  }
- }
-}
-
-static void FindNumbers(Instruction* code, int* seen)
-{
- Instruction* p;
- for (p=code;; p++)
- {
-  Instruction i=*p;
-  int op=GET_OPCODE(i);
-  switch (op)
-  {
-   case OP_PUSHNUM: case OP_PUSHNEGNUM:
-    seen[GETARG_U(i)]=1;
-   case OP_END: return;
-  }
- }
-}
-
-static int OptNumbers(Proto* tf, int* C, int* D)
-{
- int i,k;
- int n=tf->nknum;
- Number* v=tf->knum;
- for (i=0; i<n; i++) C[i]=D[i]=i;	/* group duplicates */
- V=v; qsort(C,n,sizeof(*C),compare_numbers);
- k=C[0];				/* build duplicate table */
- for (i=1; i<n; i++)
- {
-  int j=C[i];
-  if (v[k]==v[j]) D[j]=k; else k=j;
- }
- k=0;					/* build rename map & pack constants */
- for (i=0; i<n; i++)
- {
-  if (D[i]==i)				/* new value */
-  {
-   v[k]=v[i];
-   C[i]=k++;
-  }
-  else C[i]=C[D[i]];
- }
- return k;
-}
-
-static void FindStrings(Instruction* code, int* seen)
-{
- Instruction* p;
- for (p=code;; p++)
- {
-  Instruction i=*p;
-  int op=GET_OPCODE(i);
-  switch (op)
-  {
-   case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
-   case OP_PUSHSELF:   case OP_SETGLOBAL:
-    seen[GETARG_U(i)]=1;
-   case OP_END: return;
-  }
- }
-}
-
-static int compare_strings(const void* a, const void* b)
-{
- const int ia=*(const int*)a;
- const int ib=*(const int*)b;
- TString** v=(TString**) V;
- TString* va=v[ia];
- TString* vb=v[ib];
- return (strcmp(va->str,vb->str)==0) ? 0 : ia-ib;
 }
 
 static void OptConstants(Proto* tf)
 {
- static int* N=NULL;
- static int* S=NULL;
- static int* D=NULL;
- static int* U=NULL;
- int n,nnum,nstr;
- n=tf->nknum;
- if (n>0) 
+ Instruction* p;
+ int nknum,nkstr;
+ Hash* map=luaH_new(L,tf->nknum+tf->nkstr);
+ nknum=nkstr=-1;
+ for (p=tf->code;; p++)
  {
-  luaM_reallocvector(L,N,n,int);
-  luaM_reallocvector(L,D,n,int);
-  nnum=OptNumbers(tf,N,D);
+  Instruction i=*p;
+  int op=GET_OPCODE(i);
+  switch (op)
+  {
+   TObject o;
+   int j,k;
+   case OP_PUSHNUM: case OP_PUSHNEGNUM:
+    j=GETARG_U(i);
+    ttype(&o)=TAG_NUMBER; nvalue(&o)=tf->knum[j];
+    k=MapConstant(map,nknum+1,&o);
+    if (k!=j) *p=CREATE_U(op,k);
+    if (k>nknum) nknum=k;
+    break;
+   case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
+   case OP_PUSHSELF:   case OP_SETGLOBAL:
+    j=GETARG_U(i);
+    ttype(&o)=TAG_STRING; tsvalue(&o)=tf->kstr[j];
+    k=MapConstant(map,nkstr+1,&o);
+    if (k!=j) *p=CREATE_U(op,k);
+    if (k>nkstr) nkstr=k;
+    break;
+   case OP_END:
+    luaH_free(L,map);
+    tf->nknum=nknum+1;
+    tf->nkstr=nkstr+1;
+    return;
+   default:
+    break;
+  }
  }
- n=tf->nkstr;
- if (n>0) 
- {
-  luaM_reallocvector(L,S,n,int);
-  luaM_reallocvector(L,D,n,int);
-  luaM_reallocvector(L,U,n,int);
-  nstr=OptStrings(tf,S,D,U);
- }
- if (nnum!=tf->nknum || nstr!=tf->nkstr) FixConstants(tf,C);
 }
-
-#endif
 
 static int FixJump(Instruction* a, Instruction* b)
 {
@@ -239,9 +150,7 @@ static void OptFunctions(Proto* tf)
 static void OptFunction(Proto* tf)
 {
  OptCode(tf);
-#if 0
  OptConstants(tf);
-#endif
  OptFunctions(tf);
  tf->source=luaS_new(L,"");
  tf->locvars=NULL;			/* lazy! */
