@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.4 1998/02/06 20:05:39 lhf Exp lhf $
+** $Id: luac.c,v 1.5 1998/03/05 15:45:08 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -14,9 +14,10 @@
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
+extern void DumpChunk(TProtoFunc* Main, FILE* D);
 extern void PrintChunk(TProtoFunc* Main);
 extern void OptChunk(TProtoFunc* Main);
-extern void DumpChunk(TProtoFunc* Main, FILE* D);
+extern void TestChunk(TProtoFunc* Main);
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
@@ -28,6 +29,7 @@ static int undumping=0;			/* undump bytecodes? */
 static int optimizing=0;		/* optimize? */
 static int parsing=0;			/* parse only? */
 static int verbose=0;			/* tell user what is done */
+static int testing=0;			/* test code integrity?*/
 static FILE* D;				/* output file */
 
 static void usage(void)
@@ -43,6 +45,7 @@ static void usage(void)
  " -O\toptimize\n"
  " -p\tparse only\n"
  " -q\tquiet (default for -c)\n"
+ " -t\ttest code integrity\n"
  " -v\tshow version information\n"
  " -V\tverbose\n"
  );
@@ -70,8 +73,8 @@ int main(int argc, char* argv[])
   else if (IS("-D"))			/* $define */
   {
    TaggedString* s=luaS_new(argv[++i]);
-   s->u.globalval.ttype=LUA_T_NUMBER;
-   s->u.globalval.value.n=1;
+   s->u.s.globalval.ttype=LUA_T_NUMBER;
+   s->u.s.globalval.value.n=1;
   }
   else if (IS("-d"))			/* debug */
    debugging=1;
@@ -88,6 +91,8 @@ int main(int argc, char* argv[])
   }
   else if (IS("-q"))			/* quiet */
    listing=0;
+  else if (IS("-t"))			/* test */
+   testing=1; 
   else if (IS("-u"))			/* undump */
   {
    dumping=0;
@@ -138,6 +143,7 @@ static void do_compile(ZIO* z)
  Main=luaY_parser(z);
  if (optimizing) OptChunk(Main);
  if (listing) PrintChunk(Main);
+ if (testing) TestChunk(Main);
  if (dumping) DumpChunk(Main,D);
 }
 
@@ -149,6 +155,7 @@ static void do_undump(ZIO* z)
   if (Main==NULL) break;
   if (optimizing) OptChunk(Main);
   if (listing) PrintChunk(Main);
+  if (testing) TestChunk(Main);
  }
 }
 
@@ -167,7 +174,7 @@ static void doit(int undump, char* filename)
  zFopen(&z,f,filename);
  if (verbose) fprintf(stderr,"%s\n",filename);
  if (undump) do_undump(&z); else do_compile(&z);
- if (f!=stdin) fclose(f);		/* TODO: why is stdin special? */
+ if (f!=stdin) fclose(f);
 }
 
 static FILE* efopen(char* name, char* mode)
