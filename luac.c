@@ -1,9 +1,10 @@
 /*
-** $Id: luac.c,v 1.29 2001/03/15 17:29:16 lhf Exp lhf $
-** lua compiler (saves bytecodes to files; also list binary files)
+** $Id: luac.c,v 1.30 2001/06/28 13:55:17 lhf Exp lhf $
+** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
 
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,55 +14,56 @@
 #include "lmem.h"
 #include "lobject.h"
 #include "lopcodes.h"
-#include "lparser.h"
-#include "lstate.h"
 #include "lstring.h"
 #include "lundump.h"
-#include "lzio.h"
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
 static void usage(const char* message, const char* arg);
 static int doargs(int argc, const char* argv[]);
 static Proto* load(const char* filename);
-static FILE* efopen(const char* name, const char* mode);
-static void strip(Proto* tf);
 static Proto* combine(Proto** P, int n);
+static void strip(Proto* f);
+static FILE* efopen(const char* name, const char* mode);
+static void cannot(const char* name, const char* what, const char* mode);
+static void fatal(const char* message);
 
-lua_State* luac_state=NULL;		/* lazy! */
-#define	L	luac_state		/* lazy! */
-
+static lua_State* L=NULL;
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;			/* strip debug information? */
 static const char* output=OUTPUT;	/* output file name */
 
+/* need this to handle errors during parse or undump */
+static int ERRORMESSAGE(lua_State *l)
+{
+ fatal(lua_tostring(l,1));
+ return 0;
+}
+
 #define	IS(s)	(strcmp(argv[i],s)==0)
 
 int main(int argc, const char* argv[])
 {
- Proto** P,*tf;
+ Proto** P,*f;
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
  if (argc<=0) usage("no input files given",NULL);
  L=lua_open(0);
+ lua_register(L,l_s(LUA_ERRORMESSAGE),ERRORMESSAGE);
  P=luaM_newvector(L,argc,Proto*);
  for (i=0; i<argc; i++)
   P[i]=load(IS("-")? NULL : argv[i]);
- tf=combine(P,argc);
- if (dumping) luaU_optchunk(tf);
- if (listing) luaU_printchunk(tf);
+ f=combine(P,argc);
+ if (dumping) luaU_optchunk(L,f);
+ if (listing) luaU_printchunk(f);
  if (dumping)
  {
   FILE* D;
-  if (stripping) strip(tf);
+  if (stripping) strip(f);
   D=efopen(output,"wb");
-  luaU_dumpchunk(tf,D);
-  if (ferror(D))
-  {
-   perror("luac: write error");
-   exit(1);
-  }
+  luaU_dumpchunk(f,D);
+  if (ferror(D)) cannot(output,"write","out");
   fclose(D);
  }
  return 0;
@@ -113,7 +115,7 @@ static int doargs(int argc, const char* argv[])
   else					/* unknown option */
    usage("unrecognized option `%s'",argv[i]);
  }
- if (i==argc && listing)
+ if (i==argc && (listing || !dumping))
  {
   dumping=0;
   argv[--i]=OUTPUT;
@@ -123,36 +125,35 @@ static int doargs(int argc, const char* argv[])
 
 static Proto* load(const char* filename)
 {
- Proto* tf;
- ZIO z;
- char source[512];
- FILE* f;
- int c,undump;
- if (filename==NULL) 
+ switch (lua_loadfile(L,filename))
  {
-  f=stdin;
-  filename="(stdin)";
+  case 0:
+  {
+   const Closure* c=lua_topointer(L,-1);
+   if (errno!=0) cannot(filename,"read","in");
+   return c->f.l;
+   break;
+  }
+  case LUA_ERRFILE:
+   cannot(filename,"open","in");
+   break;
+  case LUA_ERRSYNTAX:
+   fatal("syntax error");
+   break;
+  case LUA_ERRRUN:
+   fatal("run-time error");
+   break;
+  case LUA_ERRMEM:
+   fatal("not enough memory");
+   break;
+  case LUA_ERRERR:
+   fatal("error in error handling");
+   break;
+  default:
+   fatal("unknown status returned by lua_loadfile");
+   break;
  }
- else
-  f=efopen(filename,"r");
- c=ungetc(fgetc(f),f);
- if (ferror(f))
- {
-  fprintf(stderr,"luac: cannot read from ");
-  perror(filename);
-  exit(1);
- }
- undump=(c==ID_CHUNK);
- if (undump && f!=stdin)
- {
-  fclose(f);
-  f=efopen(filename,"rb");
- }
- sprintf(source,"@%.*s",Sizeof(source)-2,filename);
- luaZ_Fopen(&z,f,source);
- tf = undump ? luaU_undump(L,&z) : luaY_parser(L,&z);
- if (f!=stdin) fclose(f);
- return tf;
+ return NULL;
 }
 
 static Proto* combine(Proto** P, int n)
@@ -162,42 +163,74 @@ static Proto* combine(Proto** P, int n)
  else
  {
   int i,pc=0;
-  Proto* tf=luaF_newproto(L);
-  tf->source=luaS_new(L,"=(luac)");
-  tf->maxstacksize=1;
-  tf->kproto=P;
-  tf->sizekproto=n;
-  tf->sizecode=2*n+1;
-  tf->code=luaM_newvector(L,tf->sizecode,Instruction);
+  Proto* f=luaF_newproto(L);
+  f->source=luaS_new(L,"=(luac)");
+  f->maxstacksize=1;
+  f->p=P;
+  f->sizep=n;
+  f->sizecode=2*n+1;
+  f->code=luaM_newvector(L,f->sizecode,Instruction);
   for (i=0; i<n; i++)
   {
-   tf->code[pc++]=CREATE_AB(OP_CLOSURE,i,0);
-   tf->code[pc++]=CREATE_AB(OP_CALL,0,0);
+   f->code[pc++]=CREATE_ABc(OP_CLOSURE,0,i);
+   f->code[pc++]=CREATE_ABC(OP_CALL,0,0,0);
   }
-  tf->code[pc++]=CREATE_U(OP_RETURN,1);
-  return tf;
+  f->code[pc++]=CREATE_ABC(OP_RETURN,0,0,0);
+  return f;
  }
 }
 
-static void strip(Proto* tf)
+static void strip(Proto* f)
 {
- int i,n=tf->sizekproto;
- tf->lineinfo=NULL;
- tf->sizelineinfo=0;
- tf->source=luaS_new(L,"=(none)");
- tf->locvars=NULL;
- tf->sizelocvars=0;
- for (i=0; i<n; i++) strip(tf->kproto[i]);
+ int i,n=f->sizep;
+ f->lineinfo=NULL;
+ f->sizelineinfo=0;
+ f->source=luaS_new(L,"=(none)");
+ f->locvars=NULL;
+ f->sizelocvars=0;
+ for (i=0; i<n; i++) strip(f->p[i]);
 }
 
 static FILE* efopen(const char* name, const char* mode)
 {
  FILE* f=fopen(name,mode);
- if (f==NULL)
- {
-  fprintf(stderr,"luac: cannot open %sput file ",*mode=='r' ? "in" : "out");
-  perror(name);
-  exit(1);
- }
- return f; 
+ if (f==NULL) cannot(name,"open",*mode=='r' ? "in" : "out");
+ return f;
 }
+
+static void cannot(const char* name, const char* what, const char* mode)
+{
+ fprintf(stderr,"luac: cannot %s %sput file ",what,mode);
+ perror(name);
+ exit(1);
+}
+
+static void fatal(const char* message)
+{
+ fprintf(stderr,"luac: %s\n",message);
+ exit(1);
+}
+
+/*
+* the code below avoids the parsing modules (lcode, llex, lparser).
+* it is useful if you only want to load binary files.
+* this works for interpreters like lua.c too.
+*/
+
+#ifdef NOPARSER
+
+#include "llex.h"
+#include "lparser.h"
+#include "lzio.h"
+
+void luaX_init(lua_State *L) {
+  UNUSED(L);
+}
+
+Proto *luaY_parser(lua_State *L, ZIO *z) {
+  UNUSED(z);
+  lua_error(L,"parser not loaded");
+  return NULL;
+}
+
+#endif
