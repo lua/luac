@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.10 1996/11/16 20:14:23 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.11 1996/11/18 11:24:16 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +23,12 @@ static void PrintCode(Byte* code, Byte* end)
  Byte* p;
  for (p=code; p!=end;)
  {
-	OpCode op=(OpCode)*p;
-	if (op>SETLINE) op=SETLINE+1;
+	int op=*p;
+	if (op>=NOPCODES)
+	{
+	 fprintf(stderr,"luac: bad opcode %d at %d\n",op,(int)(p-code));
+	 exit(1);
+	}
 	printf("%6d\t%s",(int)(p-code),OpCodeName[op]);
 	switch (op)
 	{
@@ -97,6 +101,8 @@ static void PrintCode(Byte* code, Byte* end)
 	case STORELIST0:
 	case ADJUST:
 	case RETCODE:
+	case VARARGS:
+	case STOREMAP:
 		printf("\t%d",*(p+1));
 		p+=2;
 		break;
@@ -170,7 +176,8 @@ static void PrintCode(Byte* code, Byte* end)
 		break;
 	}
 	default:
-		printf("\tcannot happen:  opcode=%d",*p);
+		printf("\tcannot happen:  opcode=%d\n",*p);
+	 	fprintf(stderr,"luac: bad opcode %d at %d\n",op,(int)(p-code));
 		exit(1);
 		break;
 	}
