@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.40 2002/12/13 11:12:35 lhf Exp lhf $
+** $Id: luac.c,v 1.41 2003/01/10 11:08:45 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -22,8 +22,11 @@
 #define luaB_opentests(L)
 #endif
 
+#ifndef PROGNAME
 #define PROGNAME	"luac"		/* program name */
-#define	OUTPUT		PROGNAME ".out"	/* default output file */
+#endif
+
+#define	OUTPUT		"luac.out"	/* default output file */
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
@@ -142,7 +145,7 @@ static void strip(lua_State* L, Proto* f)
  int i,n=f->sizep;
  luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
  luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
- luaM_freearray(L, f->upvalues, f->nupvalues, TString *);
+ luaM_freearray(L, f->upvalues, f->sizeupvalues, TString *);
  f->lineinfo=NULL; f->sizelineinfo=0;
  f->locvars=NULL;  f->sizelocvars=0;
  f->upvalues=NULL;
