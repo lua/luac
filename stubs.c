@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.14 1999/12/02 18:51:09 lhf Exp lhf $
+** $Id: stubs.c,v 1.15 2000/01/28 17:51:09 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -14,6 +14,7 @@ void luaU_dummy(void);
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "luac.h"
 #undef L
 
@@ -21,8 +22,8 @@ const char luac_ident[] = "$luac: " LUA_VERSION " " LUA_COPYRIGHT " $\n"
                           "$Authors: " LUA_AUTHORS " $";
 
 /*
-* avoid lapi lauxlib lbuiltin ldo lgc ltable ltm lvm
-* use only lbuffer lfunc llex lmem lobject lparser lstate lstring lzio
+* avoid lapi lauxlib lbuiltin ldebug ldo lgc lref ltable ltm lvm
+* use only lbuffer lcode lfunc llex lmem lobject lparser lstate lstring lzio
 */
 
 /* simplified from ldo.c */
@@ -49,6 +50,15 @@ void luaL_filesource (char *out, const char *filename, int len) {
   sprintf(out, "@%.*s", len-2, filename);  /* -2 for '@' and '\0' */
 }
 
+/* copied from lauxlib.c */
+int luaL_findstring (const char *name, const char *const list[]) {
+  int i;
+  for (i=0; list[i]; i++)
+    if (strcmp(list[i], name) == 0)
+      return i;
+  return -1;  /* name not found */
+}
+
 /* avoid runtime modules in lstate.c */
 
 #include "lbuiltin.h"
@@ -59,7 +69,6 @@ void luaL_filesource (char *out, const char *filename, int len) {
 
 void luaB_predefine(lua_State *L){ UNUSED(L); }
 void luaC_collect(lua_State *L, int all){ UNUSED(L); UNUSED(all); }
-void luaD_gcIM(lua_State *L, const TObject *o){ UNUSED(L); UNUSED(o); }
 void luaH_free(lua_State *L, Hash *frees){ UNUSED(L); UNUSED(frees); }
 void luaT_init(lua_State *L){ UNUSED(L);}
 
@@ -75,24 +84,15 @@ void luaT_init(lua_State *L){ UNUSED(L);}
 #include "lparser.h"
 
 void luaX_init(lua_State *L){ UNUSED(L); }
-void luaD_init(lua_State *L){ UNUSED(L); }
+void luaD_init(lua_State *L, int stacksize) { UNUSED(L); UNUSED(stacksize); }
 
-TProtoFunc* luaY_parser(lua_State *L, ZIO *z) {
+Proto *luaY_parser(lua_State *L, ZIO *z) {
  UNUSED(z);
  lua_error(L,"parser not loaded");
  return NULL;
 }
 
 #else
-
-/* copied from lauxlib.c */
-int luaL_findstring (const char *name, const char *const list[]) {
-  int i;
-  for (i=0; list[i]; i++)
-    if (strcmp(list[i], name) == 0)
-      return i;
-  return -1;  /* name not found */
-}
 
 #define EXTRALEN	sizeof("string \"...\"0")
 
