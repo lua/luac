@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.15 1999/04/15 12:30:03 lhf Exp lhf $
+** $Id: luac.c,v 1.16 1999/05/25 19:58:55 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -25,6 +25,7 @@ static int optimizing=0;		/* optimize? */
 static int parsing=0;			/* parse only? */
 static int testing=0;			/* test integrity? */
 static int verbose=0;			/* tell user what is done */
+static int native=0;			/* save numbers in native format? */
 static FILE* D;				/* output file */
 
 static void usage(char* op)
@@ -36,6 +37,7 @@ static void usage(char* op)
  " -d\t\tgenerate debugging information\n"
  " -D name\tpredefine 'name' for conditional compilation\n"
  " -l\t\tlist (default for -u)\n"
+ " -n\t\tsave numbers in native format (file may not be portable)\n"
  " -o file\toutput file for -c (default is \"" OUTPUT "\")\n"
  " -O\t\toptimize\n"
  " -p\t\tparse only\n"
@@ -78,6 +80,8 @@ int main(int argc, char* argv[])
    debugging=1;
   else if (IS("-l"))			/* list */
    listing=1;
+  else if (IS("-n"))			/* native */
+   native=1;
   else if (IS("-o"))			/* output file */
    d=argv[++i];
   else if (IS("-O"))			/* optimize */
@@ -120,10 +124,6 @@ int main(int argc, char* argv[])
    for (i=1; i<argc; i++)		/* play safe with output file */
     if (IS(d)) luaL_verror("will not overwrite input file \"%s\"",d);
    D=efopen(d,"wb");			/* must open in binary mode */
-#ifdef LUAC_NATIVE
-   if (verbose) fprintf(stderr,"luac: warning: "
-	"saving numbers in native format. file may not be portable.\n");
-#endif
   }
   for (i=1; i<argc; i++) doit(0,IS("-")? NULL : argv[i]);
   if (dumping) fclose(D);
@@ -147,7 +147,7 @@ static void do_compile(ZIO* z)
  if (optimizing) luaU_optchunk(Main);
  if (listing) luaU_printchunk(Main);
  if (testing) luaU_testchunk(Main);
- if (dumping) luaU_dumpchunk(Main,D);
+ if (dumping) luaU_dumpchunk(Main,D,native);
 }
 
 static void do_undump(ZIO* z)

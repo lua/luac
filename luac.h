@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.9 1999/03/22 21:43:09 lhf Exp lhf $
+** $Id: luac.h,v 1.10 1999/03/24 19:36:29 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -23,7 +23,7 @@ typedef struct
 } Opcode;
 
 /* from dump.c */
-void luaU_dumpchunk(TProtoFunc* Main, FILE* D);
+void luaU_dumpchunk(TProtoFunc* Main, FILE* D, int native);
 
 /* from opcode.c */
 int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE);
