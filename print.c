@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.30 2000/09/19 19:46:12 lhf Exp lhf $
+** $Id: print.c,v 1.31 2000/10/31 16:57:23 lhf Exp $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -10,7 +10,7 @@
 #include "luac.h"
 
 /* macros used in print.h, included in PrintCode */
-#define P_OP(x)	printf("%-11s  ",x)
+#define P_OP(x)	printf("%-11s\t",x)
 #define P_NONE
 #define P_AB	printf("%d %d",GETARG_A(i),GETARG_B(i))
 #define P_F	printf("%d %d\t; %p",GETARG_A(i),GETARG_B(i),tf->kproto[GETARG_A(i)])
@@ -61,8 +61,8 @@ static void PrintCode(const Proto* tf)
   int at=p-code+1;
   Instruction i=*p;
   int line=luaG_getline(tf->lineinfo,at-1,1,NULL);
-  printf("%6d  ",line);
-  printf("%6d    ",at);
+  printf("%6d\t",at);
+  if (line>=0) printf("[%d]\t",line); else printf("[-]\t");
   switch (GET_OPCODE(i)) {
 #include "print.h"
   }
