@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.4 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: test.c,v 1.5 1999/03/16 18:13:56 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -9,9 +9,9 @@
 #include <string.h>
 #include "luac.h"
 
-#define AT		" at %d in %p (\"%s\":%d)"
+#define AT		" at %d" IN
+#define ATLOC		at,INLOC)
 #define UNSAFE(s)	luaL_verror("unsafe code: " s AT
-#define ATLOC		at,tf,tf->source->str,tf->lineDefined)
 
 static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 {
@@ -43,7 +43,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 #if 0
 printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 #endif
-	switch (op)			/* test limits too */
+	switch (op)			/* test sanity of operands */
 	{
 	case PUSHCONSTANT:
 	case GETGLOBAL:
@@ -51,10 +51,18 @@ printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 	case PUSHSELF:
 	case SETGLOBAL:
 	case CLOSURE:
+	{
+		TObject* o;
 		if (i>=tf->nconsts)
 			UNSAFE("bad constant #%d (max=%d)"),
 			i,tf->nconsts-1,ATLOC;
+		o=tf->consts+i;
+		if ((op==CLOSURE   && ttype(o)!=LUA_T_PROTO)
+		 || (op==GETGLOBAL && ttype(o)!=LUA_T_STRING)
+		 || (op==SETGLOBAL && ttype(o)!=LUA_T_STRING))
+			UNSAFE("bad operand to %s"),OP.name,ATLOC;
 		break;
+	}
 	case PUSHLOCAL:
 	case SETLOCAL:
 		if (i>=sp) UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
@@ -130,7 +138,7 @@ printf("%6d%8d    %-14s  %d %d\n",at,sp,OP.name,i,OP.arg2);
 		break;
 	case CHECKSTACK:				break;
 	default:			/* cannot happen */
-		UNSAFE("cannot handle opcode %d [%s]"),OP.op,OP.name,ATLOC;
+		UNSAFE("cannot test opcode %d [%s]"),OP.op,OP.name,ATLOC;
 		break;
 	}
 	p+=n;
@@ -176,6 +184,22 @@ static void TestCode(TProtoFunc* tf)
 
 static void TestLocals(TProtoFunc* tf)
 {
+ LocVar* v=tf->locvars;
+ int i,l,n;
+ if (v==NULL) return;
+ for (l=n=i=0; v->line>=0; v++,i++)
+ {
+  if (l>v->line)
+   UNSAFE("bad linenumber %d in locvars[%d]"),v->line,i,ATLOC;
+  else
+   l=v->line;
+  if (v->varname==NULL)
+  {
+   if (--n<0) UNSAFE("no scope to close in locvars[%d]"),i,ATLOC;
+  }
+  else
+   ++n;
+ }
 }
 
 static void TestFunction(TProtoFunc* tf);
@@ -197,11 +221,8 @@ static void TestConstants(TProtoFunc* tf)
 	break;
    case LUA_T_NIL:
 	break;
-   default:			/* cannot happen */
-	luaL_verror("cannot test constant #%d: type=%d [%s]"
-		" in %p (\"%s\":%d)",
-		i,ttype(o),luaO_typename(o),
-		tf,tf->source->str,tf->lineDefined);
+   default:				/* cannot happen */
+	luaU_badconstant("print",i,o,tf);
 	break;
   }
  }
