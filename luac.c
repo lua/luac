@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.33 2001/11/29 01:00:34 lhf Exp lhf $
+** $Id: luac.c,v 1.34 2002/02/28 20:09:28 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -168,9 +168,9 @@ static Proto* combine(lua_State* L, Proto** P, int n)
   for (i=0; i<n; i++)
   {
    f->code[pc++]=CREATE_ABc(OP_CLOSURE,0,i);
-   f->code[pc++]=CREATE_ABC(OP_CALL,0,0,0);
+   f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
   }
-  f->code[pc++]=CREATE_ABC(OP_RETURN,0,0,0);
+  f->code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
   return f;
  }
 }
