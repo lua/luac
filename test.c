@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.9 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: test.c,v 1.10 1999/07/02 19:34:26 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -14,13 +14,13 @@
 #define UNSAFE(s)	\
 	luaL_verror("unsafe code at " AT IN "\n      " s,at,INLOC
 
-TObject* luaU_getconstant(TProtoFunc* tf, int i, int at)
+const TObject* luaU_getconstant(const TProtoFunc* tf, int i, int at)
 {
  if (i>=tf->nconsts) UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts-1,ATLOC;
  return tf->consts+i;
 }
 
-static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
+static int check(int n, const TProtoFunc* tf, int at, int sp, int ss)
 {
  if (n==0) return sp;
  sp+=n;
@@ -32,7 +32,7 @@ static int check(int n, TProtoFunc* tf, int at, int sp, int ss)
 #define CHECK(before,after)	\
 	sp=check(-(before),tf,at,sp,ss), sp=check(after,tf,at,sp,ss)
 
-static int jmpok(TProtoFunc* tf, int size, int at, int d)
+static int jmpok(const TProtoFunc* tf, int size, int at, int d)
 {
  int to=at+d;
  if (to<2 || to>=size)
@@ -40,7 +40,7 @@ static int jmpok(TProtoFunc* tf, int size, int at, int d)
  return to;
 }
 
-static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
+static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 {
  Byte* code=tf->code;
  Byte* p=code;
@@ -64,7 +64,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	case SETGLOBAL:
 	case CLOSURE:
 	{
-		TObject* o=luaU_getconstant(tf,i,at);
+		const TObject* o=luaU_getconstant(tf,i,at);
 		if ((op==CLOSURE   && ttype(o)!=LUA_T_PROTO)
 		 || (op==GETGLOBAL && ttype(o)!=LUA_T_STRING)
 		 || (op==SETGLOBAL && ttype(o)!=LUA_T_STRING))
@@ -155,7 +155,7 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
  }
 }
 
-static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
+static void TestJumps(const TProtoFunc* tf, int size, int* SP, int* JP)
 {
  int i;
  for (i=0; i<size; i++)
@@ -180,7 +180,7 @@ static void TestJumps(TProtoFunc* tf, int size, int* SP, int* JP)
  }
 }
 
-static void TestCode(TProtoFunc* tf)
+static void TestCode(const TProtoFunc* tf)
 {
  static int* SP=NULL;
  static int* JP=NULL;
@@ -193,7 +193,7 @@ static void TestCode(TProtoFunc* tf)
 
 #undef  AT
 #define AT	"locvars[%d]"
-static void TestLocals(TProtoFunc* tf)
+static void TestLocals(const TProtoFunc* tf)
 {
  LocVar* v;
  int l=1;
@@ -214,14 +214,14 @@ static void TestLocals(TProtoFunc* tf)
  }
 }
 
-static void TestFunction(TProtoFunc* tf);
+static void TestFunction(const TProtoFunc* tf);
 
-static void TestConstants(TProtoFunc* tf)
+static void TestConstants(const TProtoFunc* tf)
 {
  int i,n=tf->nconsts;
  for (i=0; i<n; i++)
  {
-  TObject* o=tf->consts+i;
+  const TObject* o=tf->consts+i;
   switch (ttype(o))
   {
    case LUA_T_NUMBER:
@@ -240,14 +240,14 @@ static void TestConstants(TProtoFunc* tf)
  }
 }
 
-static void TestFunction(TProtoFunc* tf)
+static void TestFunction(const TProtoFunc* tf)
 {
  TestCode(tf);
  TestLocals(tf);
  TestConstants(tf);
 }
 
-void luaU_testchunk(TProtoFunc* Main)
+void luaU_testchunk(const TProtoFunc* Main)
 {
  TestFunction(Main);
 }

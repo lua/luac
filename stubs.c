@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.10 1999/03/08 11:08:43 lhf Exp lhf $
+** $Id: stubs.c,v 1.11 1999/03/11 17:09:10 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -23,15 +23,14 @@ void luaU_dummy(void){}
 */
 
 /* simplified from ldo.c */
-void lua_error(char* s)
+void lua_error(const char* s)
 {
  if (s) fprintf(stderr,"luac: %s\n",s);
  exit(1);
 }
 
 /* copied from lauxlib.c */
-void luaL_verror (char *fmt, ...)
-{
+void luaL_verror (const char *fmt, ...) {
   char buff[500];
   va_list argp;
   va_start(argp, fmt);
@@ -41,7 +40,7 @@ void luaL_verror (char *fmt, ...)
 }
 
 /* copied from lauxlib.c */
-void luaL_filesource (char *out, char *filename, int len) {
+void luaL_filesource (char *out, const char *filename, int len) {
   if (filename == NULL) filename = "(stdin)";
   sprintf(out, "@%.*s", len-2, filename);  /* -2 for '@' and '\0' */
 }
@@ -57,7 +56,7 @@ void luaL_filesource (char *out, char *filename, int len) {
 void luaB_predefine(void){}
 void luaC_hashcallIM(Hash *l){}
 void luaC_strcallIM(TaggedString *l){}
-void luaD_gcIM(TObject *o){}
+void luaD_gcIM(const TObject *o){}
 void luaH_free(Hash *frees){}
 void luaT_init(void){}
 
@@ -83,7 +82,7 @@ TProtoFunc* luaY_parser(ZIO *z) {
 #else
 
 /* copied from lauxlib.c */
-int luaL_findstring (char *name, char *list[]) {
+int luaL_findstring (const char *name, const char *const list[]) {
   int i;
   for (i=0; list[i]; i++)
     if (strcmp(list[i], name) == 0)
@@ -92,14 +91,14 @@ int luaL_findstring (char *name, char *list[]) {
 }
 
 /* copied from lauxlib.c */
-void luaL_chunkid (char *out, char *source, int len) {
+void luaL_chunkid (char *out, const char *source, int len) {
   len -= 13;  /* 13 = strlen("string ''...\0") */
   if (*source == '@')
     sprintf(out, "file `%.*s'", len, source+1);
   else if (*source == '(')
     strcpy(out, "(C code)");
   else {
-    char *b = strchr(source , '\n');  /* stop string at first new line */
+    const char *b = strchr(source , '\n');  /* stop string at first new line */
     int lim = (b && (b-source)<len) ? b-source : len;
     sprintf(out, "string `%.*s'", lim, source);
     strcpy(out+lim+(13-5), "...'");  /* 5 = strlen("...'\0") */

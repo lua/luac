@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.19 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: dump.c,v 1.20 1999/07/02 19:34:26 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -32,7 +32,7 @@ static void DumpLong(long i, FILE* D)
  DumpWord(lo,D);
 }
 
-static void DumpNumber(real x, FILE* D, int native, TProtoFunc* tf)
+static void DumpNumber(real x, FILE* D, int native, const TProtoFunc* tf)
 {
  if (native)
   DumpBlock(&x,sizeof(x),D);
@@ -47,14 +47,14 @@ static void DumpNumber(real x, FILE* D, int native, TProtoFunc* tf)
  }
 }
 
-static void DumpCode(TProtoFunc* tf, FILE* D)
+static void DumpCode(const TProtoFunc* tf, FILE* D)
 {
  int size=luaU_codesize(tf);
  DumpLong(size,D);
  DumpBlock(tf->code,size,D);
 }
 
-static void DumpString(char* s, int size, FILE* D)
+static void DumpString(const char* s, int size, FILE* D)
 {
  if (s==NULL)
   DumpLong(0,D);
@@ -73,7 +73,7 @@ static void DumpTString(TaggedString* s, FILE* D)
   DumpString(s->str,s->u.s.len+1,D);
 }
 
-static void DumpLocals(TProtoFunc* tf, FILE* D)
+static void DumpLocals(const TProtoFunc* tf, FILE* D)
 {
  if (tf->locvars==NULL)
   DumpInt(0,D);
@@ -92,15 +92,15 @@ static void DumpLocals(TProtoFunc* tf, FILE* D)
  }
 }
 
-static void DumpFunction(TProtoFunc* tf, FILE* D, int native);
+static void DumpFunction(const TProtoFunc* tf, FILE* D, int native);
 
-static void DumpConstants(TProtoFunc* tf, FILE* D, int native)
+static void DumpConstants(const TProtoFunc* tf, FILE* D, int native)
 {
  int i,n=tf->nconsts;
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
-  TObject* o=tf->consts+i;
+  const TObject* o=tf->consts+i;
   fputc(-ttype(o),D);			/* ttype(o) is negative - ORDER LUA_T */
   switch (ttype(o))
   {
@@ -122,7 +122,7 @@ static void DumpConstants(TProtoFunc* tf, FILE* D, int native)
  }
 }
 
-static void DumpFunction(TProtoFunc* tf, FILE* D, int native)
+static void DumpFunction(const TProtoFunc* tf, FILE* D, int native)
 {
  DumpInt(tf->lineDefined,D);
  DumpTString(tf->source,D);
@@ -133,7 +133,7 @@ static void DumpFunction(TProtoFunc* tf, FILE* D, int native)
   luaL_verror("write error" IN ": %s (errno=%d)",INLOC,strerror(errno),errno);
 }
 
-static void DumpHeader(TProtoFunc* Main, FILE* D, int native)
+static void DumpHeader(const TProtoFunc* Main, FILE* D, int native)
 {
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
@@ -147,7 +147,7 @@ static void DumpHeader(TProtoFunc* Main, FILE* D, int native)
   fputc(0,D);
 }
 
-void luaU_dumpchunk(TProtoFunc* Main, FILE* D, int native)
+void luaU_dumpchunk(const TProtoFunc* Main, FILE* D, int native)
 {
  DumpHeader(Main,D,native);
  DumpFunction(Main,D,native);

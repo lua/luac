@@ -1,5 +1,5 @@
 /*
-** $Id: luac.h,v 1.10 1999/03/24 19:36:29 lhf Exp lhf $
+** $Id: luac.h,v 1.11 1999/07/02 19:34:26 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
@@ -14,7 +14,7 @@
 
 typedef struct
 {
- char* name;				/* name of opcode */
+ const char* name;			/* name of opcode */
  int op;				/* value of opcode */
  int class;				/* class of opcode (byte variant) */
  int args;				/* types of arguments (operands) */
@@ -23,21 +23,22 @@ typedef struct
 } Opcode;
 
 /* from dump.c */
-void luaU_dumpchunk(TProtoFunc* Main, FILE* D, int native);
+void luaU_dumpchunk(const TProtoFunc* Main, FILE* D, int native);
 
 /* from opcode.c */
-int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE);
-int luaU_codesize(TProtoFunc* tf);
+int luaU_opcodeinfo(const TProtoFunc* tf, const Byte* p, Opcode* I,
+	const char* xFILE, int xLINE);
+int luaU_codesize(const TProtoFunc* tf);
 
 /* from opt.c */
 void luaU_optchunk(TProtoFunc* Main);
 
 /* from print.c */
-void luaU_printchunk(TProtoFunc* Main);
+void luaU_printchunk(const TProtoFunc* Main);
 
 /* from test.c */
-void luaU_testchunk(TProtoFunc* Main);
-TObject* luaU_getconstant(TProtoFunc* tf, int i, int at);
+void luaU_testchunk(const TProtoFunc* Main);
+const TObject* luaU_getconstant(const TProtoFunc* tf, int i, int at);
 
 #define INFO(tf,p,I)	luaU_opcodeinfo(tf,p,I,__FILE__,__LINE__)
 

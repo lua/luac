@@ -1,5 +1,5 @@
 /*
-** $Id: opcode.c,v 1.8 1999/03/24 19:36:29 lhf Exp lhf $
+** $Id: opcode.c,v 1.9 1999/05/25 19:58:55 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
@@ -14,12 +14,12 @@ enum {					/* for Opcode.args */
  ARGS_WB
 };
 
-static Opcode Info[]=			/* ORDER lopcodes.h */
+static const Opcode Info[]=		/* ORDER lopcodes.h */
 {
 #include "opcode.h"
 };
 
-static Opcode Fake[]=			/* ORDER luac.h */
+static const Opcode Fake[]=		/* ORDER luac.h */
 {
 { "NOP", NOP, NOP, ARGS_NONE, -1, -1 },
 { "STACK", STACK, STACK, ARGS_B, -1, -1 },
@@ -29,10 +29,10 @@ static Opcode Fake[]=			/* ORDER luac.h */
 
 #define NOPCODES	(sizeof(Info)/sizeof(Info[0]))
 
-int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
+int luaU_opcodeinfo(const TProtoFunc* tf, const Byte* p, Opcode* I, const char* xFILE, int xLINE)
 {
  Opcode OP;
- Byte* code=tf->code;
+ const Byte* code=tf->code;
  int op=*p;
  int size=1;
  if (p==code)				/* first byte is STACK */
@@ -88,10 +88,10 @@ int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
  return size;
 }
 
-int luaU_codesize(TProtoFunc* tf)
+int luaU_codesize(const TProtoFunc* tf)
 {
- Byte* code=tf->code;
- Byte* p=code;
+ const Byte* code=tf->code;
+ const Byte* p=code;
  for (;;)
  {
   Opcode OP;

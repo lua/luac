@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.11 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: opt.c,v 1.12 1999/07/02 19:34:26 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -98,8 +98,8 @@ static void NoUnrefs(TProtoFunc* tf)
 
 static int compare(TProtoFunc* tf, int ia, int ib)
 {
- TObject* oa=tf->consts+ia;
- TObject* ob=tf->consts+ib;
+ const TObject* oa=tf->consts+ia;
+ const TObject* ob=tf->consts+ib;
  int t=ttype(oa)-ttype(ob);
  if (t) return t;
  switch (ttype(oa))
@@ -146,7 +146,7 @@ static void OptConstants(TProtoFunc* tf)
  {
   if (D[i]==i)				/* new value */
   {
-   TObject* o=tf->consts+i;
+   const TObject* o=tf->consts+i;
    if (ttype(o)!=UNREF)
    {
     tf->consts[k]=tf->consts[i];
@@ -261,7 +261,7 @@ static void OptFunctions(TProtoFunc* tf)
  int i,n=tf->nconsts;
  for (i=0; i<n; i++)
  {
-  TObject* o=tf->consts+i;
+  const TObject* o=tf->consts+i;
   if (ttype(o)==LUA_T_PROTO) OptFunction(tfvalue(o));
  }
 }
