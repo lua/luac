@@ -3,7 +3,7 @@
 ** lua decompiler (loads bytecodes from files)
 */
 
-char* rcs_luau="$Id$";
+char* rcs_luau="$Id: luau.c,v 1.1 1996/03/08 21:46:20 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -59,9 +59,7 @@ static void do_undump(FILE* f)
    for (tf=m; tf!=NULL; tf=tf->next)
     PrintFunction(tf);
    }
-#if 0
    luaI_freefunc(m);			/* TODO: free others */
-#endif
  }
 }
 
