@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.2 1997/12/02 23:18:50 lhf Exp lhf $
+** $Id: lundump.h,v 1.3 1998/01/12 13:04:24 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -21,11 +21,7 @@
 #define	TEST_FLOAT	0.123456789e-23	/* a float for testing representation */
 
 #define IsMain(f)	(f->lineDefined==0)
-#define NotWord(x)	((Word)x!=x)
-#define Get_word(w,p)	w=p[0]+(p[1]<<8)
-#define get_word(w,p)	Get_word(w,p), p+=2
-#define get_byte(p)	*p++
 
-TFunc* luaU_undump1(ZIO* Z);		/* load one chunk */
+TProtoFunc* luaU_undump1(ZIO* Z);	/* load one chunk */
 
 #endif
