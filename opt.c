@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.17 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: opt.c,v 1.18 2000/04/27 18:17:54 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ltable.h"
+#define DEBUG
 #include "luac.h"
 
 #define OP_NOP	-1UL
@@ -15,24 +15,68 @@
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
  const TObject* o=luaH_get(L,t,key);
- if (o!=&luaO_nilobject) 
+ if (ttype(o)==TAG_NUMBER)
   return nvalue(o);
  else
  {
   TObject val;
   ttype(&val)=TAG_NUMBER;
   nvalue(&val)=j;
-  luaH_set(L,t,key,&val);
+  *luaH_set(L,t,key)=val;
+  LUA_ASSERT(L,j>=0,"MapConstant returns negative!");
   return j;
  }
+}
+
+static void MapConstants(Proto* tf, Hash* map)
+{
+ int i,j,k,n;
+ TObject o;
+ j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
+ for (i=0; i<n; i++)
+ {
+  nvalue(&o)=tf->knum[i];
+  k=MapConstant(map,j,&o);
+  if (k==j) j++;
+ }
+ j=0; n=tf->nkstr; ttype(&o)=TAG_STRING;
+ for (i=0; i<n; i++)
+ {
+  tsvalue(&o)=tf->kstr[i];
+  k=MapConstant(map,j,&o);
+  if (k==j) j++;
+ }
+}
+
+static void PackConstants(Proto* tf, Hash* map)
+{
+ int i,j,k,n;
+ TObject o;
+ printf("%p before pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
+ j=0; n=tf->nknum; ttype(&o)=TAG_NUMBER;
+ for (i=0; i<n; i++)
+ {
+  nvalue(&o)=tf->knum[i];
+  k=MapConstant(map,-1,&o);
+  if (k==j) tf->knum[j++]=tf->knum[i];
+ }
+ tf->nknum=j;
+ j=0; n=tf->nkstr; ttype(&o)=TAG_STRING;
+ for (i=0; i<n; i++)
+ {
+  tsvalue(&o)=tf->kstr[i];
+  k=MapConstant(map,-1,&o);
+  if (k==j) tf->kstr[j++]=tf->kstr[i];
+ }
+ tf->nkstr=j;
+ printf("%p after  pack nknum=%d nkstr=%d\n",tf,tf->nknum,tf->nkstr);
 }
 
 static void OptConstants(Proto* tf)
 {
  Instruction* p;
- int nknum,nkstr;
  Hash* map=luaH_new(L,tf->nknum+tf->nkstr);
- nknum=nkstr=-1;
+ MapConstants(tf,map);
  for (p=tf->code;; p++)
  {
   Instruction i=*p;
@@ -44,22 +88,19 @@ static void OptConstants(Proto* tf)
    case OP_PUSHNUM: case OP_PUSHNEGNUM:
     j=GETARG_U(i);
     ttype(&o)=TAG_NUMBER; nvalue(&o)=tf->knum[j];
-    k=MapConstant(map,nknum+1,&o);
+    k=MapConstant(map,-1,&o);
     if (k!=j) *p=CREATE_U(op,k);
-    if (k>nknum) nknum=k;
     break;
    case OP_PUSHSTRING: case OP_GETGLOBAL: case OP_GETDOTTED:
    case OP_PUSHSELF:   case OP_SETGLOBAL:
     j=GETARG_U(i);
     ttype(&o)=TAG_STRING; tsvalue(&o)=tf->kstr[j];
-    k=MapConstant(map,nkstr+1,&o);
+    k=MapConstant(map,-1,&o);
     if (k!=j) *p=CREATE_U(op,k);
-    if (k>nkstr) nkstr=k;
     break;
    case OP_END:
+    PackConstants(tf,map);
     luaH_free(L,map);
-    tf->nknum=nknum+1;
-    tf->nkstr=nkstr+1;
     return;
    default:
     break;
