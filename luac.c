@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.8 1998/06/25 15:50:09 lhf Exp lhf $
+** $Id: luac.c,v 1.9 1998/07/12 00:17:37 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -17,9 +17,6 @@
 extern void DumpChunk(TProtoFunc* Main, FILE* D);
 extern void PrintChunk(TProtoFunc* Main);
 extern void OptChunk(TProtoFunc* Main);
-extern void TestChunk(TProtoFunc* Main);
-
-#define TestChunk(Main)			/* not ready for release yet */
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
@@ -31,7 +28,6 @@ static int undumping=0;			/* undump bytecodes? */
 static int optimizing=0;		/* optimize? */
 static int parsing=0;			/* parse only? */
 static int verbose=0;			/* tell user what is done */
-static int testing=0;			/* test code integrity?*/
 static FILE* D;				/* output file */
 
 static void usage(void)
@@ -47,9 +43,6 @@ static void usage(void)
  " -O\toptimize\n"
  " -p\tparse only\n"
  " -q\tquiet (default for -c)\n"
-#ifndef TestChunk
- " -t\ttest code integrity\n"
-#endif
  " -v\tshow version information\n"
  " -V\tverbose\n"
  " -\tcompile \"stdin\"\n"
@@ -96,10 +89,6 @@ int main(int argc, char* argv[])
   }
   else if (IS("-q"))			/* quiet */
    listing=0;
-#ifndef TestChunk
-  else if (IS("-t"))			/* test */
-   testing=1; 
-#endif
   else if (IS("-u"))			/* undump */
   {
    dumping=0;
@@ -150,9 +139,6 @@ static void do_compile(ZIO* z)
  Main=luaY_parser(z);
  if (optimizing) OptChunk(Main);
  if (listing) PrintChunk(Main);
-#ifndef TestChunk
- if (testing) TestChunk(Main);
-#endif
  if (dumping) DumpChunk(Main,D);
 }
 
@@ -164,9 +150,6 @@ static void do_undump(ZIO* z)
   if (Main==NULL) break;
   if (optimizing) OptChunk(Main);
   if (listing) PrintChunk(Main);
-#ifndef TestChunk
-  if (testing) TestChunk(Main);
-#endif
  }
 }
 
