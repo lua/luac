@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.6 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: luac.c,v 1.7 1998/06/13 16:54:15 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -37,11 +37,11 @@ static FILE* D;				/* output file */
 static void usage(void)
 {
  fprintf(stderr,"usage: "
- "luac [-c | -u] [-D name] [-d] [-l] [-p] [-q] [-v] [-o output] file ...\n"
+ "luac [-c | -u] [-D name] [-d] [-l] [-o output] [-O] [-p] [-q] [-v] [-V] [files]\n"
  " -c\tcompile (default)\n"
  " -u\tundump\n"
- " -D\tpredefine symbol for conditional compilation\n"
  " -d\tgenerate debugging information\n"
+ " -D\tpredefine symbol for conditional compilation\n"
  " -l\tlist (default for -u)\n"
  " -o\toutput file for -c (default is \"" OUTPUT "\")\n"
  " -O\toptimize\n"
@@ -52,6 +52,7 @@ static void usage(void)
 #endif
  " -v\tshow version information\n"
  " -V\tverbose\n"
+ " -\tcompile \"stdin\"\n"
  );
  exit(1);
 }
@@ -124,7 +125,7 @@ int main(int argc, char* argv[])
     if (IS(d)) luaL_verror("will not overwrite input file \"%s\"\n",d);
    D=efopen(d,"wb");			/* must open in binary mode */
 #if ID_NUMBER==ID_NATIVE
-   fprintf(stderr,"luac: warning: "
+   if (verbose) fprintf(stderr,"luac: warning: "
 	"saving numbers in native format. file may not be portable.\n");
 #endif
   }
@@ -193,4 +194,11 @@ static FILE* efopen(char* name, char* mode)
   exit(1);
  }
  return f; 
+}
+
+void testnumber(int verbose)
+{
+ if (sizeof(real)!=SIZEOF_NUMBER)
+  luaL_verror("numbers have %d bytes; expected %d. see lundump.h",
+	(int)sizeof(real),SIZEOF_NUMBER);
 }
