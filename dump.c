@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.17 1996/11/18 11:18:29 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.18 1997/04/10 18:02:04 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,7 +34,7 @@ static void ThreadCode(Byte* code, Byte* end)
  for (i=0; i<lua_nconstant; i++) StrLoc(i)=0;
  for (p=code; p!=end;)
  {
-	OpCode op=(OpCode)*p;
+	int op=*p;
 	int at=p-code+1;
 	switch (op)
 	{
@@ -89,6 +89,8 @@ static void ThreadCode(Byte* code, Byte* end)
 	case STORELIST0:
 	case ADJUST:
 	case RETCODE:
+	case VARARGS:
+	case STOREMAP:
 		p+=2;
 		break;
 	case PUSHWORD:
@@ -152,7 +154,7 @@ static void ThreadCode(Byte* code, Byte* end)
 		break;
 	}
 	default:			/* cannot happen */
-		fprintf(stderr,"luac: bad opcode %d at %d",*p,(int)(p-code));
+		fprintf(stderr,"luac: bad opcode %d at %d\n",*p,(int)(p-code));
 		exit(1);
 		break;
 	}
