@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.4 1998/01/12 13:04:24 lhf Exp lhf $
+** $Id: print.c,v 1.5 1998/01/13 20:05:24 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -21,8 +21,8 @@ if (op>=NOPCODES)			/* cannot happen */\
 
 int CodeSize(TProtoFunc* tf)		/* also used in dump.c */
 {
- Byte* code=tf->code+2;
- Byte* p=code;
+ Byte* code=tf->code;
+ Byte* p=code+2;			/* skip headers bytes */
  while (1)
  {
   int op=*p;
@@ -59,11 +59,13 @@ static void PrintConstants(TProtoFunc* tf)
 
 static void PrintConstant(TProtoFunc* tf, int n)
 {
+#ifdef DEBUG
  if (n<0 || n>=tf->nconsts)
  {
-  printf("(bad constant)");
+  printf("(bad constant #%d. max=%d)",n,tf->nconsts);
  }
  else
+#endif
  {
   TObject* o=tf->consts+n;
   switch (ttype(o))
@@ -85,9 +87,16 @@ static void PrintConstant(TProtoFunc* tf, int n)
 
 static void PrintCode(TProtoFunc* tf)
 {
- Byte* code=tf->code+2;
+ Byte* code=tf->code;
  Byte* p=code;
  int line=0;
+ printf("%6d  %02X%*s%-13s\t%d\n",(int)(p-code),*p,8,"","STACK",*p); p++;
+ printf("%6d  %02X%*s",(int)(p-code),*p,8,"");
+ if (*p>=ZEROVARARG)
+  printf("%-13s\t%d\n","VARARGS",*p-ZEROVARARG);
+ else
+  printf("%-13s\t%d\n","ARGS",*p);
+ p++;
  while (1)
  {
 	int op=*p;
@@ -119,7 +128,6 @@ static void PrintCode(TProtoFunc* tf)
 	case PUSHCONSTANT:
 	case GETDOTTED:
 	case PUSHSELF:
-	case CLOSURE:
 		printf("\t; ");
 		PrintConstant(tf,i);
 		break;
@@ -211,8 +219,8 @@ static void PrintLocals(TProtoFunc* tf)
 
 static Byte* FindFunction(TProtoFunc* tf, TProtoFunc* Main)
 {
- Byte* code=Main->code+2;
- Byte* p=code;
+ Byte* code=Main->code;
+ Byte* p=code+2;			/* skip headers bytes */
  while (1)
  {
   int op=*p;
@@ -249,7 +257,7 @@ static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main)
    printf("main");
   else
    printf("%p",Main);
-  printf("+%d\n",(int)(p-Main->code-2));
+  printf("+%d\n",(int)(p-Main->code));
  }
 #if 0
  printf("needs %d stack positions\n",*tf->code);
