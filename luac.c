@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.41 2003/01/10 11:08:45 lhf Exp lhf $
+** $Id: luac.c,v 1.42 2003/02/11 23:52:12 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -111,13 +111,16 @@ static int doargs(int argc, char* argv[])
  return i;
 }
 
+static Proto* toproto(lua_State* L, int i)
+{
+ const Closure* c=(const Closure*)lua_topointer(L,i);
+ return c->l.p;
+}
+
 static Proto* combine(lua_State* L, int n)
 {
  if (n==1)
- {
-  const Closure* c=lua_topointer(L,-1);
-  return c->l.p;
- }
+  return toproto(L,-1);
  else
  {
   int i,pc=0;
@@ -130,8 +133,7 @@ static Proto* combine(lua_State* L, int n)
   f->code=luaM_newvector(L,f->sizecode,Instruction);
   for (i=0; i<n; i++)
   {
-   const Closure* c=lua_topointer(L,i-n);
-   f->p[i]=c->l.p;
+   f->p[i]=toproto(L,i-n);
    f->code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
    f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
   }
