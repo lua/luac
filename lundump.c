@@ -1,6 +1,6 @@
 /*
-** $Id: lundump.c,v 1.34 2001/03/15 17:29:16 lhf Exp lhf $
-** load bytecodes from files
+** $Id: lundump.c,v 1.35 2001/06/28 13:55:17 lhf Exp lhf $
+** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
 
@@ -13,6 +13,7 @@
 #include "ldebug.h"
 #include "lfunc.h"
 #include "lmem.h"
+#include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
 
@@ -105,81 +106,90 @@ static TString* LoadString (lua_State* L, ZIO* Z, int swap)
  }
 }
 
-static void LoadCode (lua_State* L, Proto* tf, ZIO* Z, int swap)
+static void LoadCode (lua_State* L, Proto* f, ZIO* Z, int swap)
 {
  int size=LoadInt(L,Z,swap);
- tf->code=luaM_newvector(L,size,Instruction);
- tf->sizecode=size;
- LoadVector(L,tf->code,size,sizeof(*tf->code),Z,swap);
+ f->code=luaM_newvector(L,size,Instruction);
+ f->sizecode=size;
+ LoadVector(L,f->code,size,sizeof(*f->code),Z,swap);
 }
 
-static void LoadLocals (lua_State* L, Proto* tf, ZIO* Z, int swap)
+static void LoadLocals (lua_State* L, Proto* f, ZIO* Z, int swap)
 {
  int i,n;
  n=LoadInt(L,Z,swap);
- tf->locvars=luaM_newvector(L,n,LocVar);
- tf->sizelocvars=n;
+ f->locvars=luaM_newvector(L,n,LocVar);
+ f->sizelocvars=n;
  for (i=0; i<n; i++)
  {
-  tf->locvars[i].varname=LoadString(L,Z,swap);
-  tf->locvars[i].startpc=LoadInt(L,Z,swap);
-  tf->locvars[i].endpc=LoadInt(L,Z,swap);
+  f->locvars[i].varname=LoadString(L,Z,swap);
+  f->locvars[i].startpc=LoadInt(L,Z,swap);
+  f->locvars[i].endpc=LoadInt(L,Z,swap);
  }
 }
 
-static void LoadLines (lua_State* L, Proto* tf, ZIO* Z, int swap)
+static void LoadLines (lua_State* L, Proto* f, ZIO* Z, int swap)
 {
  int n;
  n=LoadInt(L,Z,swap);
- tf->lineinfo=luaM_newvector(L,n,int);
- tf->sizelineinfo=n;
- LoadVector(L,tf->lineinfo,n,sizeof(*tf->lineinfo),Z,swap);
+ f->lineinfo=luaM_newvector(L,n,int);
+ f->sizelineinfo=n;
+ LoadVector(L,f->lineinfo,n,sizeof(*f->lineinfo),Z,swap);
 }
 
-static Proto* LoadFunction (lua_State* L, ZIO* Z, int swap);
+static Proto* LoadFunction (lua_State* L, TString* p, ZIO* Z, int swap);
 
-static void LoadConstants (lua_State* L, Proto* tf, ZIO* Z, int swap)
+static void LoadConstants (lua_State* L, Proto* f, ZIO* Z, int swap)
 {
  int i,n;
  n=LoadInt(L,Z,swap);
- tf->kstr=luaM_newvector(L,n,TString*);
- tf->sizekstr=n;
+ f->k=luaM_newvector(L,n,TObject);
+ f->sizek=n;
  for (i=0; i<n; i++)
-  tf->kstr[i]=LoadString(L,Z,swap);
+ {
+  TObject* o=&f->k[i];
+  ttype(o)=LoadByte(L,Z);
+  switch (ttype(o))
+  {
+   case LUA_TNUMBER:
+	nvalue(o)=LoadNumber(L,Z,swap);
+	break;
+   case LUA_TSTRING:
+	tsvalue(o)=LoadString(L,Z,swap);
+	break;
+   default:
+	luaO_verror(L,l_s("bad constant type (%d) in `%.99s'"),ttype(o),ZNAME(Z));
+	break;
+  }
+ }
  n=LoadInt(L,Z,swap);
- tf->knum=luaM_newvector(L,n,lua_Number);
- tf->sizeknum=n;
- LoadVector(L,tf->knum,n,sizeof(*tf->knum),Z,swap);
- n=LoadInt(L,Z,swap);
- tf->kproto=luaM_newvector(L,n,Proto*);
- tf->sizekproto=n;
- for (i=0; i<n; i++)
-  tf->kproto[i]=LoadFunction(L,Z,swap);
+ f->p=luaM_newvector(L,n,Proto*);
+ f->sizep=n;
+ for (i=0; i<n; i++) f->p[i]=LoadFunction(L,f->source,Z,swap);
 }
 
-static Proto* LoadFunction (lua_State* L, ZIO* Z, int swap)
+static Proto* LoadFunction (lua_State* L, TString* p, ZIO* Z, int swap)
 {
- Proto* tf=luaF_newproto(L);
- tf->source=LoadString(L,Z,swap);
- tf->lineDefined=LoadInt(L,Z,swap);
- tf->nupvalues=LoadInt(L,Z,swap);
- tf->numparams=LoadInt(L,Z,swap);
- tf->is_vararg=LoadByte(L,Z);
- tf->maxstacksize=LoadInt(L,Z,swap);
- LoadLocals(L,tf,Z,swap);
- LoadLines(L,tf,Z,swap);
- LoadConstants(L,tf,Z,swap);
- LoadCode(L,tf,Z,swap);
+ Proto* f=luaF_newproto(L);
+ f->source=LoadString(L,Z,swap); if (f->source==NULL) f->source=p;
+ f->lineDefined=LoadInt(L,Z,swap);
+ f->nupvalues=LoadInt(L,Z,swap);
+ f->numparams=LoadInt(L,Z,swap);
+ f->is_vararg=LoadByte(L,Z);
+ f->maxstacksize=LoadInt(L,Z,swap);
+ LoadLocals(L,f,Z,swap);
+ LoadLines(L,f,Z,swap);
+ LoadConstants(L,f,Z,swap);
+ LoadCode(L,f,Z,swap);
 #ifndef TRUST_BINARIES
-if(0)
- if (luaG_checkcode(L,tf)==0) luaO_verror(L,l_s("bad code in `%.99s'"),ZNAME(Z));
+ if (!luaG_checkcode(f)) luaO_verror(L,l_s("bad code in `%.99s'"),ZNAME(Z));
 #endif
- return tf;
+ return f;
 }
 
 static void LoadSignature (lua_State* L, ZIO* Z)
 {
- const l_char* s=l_s(SIGNATURE);
+ const l_char* s=l_s(LUA_SIGNATURE);
  while (*s!=0 && ezgetc(L,Z)==*s)
   ++s;
  if (*s!=0) luaO_verror(L,l_s("bad signature in `%.99s'"),ZNAME(Z));
@@ -199,7 +209,7 @@ static void TestSize (lua_State* L, int s, const l_char* what, ZIO* Z)
 static int LoadHeader (lua_State* L, ZIO* Z)
 {
  int version,swap;
- lua_Number f=0,tf=TEST_NUMBER;
+ lua_Number x=0,tx=TEST_NUMBER;
  LoadSignature(L,Z);
  version=ezgetc(L,Z);
  if (version>VERSION)
@@ -214,37 +224,33 @@ static int LoadHeader (lua_State* L, ZIO* Z)
  TESTSIZE(sizeof(int));
  TESTSIZE(sizeof(size_t));
  TESTSIZE(sizeof(Instruction));
- TESTSIZE(SIZE_INSTRUCTION);
  TESTSIZE(SIZE_OP);
+ TESTSIZE(SIZE_A);
  TESTSIZE(SIZE_B);
+ TESTSIZE(SIZE_C);
  TESTSIZE(sizeof(lua_Number));
- f=LoadNumber(L,Z,swap);
- if ((long)f!=(long)tf)		/* disregard errors in last bit of fraction */
+ x=LoadNumber(L,Z,swap);
+ if ((long)x!=(long)tx)		/* disregard errors in last bits of fraction */
   luaO_verror(L,l_s("unknown number format in `%.99s':\n")
       l_s("  read ") l_s(LUA_NUMBER_FMT) l_s("; expected ") l_s(LUA_NUMBER_FMT),
-      ZNAME(Z),f,tf);
+      ZNAME(Z),x,tx);
  return swap;
 }
 
 static Proto* LoadChunk (lua_State* L, ZIO* Z)
 {
- return LoadFunction(L,Z,LoadHeader(L,Z));
+ return LoadFunction(L,NULL,Z,LoadHeader(L,Z));
 }
 
 /*
 ** load one chunk from a file or buffer
-** return main if ok and NULL at EOF
 */
 Proto* luaU_undump (lua_State* L, ZIO* Z)
 {
- Proto* tf=NULL;
- int c=zgetc(Z);
- if (c==ID_CHUNK)
-  tf=LoadChunk(L,Z);
- c=zgetc(Z);
- if (c!=EOZ)
+ Proto* f=LoadChunk(L,Z);
+ if (zgetc(Z)!=EOZ)
   luaO_verror(L,l_s("`%.99s' apparently contains more than one chunk"),ZNAME(Z));
- return tf;
+ return f;
 }
 
 /*
