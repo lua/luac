@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files; also list binary files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.20 1997/04/14 12:12:40 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.21 1997/06/19 14:56:04 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -106,23 +106,20 @@ int main(int argc, char* argv[])
  return 0;
 }
 
-TFunc* MAIN;
-
-static void do_dump(TFunc* m)
+static void do_dump(TFunc* Main)
 {
  TFunc* tf;
- MAIN=m;
- LinkFunctions(m);
+ LinkFunctions(Main);
  if (listing)
  {
-  for (tf=m; tf!=NULL; tf=tf->next) PrintFunction(tf);
+  for (tf=Main; tf!=NULL; tf=tf->next) PrintFunction(tf,Main);
  }
  if (dumping)
  {
   DumpHeader(D);
-  for (tf=m; tf!=NULL; tf=tf->next) DumpFunction(tf,D);
+  for (tf=Main; tf!=NULL; tf=tf->next) DumpFunction(tf,D);
  }
- for (tf=m; tf!=NULL; )
+ for (tf=Main; tf!=NULL; )
  {
   TFunc* nf=tf->next;
   luaI_freefunc(tf);
@@ -161,23 +158,22 @@ static void compile(char* filename)
 
 static void do_undump(ZIO* z)
 {
- TFunc* m;
- while ((m=luaI_undump1(z)))
+ TFunc* Main;
+ while ((Main=luaI_undump1(z)))
  {
   if (listing)
   {
    TFunc* tf;
-   MAIN=m;
-   for (tf=m; tf!=NULL; tf=tf->next)
-    PrintFunction(tf);
+   for (tf=Main; tf!=NULL; tf=tf->next)
+    PrintFunction(tf,Main);
   }
-  luaI_freefunc(m);			/* TODO: free others */
+  luaI_freefunc(Main);			/* TODO: free others */
  }
 }
 
 static void undump(char* filename)
 {
- FILE* f=fopen(filename,"rb");		/* must open in binary mode */
+ FILE* f= (filename==NULL) ? stdin : fopen(filename, "rb");
  if (f==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
