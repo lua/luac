@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.2 1996/02/20 21:58:39 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.3 1996/02/21 17:20:42 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
   perror(d);
   exit(1);
  }
+ DumpHeader(D);
  for (i=1; i<argc; i++) compile(IS("-")? NULL : argv[i]);
  fclose(D);
  return 0;
