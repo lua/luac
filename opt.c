@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.3 1998/03/30 11:22:25 lhf Exp lhf $
+** $Id: opt.c,v 1.4 1998/04/02 20:44:08 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -13,30 +13,29 @@ static void FixConstants(TProtoFunc* tf, int* C)
 {
  Byte* code=tf->code;
  Byte* p=code;
+ int m=0;				/* size of last LONGARG */
+ int longarg=0;
  while (1)
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
   int op=OP.class;
-  int i=OP.arg;
+  int i=OP.arg+longarg;
   if (op==ENDCODE) break;
-  if (	op==PUSHCONSTANT || op==GETDOTTED || op==PUSHSELF ||
-	op==GETGLOBAL    || op==SETGLOBAL)
+  else if (op==LONGARG) { m=n; longarg=i<<16; }
+  else if (op==PUSHCONSTANT || op==GETGLOBAL || op==GETDOTTED    ||
+	   op==PUSHSELF     || op==SETGLOBAL || op==SETGLOBALDUP || op==CLOSURE)
   {
    int j=C[i];
    if (j==i)
     ;
-   else if (n==1)
-   {
-    p[0]=op+j+1;
-   }
    else if (n==2)
    {
-    if (j<8) { p[0]=op+j+1; p[1]=NOP; } else p[1]=j;
+    p[1]=j;
    }
    else
    {
-    if (j<=255)
+    if (j<=MAX_BYTE)
     {
      p[0]=op;
      p[1]=j;
@@ -49,13 +48,14 @@ static void FixConstants(TProtoFunc* tf, int* C)
     }
    }
   }
+  else { m=0; longarg=0; }
   p+=n;
  }
 }
 
 static TProtoFunc* TF;
 
-static int compare(const void* a, const void *b)
+static int compare(const void* a, const void* b)
 {
  int ia=*(int*)a;
  int ib=*(int*)b;
@@ -93,7 +93,7 @@ static void OptConstants(TProtoFunc* tf)
  }
  if (k>=n) return;
 printf("\t\"%s\":%d reduced constants from %d to %d\n",
-	tf->fileName->str,tf->lineDefined,n,k);
+	tf->source->str,tf->lineDefined,n,k);
  tf->nconsts=k;
  FixConstants(tf,C);
 }
@@ -102,6 +102,7 @@ static int NoDebug(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
+ int m=0;				/* size of last LONGARG */
  int nop=0;
  while (1)				/* change SETLINE to NOP */
  {
@@ -109,8 +110,13 @@ static int NoDebug(TProtoFunc* tf)
   int n=INFO(tf,p,&OP);
   int op=OP.class;
   if (op==ENDCODE) break;
-  if (op==NOP) ++nop;
-  if (op==SETLINE) { nop+=n; memset(p,NOP,n); }
+  else if (op==NOP) ++nop;
+  else if (op==LONGARG) m=n;		/* in case next is SETLINE */
+  else if (op==SETLINE)
+  {
+   nop+=n+m; memset(p-m,NOP,n+m);
+  }
+  else m=0;
   p+=n;
  }
  return nop;
@@ -155,7 +161,7 @@ static void FixJumps(TProtoFunc* tf)
    else
 #if 0
    {
-    if (j<=255)				/* does NOT work for nested loops */
+    if (j<=MAX_BYTE)			/* does NOT work for nested loops */
     {
      if (op==IFTUPJMP || op==IFFUPJMP) --j;
      p[0]=OP.op-1;			/* *JMP and *JMPW are consecutive */
@@ -191,7 +197,7 @@ static void PackCode(TProtoFunc* tf)
   if (op==ENDCODE) break;
  }
 printf("\t\"%s\":%d reduced code from %d to %d\n",
-	tf->fileName->str,tf->lineDefined,(int)(p-code),(int)(q-code));
+	tf->source->str,tf->lineDefined,(int)(p-code),(int)(q-code));
 }
 
 static void OptCode(TProtoFunc* tf)
@@ -216,13 +222,13 @@ static void OptFunctions(TProtoFunc* tf)
 
 static void OptFunction(TProtoFunc* tf)
 {
- tf->locvars=NULL;			/* remove local variables table */
+ tf->locvars=NULL;			/* remove local variables */
  OptConstants(tf);
  OptCode(tf);
  OptFunctions(tf);
 }
 
-void OptChunk(TProtoFunc* Main)
+void luaU_optchunk(TProtoFunc* Main)
 {
  OptFunction(Main);
 }
