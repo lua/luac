@@ -1,25 +1,12 @@
-# $Id: Makefile,v 1.20 2003/03/11 23:52:39 lhf Exp lhf $
+# $Id: Makefile,v 1.21 2003/04/01 17:57:52 lhf Exp lhf $
 # makefile for Lua compiler
 
-# begin of configuration -----------------------------------------------------
-
-# location of Lua headers and library
 LUA=..
-
-# compiler -------------------------------------------------------------------
-
-# gcc
-CC= gcc
-WARN= -ansi -pedantic -Wall \
--W -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return -Wcast-qual -Wnested-externs -Wwrite-strings
 WARN= -ansi -pedantic -Wall -W
-
-# end of configuration -------------------------------------------------------
-
 CFLAGS= -O2 $(WARN) $(INCS) $G
 INCS= -I$(LUA)
-LIBS= $(LUA)/liblua.a $(LUA)/liblualib.a
 
+LIBS= $(LUA)/liblua.a $(LUA)/lauxlib.o
 OBJS= ldump.o luac.o lundump.o print.o lopcodes.o
 SRCS= ldump.c luac.c lundump.c print.c lundump.h
 
@@ -31,10 +18,10 @@ luac:	$(OBJS) $(LIBS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
 $(LIBS):
-	cd $(LUA); make
+	cd $(LUA); make o $@
 
 lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
-	$(CC) $(CFLAGS) -DLUA_OPNAMES -c -o $@ $(LUA)/lopcodes.c
+	$(CC) -o $@ -c $(CFLAGS) -DLUA_OPNAMES $(LUA)/lopcodes.c
 
 print.c:	$(LUA)/lopcodes.h
 	@diff lopcodes.h $(LUA)
@@ -86,4 +73,7 @@ depend:
 opp:
 	grep Kst lopcodes.h | grep ^OP_; echo ''
 	grep RK  lopcodes.h | grep ^OP_; echo ''
-	grep PC  lopcodes.h | grep ^OP_; echo ''
+	grep pc  lopcodes.h | grep ^OP_; echo ''
+
+load.c:	$(LUA)/lauxlib.c
+	ex <load.ex $<
