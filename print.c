@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.3 1998/01/05 13:37:07 lhf Exp lhf $
+** $Id: print.c,v 1.4 1998/01/12 13:04:24 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -9,6 +9,29 @@
 #include <string.h>
 #include "luac.h"
 #include "print.h"
+
+#ifdef DEBUG
+#define CHECKOP(op,p,code,tf,s) \
+if (op>=NOPCODES)			/* cannot happen */\
+	luaL_verror("internal error in %s: bad opcode %d at %d in tf=%p\n",\
+		s,op,(int)(p-code),tf)
+#else
+#define CHECKOP(op,p,code,tf,s)
+#endif
+
+int CodeSize(TProtoFunc* tf)		/* also used in dump.c */
+{
+ Byte* code=tf->code+2;
+ Byte* p=code;
+ while (1)
+ {
+  int op=*p;
+  CHECKOP(op,p,code,tf,"CodeSize");
+  p+=Opcode[op].size;
+  if (op==ENDCODE) break;
+ }
+ return p-code;
+}
 
 static void PrintConstants(TProtoFunc* tf)
 {
@@ -24,11 +47,11 @@ static void PrintConstants(TProtoFunc* tf)
    case LUA_T_NUMBER:	printf("N %g",nvalue(o)); break;
    case LUA_T_STRING:	printf("S \"%s\"",svalue(o)); break;
    case LUA_T_PROTO:	printf("F %p",tfvalue(o)); break;
+   default:				/* cannot happen */
 #ifdef DEBUG
-   default:		printf("? %d",ttype(o)); break;
-#else
-   default: break;
+			printf("? %d",ttype(o)); 
 #endif
+   break;
   }
  }
  printf("\n");
@@ -48,11 +71,12 @@ static void PrintConstant(TProtoFunc* tf, int n)
    case LUA_T_NUMBER:	printf("%g",nvalue(o)); break;
    case LUA_T_STRING:	printf("\"%s\"",svalue(o)); break;
    case LUA_T_PROTO:	printf("function at %p",tfvalue(o)); break;
+   default:				/* cannot happen */
 #ifdef DEBUG
-   default:		printf("cannot handle ttype(o)=%d",ttype(o)); break;
-#else
-   default: break;
+	luaL_verror("internal error in PrintConstant: "
+		"bad constant #%d type=%d\n",n,ttype(o));
 #endif
+   break;
   }
  }
 }
@@ -61,18 +85,14 @@ static void PrintConstant(TProtoFunc* tf, int n)
 
 static void PrintCode(TProtoFunc* tf)
 {
- Byte* code=tf->code+1;
+ Byte* code=tf->code+2;
  Byte* p=code;
  int line=0;
  while (1)
  {
 	int op=*p;
 	int n,i;
-#ifdef DEBUG
-	if (op>=NOPCODES)		/* cannot happen */
-	 luaL_verror("internal error in PrintCode: "
-		"bad opcode %d at %d (NOPCODES=%d)\n",op,(int)(p-code),NOPCODES);
-#endif
+	CHECKOP(op,p,code,tf,"PrintCode");
 	n=Opcode[op].size;
 	printf("%6d  ",(int)(p-code));
 	{
@@ -80,19 +100,19 @@ static void PrintCode(TProtoFunc* tf)
 	 int i=n;
 	 while (i--) printf("%02X",*q++);
 	}
-	printf("\t%-13s",Opcode[op].name);
-	if (n==1) i=Opcode[op].arg; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
+	printf("%*s%-13s",2*(5-n),"",Opcode[op].name);
+
+	if (op==CALLFUNC || op==SETLIST) i=p[1];
+	else if (n==1) i=Opcode[op].arg;
+	else if (n==2) i=p[1];
+	else i=p[1]+(p[2]<<8);
 	op=Opcode[op].class;
-	if (n!=1 && op!=SETLIST && op!=CALLFUNC) printf("\t%d",i);
-	if (n==1 && i>=0) printf("\t");
+	if (n!=1) printf("\t%d",i); else if (i>=0) printf("\t");
 
 	switch (op)
 	{
 
 	case ENDCODE:
-#if 0
-		printf("\t(%d bytes of code)",(int)(p-code)+1);
-#endif
 		printf("\n");
 		return;
 
@@ -131,21 +151,16 @@ static void PrintCode(TProtoFunc* tf)
 		break;
 
 	case SETLIST:
+		if (n>=3) printf(" %d",p[n-1]);
+		break;
+
 	case CALLFUNC:
-		printf("\t%d %d",p[1],p[2]);
+		if (n==3) printf(" %d",p[2]);
 		break;
 
 	case SETLINE:
 		printf("\t; \"%s\":%d",tf->fileName->str,line=i);
 		break;
-
-#if 0
-	default:			/* cannot happen */
-		printf("\n");
-	 	luaL_verror("internal error in PrintCode: "
-			"bad opcode %d at %d\n",*p,(int)(p-code));
-		break;
-#endif
 
 	}
 	printf("\n");
@@ -156,17 +171,9 @@ static void PrintCode(TProtoFunc* tf)
 static void PrintLocals(TProtoFunc* tf)
 {
  LocVar* v=tf->locvars;
- int n=0;
- int i=0;
- Byte* p;
+ int n,i=0;
  if (v==NULL || v->varname==NULL) return;
- for (p=tf->code+1;;)
-  if (*p==SETLINE) p+=2; else if (*p==SETLINEW) p+=3; else break;
- if (*p==ARGS || *p==VARARGS) n=p[1]; else
- if (*p>ARGS && *p<VARARGS) n=*p-ARGS0;
-#if 0
- printf("PrintLocals: %d %s n=%d\n",(int)(p-tf->code)-1,Opcode[*p].name,n);
-#endif
+ n=tf->code[1]; if (n>=ZEROVARARG) n-=ZEROVARARG;
 
  printf("locals:");
  if (n>0)
@@ -204,50 +211,29 @@ static void PrintLocals(TProtoFunc* tf)
 
 static Byte* FindFunction(TProtoFunc* tf, TProtoFunc* Main)
 {
- Byte* code=Main->code+1;
+ Byte* code=Main->code+2;
  Byte* p=code;
  while (1)
  {
   int op=*p;
-  int i=-1;
-#ifdef DEBUG
-  if (op>=NOPCODES)			/* cannot happen */
-   luaL_verror("internal error in FindFunction: bad opcode %d at %d\n",
-	op,(int)(p-code));
-#endif
+  int n,i;
+  CHECKOP(op,p,code,tf,"FindFunction");
   if (op==ENDCODE) break;
-  else if (op==PUSHCONSTANT) i=p[1];
-  else if (op>PUSHCONSTANT && op<PUSHCONSTANTW) i=op-PUSHCONSTANT0;
-  p+=Opcode[op].size;
-  if (i>=0)
+  n=Opcode[op].size;
+  if (n==1) i=Opcode[op].arg; else if (n==2) i=p[1]; else i=p[1]+(p[2]<<8);
+  op=Opcode[op].class;
+  if (op==PUSHCONSTANT)
   {
    TObject* o=Main->consts+i;
-   if (ttype(o)==LUA_T_PROTO && tfvalue(o)==tf) return p+1;
+   if (ttype(o)==LUA_T_PROTO && tfvalue(o)==tf) return p;
   }
+  p+=n;
  }
- return NULL;				/* to avoid warnings */
-}
-
-int CodeSize(TProtoFunc* tf)
-{
- Byte* code=tf->code+1;
- Byte* p=code;
- while (1)
- {
-  int op=*p;
 #ifdef DEBUG
-  if (op>=NOPCODES)			/* cannot happen */
-   luaL_verror("internal error in CodeSize: bad opcode %d at %d\n",
-	op,(int)(p-code));
+ luaL_verror("internal error in FindFunction: function %p not found\n",tf);
 #endif
-  p+=Opcode[op].size;
-  if (op==ENDCODE) break;
- }
- return p-code;
+ return NULL;				/* avoid warnings */
 }
-
-#undef VarStr
-#define VarStr(i)       svalue(Main->consts+i)
 
 static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main)
 {
@@ -257,59 +243,13 @@ static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main)
  else if (Main)
  {
   Byte* p=FindFunction(tf,Main);
-  Byte* op=p;
-  printf("\nfunction ");
-  if (p)
-  switch (*p)				/* try to get name */
-  {
-   int i;
-   case SETGLOBAL0:
-   case SETGLOBAL1:
-   case SETGLOBAL2:
-   case SETGLOBAL3:
-   case SETGLOBAL4:
-   case SETGLOBAL5:
-   case SETGLOBAL6:
-   case SETGLOBAL7:
-    i=*p-SETGLOBAL0;
-    goto PRINTGLOBAL;
-   case SETGLOBAL:
-    i=p[1];
-    goto PRINTGLOBAL;
-   case SETGLOBALW:
-    i=p[1]+(p[2]<<8);
-PRINTGLOBAL:
-    printf("%s ",VarStr(i));
-    break;
-   case SETTABLE0:			/* try method definition */
-   {
-    int t=-1,m=-1;
-    if (p[-3]>PUSHCONSTANT && p[-3]<PUSHCONSTANTW
-     && p[-4]>GETGLOBAL && p[-4]<GETGLOBALW)
-    {
-     t=p[-4]-GETGLOBAL-1;
-     m=p[-3]-PUSHCONSTANT-1;
-#if 0
-printf("t=%d m=%d\n",t,m);
-#endif
-    }
-    if (t>=0 && m>=0)
-    {
-     int c=(tf->locvars && tf->locvars->varname &&
-     strcmp(tf->locvars->varname->str,"self")==0)
-		? ':' : '.';
-     printf("%s%c%s ",VarStr(t),c,VarStr(m));
-    }
-    break;
-   }
-  }
-  printf("defined at \"%s\":%d (%d bytes at %p); used at ",
+  printf("\nfunction defined at \"%s\":%d (%d bytes at %p); used at ",
 	tf->fileName->str,tf->lineDefined,size,tf);
   if (IsMain(Main))
    printf("main");
   else
    printf("%p",Main);
-  printf("+%d\n",(int)(op-Main->code-3));
+  printf("+%d\n",(int)(p-Main->code-2));
  }
 #if 0
  printf("needs %d stack positions\n",*tf->code);
