@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.16 1999/03/12 23:54:39 lhf Exp lhf $
+** $Id: print.c,v 1.17 1999/03/16 18:13:56 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -61,7 +61,7 @@ static void PrintConstant(TProtoFunc* tf, int i)
 	printf("(nil)");
 	break;
    default:				/* cannot happen */
-	printf("(bad constant #%d: type=%d [%s])\n",i,ttype(o),luaO_typename(o));
+	luaU_badconstant("print",i,o,tf);
 	break;
   }
  }
@@ -118,7 +118,7 @@ static void PrintCode(TProtoFunc* tf)
 		break;
 
 	case SETLINE:
-		printf("\t; \"%s\":%d",tf->source->str,line=i);
+		printf("\t; " SOURCE,tf->source->str,line=i);
 		break;
 
 	case LONGARG:
@@ -142,49 +142,58 @@ static void PrintCode(TProtoFunc* tf)
  }
 }
 
+static void DumpLocals(TProtoFunc* tf)
+{
+ LocVar* v=tf->locvars;
+ int i=0;
+ if (v==NULL) return;
+ printf("dumplocals:\n");
+ do
+ {
+  printf("%d line=%d varname=%s [%p]\n",
+	i++,v->line,v->varname?v->varname->str:"",v->varname);
+ } while (v++->line>=0);
+}
+
 static void PrintLocals(TProtoFunc* tf)
 {
  LocVar* v=tf->locvars;
- int n,i=0;
- if (v==NULL || v->varname==NULL) return;
+ int n,i;
+ DumpLocals(tf);
+ if (v==NULL || v->line<0) return;
  n=tf->code[1]; if (n>=ZEROVARARG) n-=ZEROVARARG;
-
  printf("locals:");
- if (n>0)
+ for (i=0; i<n; v++,i++)		/* arguments */
+  printf(" %s",v->varname->str);
+ for (; v->line>=0; v++)
  {
-  for (i=0; i<n; v++,i++) printf(" %s",v->varname->str);
- }
- if (v->varname!=NULL)
- {
-  for (; v->line>=0; v++)
+  if (v->varname==NULL)
   {
-   if (v->varname==NULL)
-   {
-    printf(")"); --i;
-   }
-   else
-   {
-    printf(" (%s",v->varname->str); i++;
-   }
+   printf(")"); --i;
   }
-  i-=n;
-  while (i--) printf(")");
+  else
+  {
+   printf(" (%s",v->varname->str); i++;
+  }
  }
+ i-=n;
+ while (i--) printf(")");
  printf("\n");
 }
 
-#define IsMain(f)	(f->lineDefined==0)
+#define IsMain(tf)	(tf->lineDefined==0)
 
 static void PrintHeader(TProtoFunc* tf, TProtoFunc* Main, int at)
 {
  int size=luaU_codesize(tf);
  if (IsMain(tf))
-  printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->source->str,size,tf);
- else if (Main)
- {
-  printf("\nfunction defined at \"%s\":%d (%d bytes at %p); used at ",
+  printf("\nmain " SOURCE " (%d bytes at %p)\n",
 	tf->source->str,tf->lineDefined,size,tf);
-  if (IsMain(Main))
+ else
+ {
+  printf("\nfunction " SOURCE " (%d bytes at %p); used at ",
+	tf->source->str,tf->lineDefined,size,tf);
+  if (Main && IsMain(Main))
    printf("main");
   else
    printf("%p",Main);
