@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.10 1999/07/02 19:34:26 lhf Exp lhf $
+** $Id: test.c,v 1.11 1999/09/09 13:24:52 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -42,8 +42,8 @@ static int jmpok(const TProtoFunc* tf, int size, int at, int d)
 
 static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 {
- Byte* code=tf->code;
- Byte* p=code;
+ const Byte* code=tf->code;
+ const Byte* p=code;
  int longarg=0;
  int ss=0;
  int sp=0;
@@ -195,7 +195,7 @@ static void TestCode(const TProtoFunc* tf)
 #define AT	"locvars[%d]"
 static void TestLocals(const TProtoFunc* tf)
 {
- LocVar* v;
+ const LocVar* v;
  int l=1;
  int d=0;
  if (tf->locvars==NULL) return;

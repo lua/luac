@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.20 1999/07/02 19:34:26 lhf Exp lhf $
+** $Id: dump.c,v 1.21 1999/09/09 13:24:52 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -79,7 +79,7 @@ static void DumpLocals(const TProtoFunc* tf, FILE* D)
   DumpInt(0,D);
  else
  {
-  LocVar* v;
+  const LocVar* v;
   int n=0;
   for (v=tf->locvars; v->line>=0; v++)
    ++n;

@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.16 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: luac.c,v 1.17 1999/07/02 19:34:26 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -14,8 +14,8 @@
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
-static FILE* efopen(char* name, char* mode);
-static void doit(int undump, char* filename);
+static FILE* efopen(const char* name, const char* mode);
+static void doit(int undump, const char* filename);
 
 static int listing=0;			/* list bytecodes? */
 static int debugging=0;			/* emit debug information? */
@@ -56,7 +56,7 @@ static void usage(char* op)
 
 int main(int argc, char* argv[])
 {
- char* d=OUTPUT;			/* output file name */
+ const char* d=OUTPUT;			/* output file name */
  int i;
  lua_open();
  for (i=1; i<argc; i++)
@@ -162,7 +162,7 @@ static void do_undump(ZIO* z)
  }
 }
 
-static void doit(int undump, char* filename)
+static void doit(int undump, const char* filename)
 {
  FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
  ZIO z;
@@ -174,7 +174,7 @@ static void doit(int undump, char* filename)
  if (f!=stdin) fclose(f);
 }
 
-static FILE* efopen(char* name, char* mode)
+static FILE* efopen(const char* name, const char* mode)
 {
  FILE* f=fopen(name,mode);
  if (f==NULL)

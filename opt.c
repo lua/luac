@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.12 1999/07/02 19:34:26 lhf Exp lhf $
+** $Id: opt.c,v 1.13 1999/09/09 13:24:52 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -117,8 +117,8 @@ static TProtoFunc* TF;			/* for sort */
 
 static int compare1(const void* a, const void* b)
 {
- int ia=*(int*)a;
- int ib=*(int*)b;
+ const int ia=*(const int*)a;
+ const int ib=*(const int*)b;
  int t=compare(TF,ia,ib);
  return (t) ? t : ia-ib;
 }

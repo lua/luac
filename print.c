@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.21 1999/05/25 19:58:55 lhf Exp lhf $
+** $Id: print.c,v 1.22 1999/09/09 13:24:52 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -138,7 +138,7 @@ static void PrintCode(const TProtoFunc* tf)
 
 static void PrintLocals(const TProtoFunc* tf)
 {
- LocVar* v=tf->locvars;
+ const LocVar* v=tf->locvars;
  int n,i;
  if (v==NULL || v->line<0) return;
  n=tf->code[1]; if (n>=ZEROVARARG) n-=ZEROVARARG;
@@ -185,8 +185,8 @@ static void PrintFunction(const TProtoFunc* tf, const TProtoFunc* Main, int at);
 
 static void PrintFunctions(const TProtoFunc* Main)
 {
- Byte* code=Main->code;
- Byte* p=code;
+ const Byte* code=Main->code;
+ const Byte* p=code;
  int longarg=0;
  for (;;)
  {
