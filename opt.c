@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.14 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: opt.c,v 1.15 1999/12/02 18:51:09 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -108,7 +108,7 @@ static int compare(TProtoFunc* tf, int ia, int ib)
  {
   case LUA_T_NUMBER:	return CMP(oa,ob,nvalue);
   case LUA_T_STRING:	return CMP(oa,ob,tsvalue);
-  case LUA_T_PROTO:	return CMP(oa,ob,tfvalue);
+  case LUA_T_LPROTO:	return CMP(oa,ob,tfvalue);
   case LUA_T_NIL:	return 0;
   case UNREF:		return 0;
   default:		return ia-ib;	/* cannot happen */
@@ -172,13 +172,13 @@ static int NoDebug(TProtoFunc* tf)
  Byte* p=code;
  int lop=NOP;				/* last opcode */
  int nop=0;
- for (;;)				/* change SETLINE to NOP */
+ for (;;)				/* change SETLINE and SETNAME to NOP */
  {
   Opcode OP;
   int n=INFO(tf,p,&OP);
   int op=OP.class;
   if (op==NOP) ++nop;
-  else if (op==SETLINE)
+  else if (op==SETLINE || op==SETNAME)
   {
    int m;
    if (lop==LONGARG) m=2; else if (lop==LONGARGW) m=3; else m=0;
@@ -264,7 +264,7 @@ static void OptFunctions(TProtoFunc* tf)
  for (i=0; i<n; i++)
  {
   const TObject* o=tf->consts+i;
-  if (ttype(o)==LUA_T_PROTO) OptFunction(tfvalue(o));
+  if (ttype(o)==LUA_T_LPROTO) OptFunction(tfvalue(o));
  }
 }
 
