@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.4 1998/04/02 20:44:08 lhf Exp lhf $
+** $Id: opt.c,v 1.5 1999/03/08 11:08:43 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "luac.h"
-#include "lmem.h"
 
 static void FixConstants(TProtoFunc* tf, int* C)
 {
@@ -21,34 +20,34 @@ static void FixConstants(TProtoFunc* tf, int* C)
   int n=INFO(tf,p,&OP);
   int op=OP.class;
   int i=OP.arg+longarg;
+  m=0; longarg=0;
   if (op==ENDCODE) break;
   else if (op==LONGARG) { m=n; longarg=i<<16; }
   else if (op==PUSHCONSTANT || op==GETGLOBAL || op==GETDOTTED    ||
-	   op==PUSHSELF     || op==SETGLOBAL || op==SETGLOBALDUP || op==CLOSURE)
+	   op==PUSHSELF     || op==SETGLOBAL || op==CLOSURE)
   {
    int j=C[i];
    if (j==i)
     ;
-   else if (n==2)
+   else if (op==OP.op)			/* byte variant */
    {
     p[1]=j;
    }
-   else
+   else					/* word variant */
    {
-    if (j<=MAX_BYTE)
+    if (j<=MAX_BYTE)			/* can use byte variant instead */
     {
      p[0]=op;
      p[1]=j;
      p[2]=NOP;
     }
-    else 
+    else 				/* stuck with word variant */
     {
      p[1]= 0x0000FF & (j>>8);
      p[2]= 0x0000FF &  j;
     }
    }
   }
-  else { m=0; longarg=0; }
   p+=n;
  }
 }
@@ -94,15 +93,15 @@ static void OptConstants(TProtoFunc* tf)
  if (k>=n) return;
 printf("\t\"%s\":%d reduced constants from %d to %d\n",
 	tf->source->str,tf->lineDefined,n,k);
- tf->nconsts=k;
  FixConstants(tf,C);
+ tf->nconsts=k;
 }
 
 static int NoDebug(TProtoFunc* tf)
 {
  Byte* code=tf->code;
  Byte* p=code;
- int m=0;				/* size of last LONGARG */
+ int lop;				/* last opcode */
  int nop=0;
  while (1)				/* change SETLINE to NOP */
  {
@@ -111,12 +110,13 @@ static int NoDebug(TProtoFunc* tf)
   int op=OP.class;
   if (op==ENDCODE) break;
   else if (op==NOP) ++nop;
-  else if (op==LONGARG) m=n;		/* in case next is SETLINE */
   else if (op==SETLINE)
   {
+   int m;
+   if (lop==LONGARG) m=2; else if (lop==LONGARGW) m=3; else m=0;
    nop+=n+m; memset(p-m,NOP,n+m);
   }
-  else m=0;
+  lop=OP.op;
   p+=n;
  }
  return nop;
@@ -132,7 +132,7 @@ static int FixJump(TProtoFunc* tf, Byte* a, Byte* b)
   int n=INFO(tf,p,&OP);
   int op=OP.class;
   if (op==ENDCODE) break;
-  if (op==NOP) ++nop;
+  else if (op==NOP) ++nop;
   p+=n;
  }
  return nop;
@@ -150,9 +150,12 @@ static void FixJumps(TProtoFunc* tf)
   int i=OP.arg;
   int nop;
   if (op==ENDCODE) break;
-  nop=0;
-  if (op==IFTUPJMP || op==IFFUPJMP) nop=FixJump(tf,p-i+n,p); else
-  if (op==ONTJMP || op==ONFJMP || op==JMP || op==IFFJMP) nop=FixJump(tf,p,p+i+n);
+  else if (op==IFTUPJMP || op==IFFUPJMP)
+   nop=FixJump(tf,p-i+n,p);
+  else if (op==ONTJMP || op==ONFJMP || op==JMP || op==IFFJMP)
+   nop=FixJump(tf,p,p+i+n);
+  else
+   nop=0;
   if (nop>0)
   {
    int j=i-nop;
@@ -202,8 +205,7 @@ printf("\t\"%s\":%d reduced code from %d to %d\n",
 
 static void OptCode(TProtoFunc* tf)
 {
- int nop=NoDebug(tf);
- if (nop==0) return;			/* cannot improve code */
+ if (NoDebug(tf)==0) return;		/* cannot improve code */
  FixJumps(tf);
  PackCode(tf);
 }
@@ -222,10 +224,11 @@ static void OptFunctions(TProtoFunc* tf)
 
 static void OptFunction(TProtoFunc* tf)
 {
- tf->locvars=NULL;			/* remove local variables */
  OptConstants(tf);
  OptCode(tf);
  OptFunctions(tf);
+ tf->source=luaS_new("?");		/* remove source */
+ tf->locvars=NULL;			/* remove local variables */
 }
 
 void luaU_optchunk(TProtoFunc* Main)
