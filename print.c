@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.35 2001/07/19 14:34:06 lhf Exp $
+** $Id: print.c,v 1.36 2002/02/28 20:09:28 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -12,6 +12,7 @@
 #include "lfunc.h"
 #include "lobject.h"
 #include "lopcodes.h"
+#include "lundump.h"
 
 #define Sizeof(x)	((int)sizeof(x))
 
@@ -127,6 +128,17 @@ static void PrintCode(const Proto* f)
  }
 }
 
+static const char* Source(const Proto* f)
+{
+ const char* s=getstr(f->source);
+ if (*s=='@' || *s=='=')
+  return s+1;
+ else if (*s==LUA_SIGNATURE[0])
+  return "(bstring)";
+ else
+  return "(string)";
+}
+
 #define IsMain(f)	(f->lineDefined==0)
 
 #define SS(x)	(x==1)?"":"s"
@@ -135,7 +147,7 @@ static void PrintCode(const Proto* f)
 static void PrintHeader(const Proto* f)
 {
  printf("\n%s <%d:%s> (%d instruction%s, %d bytes at %p)\n",
- 	IsMain(f)?"main":"function",f->lineDefined,getstr(f->source),
+ 	IsMain(f)?"main":"function",f->lineDefined,Source(f),
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),f);
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
