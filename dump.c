@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.13 1996/11/07 14:28:32 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.14 1996/11/07 14:47:10 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -104,7 +104,7 @@ static void ThreadCode(Byte* code, Byte* end)
 		p+=3;
 		break;
 	case PUSHFLOAT:
-		p+=5;
+		p+=5;			/* assumes sizeof(float)==4 */
 		break;
 	case PUSHSELF:
 	case PUSHSTRING:
@@ -239,6 +239,9 @@ void DumpHeader(FILE* D)
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
+ fputc(sizeof(int),D);
+ fputc(sizeof(float),D);
+ fputc(sizeof(TFunc*),D);
  fwrite(&w,sizeof(w),1,D);
  fwrite(&f,sizeof(f),1,D);
 }
