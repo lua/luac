@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.2 2002/12/13 11:17:27 lhf Exp lhf $
+** $Id: ldump.c,v 1.3 2003/01/10 11:08:45 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -90,14 +90,9 @@ static void DumpLines(const Proto* f, DumpState* D)
 
 static void DumpUpvalues(const Proto* f, DumpState* D)
 {
- if (f->upvalues==NULL)
-  DumpInt(0,D);
- else
- {
-  int i,n=f->nupvalues;
-  DumpInt(n,D);
-  for (i=0; i<n; i++) DumpString(f->upvalues[i],D);
- }
+ int i,n=f->sizeupvalues;
+ DumpInt(n,D);
+ for (i=0; i<n; i++) DumpString(f->upvalues[i],D);
 }
 
 static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
@@ -133,7 +128,7 @@ static void DumpFunction(const Proto* f, const TString* p, DumpState* D)
 {
  DumpString((f->source==p) ? NULL : f->source,D);
  DumpInt(f->lineDefined,D);
- DumpInt(f->nupvalues,D);
+ DumpByte(f->nups,D);
  DumpByte(f->numparams,D);
  DumpByte(f->is_vararg,D);
  DumpByte(f->maxstacksize,D);
@@ -172,3 +167,4 @@ void luaU_dump (lua_State* L, const Proto* Main, lua_Chunkwriter w, void* data)
  DumpHeader(&D);
  DumpFunction(Main,NULL,&D);
 }
+
