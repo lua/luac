@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.16 1999/07/02 19:34:26 lhf Exp lhf $
-.TH LUAC 1 "$Date: 1999/07/02 19:34:26 $"
+.\" $Id: luac.man,v 1.17 1999/07/07 16:02:07 lhf Exp lhf $
+.TH LUAC 1 "$Date: 1999/07/07 16:02:07 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -70,7 +70,7 @@ The internal format of the binary files produced by
 .B luac
 may change when a new version of Lua is released.
 We try to maintain compatibility even for binary files,
-but sometimes it cannot be done.
+but it is not always possible.
 So,
 save the source files of all Lua programs that you precompile.
 .LP
@@ -82,9 +82,11 @@ compile (this is the default).
 .TP
 .B \-u
 undump, i.e., load and list the given binary files.
-If no files are given, then luac undumps
+If no files are given, then
+.B luac
+undumps
 .BR luac.out .
-Listing a binary file is useful to learn Lua's virtual machine.
+Listing a binary file is useful to learn about Lua's virtual machine.
 Listing is also useful to test the integrity of binary files:
 corrupted files will probably generate errors when undumped.
 To test without listing, use
@@ -97,7 +99,9 @@ use
 turn debugging on.
 Individual chunks may
 still control the generation of debug information with
-$debug and $nodebug.
+.B $debug
+and
+.B $nodebug.
 If debugging is on, then listings show the names of the local variables.
 .TP
 .BI \-D " name"
@@ -116,16 +120,16 @@ produce a listing of the compiled bytecode for Lua's virtual machine.
 This is the default when undumping.
 .TP
 .B \-n
-Save numbers in native format.
+save numbers in native format.
 By default,
 numbers are saved in text form,
 for maximum portability.
 Binary files with numbers in native format are slightly faster to load,
 but are not completely portable.
 .TP
-.BI \-o " filename"
+.BI \-o " file"
 output to
-.IR filename ,
+.IR file ,
 instead of the default
 .BR luac.out .
 The output file cannot be a source file.
@@ -141,7 +145,7 @@ parse sources files but do not generate any output file.
 Used mainly for syntax checking.
 .TP
 .B \-q
-quiet; produces no listing.
+quiet; produce no listing.
 This is the default when compiling.
 .TP
 .B \-t
@@ -170,19 +174,12 @@ default output file
 .SH "SEE ALSO"
 .BR lua (1)
 .br
-.I "Reference Manual of the Programming Language Lua"
-.br
 http://www.tecgraf.puc-rio.br/lua/
-.br
-"Lua: an extensible extension language",
-.I Software: Practice & Experience
-.B 26
-#6 (1996) 635-652.
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
 .SH AUTHORS
 L. H. de Figueiredo,
 R. Ierusalimschy and
 W. Celes
-.I (lua@tecgraf.puc-rio.br)
+(lua@tecgraf.puc-rio.br)
 .\" EOF
