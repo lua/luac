@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.22 2003/08/29 10:44:45 lhf Exp lhf $
+# $Id: Makefile,v 1.23 2004/03/30 11:55:33 lhf Exp lhf $
 # makefile for Lua compiler
 
 LUA=..
@@ -7,8 +7,8 @@ CFLAGS= -O2 $(WARN) $(INCS) $G
 INCS= -I$(LUA)
 
 LIBS= $(LUA)/liblua.a $(LUA)/lauxlib.o
-OBJS= ldump.o luac.o lundump.o print.o lopcodes.o
-SRCS= ldump.c luac.c lundump.c print.c lundump.h
+OBJS= ldump.o luac.o lundump.o print.o unprint.o
+SRCS= ldump.c luac.c lundump.c print.c unprint.c lundump.h
 
 # targets --------------------------------------------------------------------
 
@@ -19,9 +19,6 @@ luac:	$(OBJS) $(LIBS)
 
 $(LIBS):
 	make -C $(LUA) o $@
-
-lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
-	$(CC) -o $@ -c $(CFLAGS) -DLUA_OPNAMES $(LUA)/lopcodes.c
 
 print.c:	$(LUA)/lopcodes.h
 	@diff lopcodes.h $(LUA)
