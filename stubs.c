@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.20 2000/10/31 16:57:23 lhf Exp lhf $
+** $Id: stubs.c,v 1.21 2001/03/15 17:29:16 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -7,10 +7,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "luac.h"
+#include "ldebug.h"
 #include "ldo.h"
 #include "llex.h"
-#include "luac.h"
-#undef L
+#include "lmem.h"
+#include "lobject.h"
+#include "lstring.h"
 
 #ifndef NOSTUBS
 
@@ -56,11 +59,7 @@ lua_State *lua_newthread (lua_State *OL, int stacksize) {
   G(L)->TMtable = NULL;
   G(L)->sizeTM = 0;
   G(L)->ntag = 0;
-  G(L)->refArray = NULL;
-  G(L)->nref = 0;
-  G(L)->sizeref = 0;
-  G(L)->refFree = NONEXT;
-  G(L)->nblocks = sizeof(lua_State);
+  G(L)->nblocks = sizeof(lua_State) + sizeof(global_State);
   luaS_init(L);
   luaX_init(L);
   G(L)->GCthreshold = 4*G(L)->nblocks;
