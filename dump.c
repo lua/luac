@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.23 1999/12/02 18:45:03 lhf Exp lhf $
+** $Id: dump.c,v 1.24 2000/01/28 17:51:09 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -96,30 +96,13 @@ static void DumpFunction(const TProtoFunc* tf, FILE* D, int native);
 
 static void DumpConstants(const TProtoFunc* tf, FILE* D, int native)
 {
- int i,n=tf->nconsts;
- DumpInt(n,D);
- for (i=0; i<n; i++)
- {
-  const TObject* o=tf->consts+i;
-  fputc(-ttype(o),D);			/* ttype(o) is negative - ORDER LUA_T */
-  switch (ttype(o))
-  {
-   case LUA_T_NUMBER:
-	DumpNumber(nvalue(o),D,native,tf);
-	break;
-   case LUA_T_STRING:
-	DumpTString(tsvalue(o),D);
-	break;
-   case LUA_T_LPROTO:
-	DumpFunction(tfvalue(o),D,native);
-	break;
-   case LUA_T_NIL:
-	break;
-   default:				/* cannot happen */
-	luaU_badconstant(L,"dump",i,o,tf);
-	break;
-  }
- }
+ int i,n;
+ n=tf->nkstr;
+ DumpInt(n,D); for (i=0; i<n; i++) DumpTString(tf->kstr[i],D);
+ n=tf->nknum;
+ DumpInt(n,D); for (i=0; i<n; i++) DumpNumber(tf->knum[i],D,native,tf);
+ n=tf->nkproto;
+ DumpInt(n,D); for (i=0; i<n; i++) DumpFunction(tf->kproto[i],D,native);
 }
 
 static void DumpFunction(const TProtoFunc* tf, FILE* D, int native)
