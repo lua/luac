@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.11 1996/11/18 11:24:16 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.12 1997/04/14 12:12:40 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +68,7 @@ static void PrintCode(Byte* code, Byte* end)
 	case PUSHLOCAL9:
 	{
 		int i=op-PUSHLOCAL0;
-		printf("\t%d\t; %s",i,LocStr(i));
+		printf("\t\t; %s",LocStr(i));
 		p++;
 		break;
 	}
@@ -84,7 +84,7 @@ static void PrintCode(Byte* code, Byte* end)
 	case STORELOCAL9:
 	{
 		int i=op-STORELOCAL0;
-		printf("\t%d\t; %s",i,LocStr(i));
+		printf("\t\t; %s",LocStr(i));
 		p++;
 		break;
 	}
@@ -108,18 +108,32 @@ static void PrintCode(Byte* code, Byte* end)
 		break;
 	case PUSHWORD:
 	case CREATEARRAY:
-	case ONTJMP:
-	case ONFJMP:
-	case JMP:
-	case UPJMP:
-	case IFFJMP:
-	case IFFUPJMP:
 	case SETLINE:
 	{
 		Word w;
 		p++;
 		get_word(w,p);
 		printf("\t%d",w);
+		break;
+	}
+	case ONTJMP:
+	case ONFJMP:
+	case JMP:
+	case IFFJMP:
+	{		/* suggested by Norman Ramsey <nr@cs.virginia.edu> */
+		Word w;
+		p++;
+		get_word(w,p);
+		printf("\t%d\t\t; to %d",w,(int)(p-code)+w);
+		break;
+	}
+	case UPJMP:
+	case IFFUPJMP:
+	{		/* suggested by Norman Ramsey <nr@cs.virginia.edu> */
+		Word w;
+		p++;
+		get_word(w,p);
+		printf("\t%d\t\t; to %d",w,(int)(p-code)-w);
 		break;
 	}
 	case PUSHFLOAT:
