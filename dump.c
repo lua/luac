@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char *rcs_dump="$Id: dump.c,v 1.6 1996/02/24 21:51:06 lhf Exp lhf $";
+char *rcs_dump="$Id: dump.c,v 1.7 1996/02/26 19:43:32 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -162,14 +162,14 @@ static void ThreadCode(Byte *code, Byte *end)
  }
 }
 
-static void CheckThread(Byte *p, int i)
+static void CheckThread(Byte *code, int i)
 {
  while (i!=0)
  {
   CodeWord c;
-  Byte *q=p+i;
+  Byte *p=code+i;
   printf(" %d",i);
-  get_word(c,q);
+  get_word(c,p);
   i=c.w;
  }
  printf("\n");
@@ -248,9 +248,11 @@ void DumpFunction(TFunc *tf, FILE *D)
  ThreadCode(tf->code,tf->code+tf->size);
  fputc('F',D);
  DumpWord(tf->size,D);
- DumpWord(tf->marked,D);
  DumpWord(tf->lineDefined,D);
- DumpString(tf->fileName,D);
+ if (IsMain(tf))
+  DumpString(tf->fileName,D);
+ else
+  DumpWord(tf->marked,D);
  DumpBlock(tf->code,tf->size,D);
  DumpStrings(D);
 #if 0
