@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.13 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: print.c,v 1.14 1999/03/08 11:08:43 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -110,7 +110,6 @@ static void PrintCode(TProtoFunc* tf)
 
 	case PUSHLOCAL:
 	case SETLOCAL:
-	case SETLOCALDUP:
 	{
 		char* s=luaF_getlocalname(tf,i+1,line);
 		if (s) printf("\t; %s",s);
@@ -119,7 +118,6 @@ static void PrintCode(TProtoFunc* tf)
 
 	case GETGLOBAL:
 	case SETGLOBAL:
-	case SETGLOBALDUP:
 		printf("\t; %s",VarStr(i));
 		break;
 
