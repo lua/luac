@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.22 2000/04/24 17:32:29 lhf Exp lhf $
+** $Id: luac.c,v 1.23 2000/04/27 18:17:54 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
   }
   else if (IS("-v"))			/* show version */
   {
-   printf("%s  %s\n", LUA_VERSION,LUA_COPYRIGHT);
+   printf("%s  %s\n",LUA_VERSION,LUA_COPYRIGHT);
    if (argc==2) return 0;
   }
   else if (IS("-V"))			/* verbose */
@@ -193,14 +193,17 @@ static void doit(int undump, const char* filename)
 
 static void defineglobal(const char* name, int define)
 {
- GlobalVar* s=luaS_assertglobalbyname(L,name);
+ TObject key,value;
+ ttype(&key)=TAG_STRING;
+ tsvalue(&key)=luaS_new(L,name);
  if (define)
  {
-  s->value.ttype=TAG_NUMBER;
-  s->value.value.n=1;
+  ttype(&value)=TAG_NUMBER;
+  nvalue(&value)=1;
  }
  else
-  s->value.ttype=TAG_NIL;
+  ttype(&value)=TAG_NIL;
+ *luaH_set(L,L->gt,&key)=value;
 }
 
 static FILE* efopen(const char* name, const char* mode)
