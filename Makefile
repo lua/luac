@@ -1,16 +1,12 @@
-# $Id: Makefile,v 1.12 2001/03/15 17:36:54 lhf Exp lhf $
-# makefile for lua compiler
+# $Id: Makefile,v 1.13 2001/06/28 14:01:07 lhf Exp lhf $
+# makefile for Lua compiler
 
 # begin of configuration -----------------------------------------------------
 
-# location of lua headers and library
+# location of Lua headers and library
 LUA=lua
 
 # compiler -------------------------------------------------------------------
-
-# Sun acc
-CC= acc
-WARN= -Xc -vc #-fast
 
 # SGI cc
 CC= cc
@@ -27,60 +23,40 @@ WARN= -ansi -pedantic -Wall \
 CFLAGS= -O2 $(WARN) $(INCS) $(DEFS) $G
 INCS= -I$(LUA)
 
-OBJS= dump.o luac.o lundump.o opt.o print.o stubs.o
-SRCS= dump.c luac.c lundump.c opt.c print.c stubs.c ldumplib.c \
-	luac.h lundump.h print.h
+OBJS= dump.o luac.o lundump.o opt.o print.o lopcodes.o
+SRCS= dump.c luac.c lundump.c opt.c print.c luac.h ldumplib.c lundump.h
 
 # targets --------------------------------------------------------------------
 
-all:	print.h stubs luac lua lib
+all:	luac lib
 
 luac:	$(OBJS) $(LUA)/liblua.a
 	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
-
-lua:	$(LUA)/lua
-
-$(LUA)/lua: lundump.c lundump.h
-	cd $(LUA); $(MAKE) update
-
-print.h: $(LUA)/lopcodes.h mkprint.lua
-	-mv -f $@ $@,old
-	lua mkprint.lua <$(LUA)/lopcodes.h >$@
-	-diff $@,old $@
-
-stubs:	$(LUA)/lua
-	diff lstate.c $(LUA)
-	$(LUA)/lua stubs.lua <stubs.c >stubs.new
-	diff stubs.c stubs.new
-	-rm -f stubs.new
 
 lib:	ldumplib.o
 
 ldumplib.o:	ldumplib.c dump.c
 	$(CC) $(CFLAGS) -c -o $@ ldumplib.c
 
+lopcodes.o:	../lopcodes.c ../lopcodes.h
+	$(CC) $(CFLAGS) -DLUA_OPNAMES -c -o $@ ../lopcodes.c
+
+print.c:	../lopcodes.h
+	diff lopcodes.h ..
+
 debug:	clean
 	$(MAKE) DEFS="-DLUA_DEBUG"
 
 noparser:
-	rm -f stubs.o luac
+	rm -f luac.o luac
 	$(MAKE) DEFS="-DNOPARSER"
-
-nostubs:
-	rm -f stubs.o luac
-	$(MAKE) DEFS="-DNOSTUBS"
-
-map:	$(OBJS)
-	@echo -n '* use only '
-	@ld -o /dev/null -e main -M $(OBJS) $(LUA)/liblua.a -lc | sed -n '/lua.liblua.a(/{s///;s/.o).*//;p;};/Memory/q' | sort | xargs echo
-	grep 'use only' stubs.c
 
 lint:
 	lint -I$(LUA) *.c >lint.out
 
 clean:
-	-rm -f luac *.o luac.out a.out core mon.out gmon.out tags
-	#cd test; $(MAKE) $@
+	-rm -f luac *.o luac.out a.out core mon.out gmon.out tags luac.lst
+	@#cd test; $(MAKE) $@
 
 co:
 	co -l -M $(SRCS)
@@ -106,8 +82,8 @@ ln:
 u:	$(OBJS)
 	nm -o $(OBJS) | grep 'U lua'
 
-ls:
-	cp -fp $(LUA)/lstate.c .
+lo:
+	cp -fp $(LUA)/lopcodes.h .
 
 tags:	$(SRCS)
 	ctags $(SRCS)
