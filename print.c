@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char *rcs_print="$Id: print.c,v 1.2 1996/02/24 20:30:13 lhf Exp lhf $";
+char *rcs_print="$Id: print.c,v 1.3 1996/02/28 23:11:27 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -17,7 +17,7 @@ static void PrintCode(Byte *code, Byte *end)
  {
 	OpCode op=(OpCode)*p;
 	if (op>SETLINE) op=SETLINE+1;
-	printf("%8d   %s",p-code,OpCodeName[op]);
+	printf("%6d\t%s",p-code,OpCodeName[op]);
 	switch (op)
 	{
 	case PUSHNIL:
@@ -137,7 +137,7 @@ static void PrintCode(Byte *code, Byte *end)
 		while (n--)
 		{
 			CodeWord c;
-			printf("\n%8d\tFIELD",p-code);
+			printf("\n%6d\t      FIELD",p-code);
 			get_word(c,p);
 			printf("\t%d\t; \"%s\"",c.w,StrStr(c.w));
 		}
@@ -152,6 +152,16 @@ static void PrintCode(Byte *code, Byte *end)
  }
 }
 
+static void PrintLocals(LocVar* v)
+{
+ int i;
+ if (v->varname==NULL) return;
+ printf("locals:");
+ for (i=0; v->varname!=NULL; v++,i++)
+  printf(" %d:%s,%d",i,LocStr(v),LocLoc(v));
+ printf("\n");
+}
+
 void PrintFunction(TFunc *tf)
 {
  if (IsMain(tf))
@@ -160,4 +170,5 @@ void PrintFunction(TFunc *tf)
   printf("\nfunction \"%s\":%d (%d bytes at %p); used at main+%d\n",
 	tf->fileName,tf->lineDefined,tf->size,tf,tf->marked);
  PrintCode(tf->code,tf->code+tf->size);
+ PrintLocals(tf->locvars);
 }
