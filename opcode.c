@@ -1,12 +1,12 @@
 /*
-** $Id: opcode.c,v 1.4 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: opcode.c,v 1.5 1999/03/08 11:08:43 lhf Exp lhf $
 ** opcode information
 ** See Copyright Notice in lua.h
 */
 
 #include "luac.h"
 
-enum {
+enum {					/* for Opcode.args */
  ARGS_NONE,
  ARGS_B,
  ARGS_W,
@@ -59,7 +59,7 @@ int luaU_opcodeinfo(TProtoFunc* tf, Byte* p, Opcode* I, char* xFILE, int xLINE)
  }
  else if (op>=NOPCODES)			/* cannot happen */
  {
-  luaL_verror("bad opcode %d at %d in %p (\"%s\":%d)",
+  luaL_verror("[%s:%d] bad opcode %d at %d in %p (\"%s\":%d)",
 	xFILE,xLINE,op,(int)(p-code),tf,tf->source->str,tf->lineDefined);
   return 0;
  }
