@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.45 2003/08/29 10:39:32 lhf Exp lhf $
+** $Id: luac.c,v 1.46 2003/12/09 19:22:19 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -12,6 +12,7 @@
 #include "lua.h"
 #include "lauxlib.h"
 
+#include "ldo.h"
 #include "lfunc.h"
 #include "lmem.h"
 #include "lobject.h"
@@ -125,6 +126,7 @@ static Proto* combine(lua_State* L, int n)
  {
   int i,pc=0;
   Proto* f=luaF_newproto(L);
+  setptvalue2s(L,L->top,f); incr_top(L);
   f->source=luaS_newliteral(L,"=(" PROGNAME ")");
   f->maxstacksize=1;
   f->p=luaM_newvector(L,n,Proto*);
@@ -150,7 +152,8 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 
 static int panic(lua_State *L)
 {
- fatal(lua_tostring(L,-1));
+ UNUSED(L);
+ fatal("not enough memory!");
  return 0;
 }
 
@@ -162,6 +165,7 @@ int main(int argc, char* argv[])
  argc-=i; argv+=i;
  if (argc<=0) usage("no input files given");
  L=lua_open();
+ if (L==NULL) fatal("not enough memory for state");
  lua_atpanic(L,panic);
  if (!lua_checkstack(L,argc)) fatal("too many input files");
  for (i=0; i<argc; i++)
@@ -182,5 +186,5 @@ int main(int argc, char* argv[])
   if (fclose(D)) cannot("close");
  }
  lua_close(L);
- return 0;
+ return EXIT_SUCCESS;
 }
