@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.11 1999/03/11 17:09:10 lhf Exp lhf $
+** $Id: stubs.c,v 1.12 1999/09/09 13:24:52 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -54,8 +54,7 @@ void luaL_filesource (char *out, const char *filename, int len) {
 #include "ltm.h"
 
 void luaB_predefine(void){}
-void luaC_hashcallIM(Hash *l){}
-void luaC_strcallIM(TaggedString *l){}
+void luaC_collect(int all){}
 void luaD_gcIM(const TObject *o){}
 void luaH_free(Hash *frees){}
 void luaT_init(void){}
