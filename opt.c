@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.22 2000/10/31 16:57:23 lhf Exp lhf $
+** $Id: opt.c,v 1.23 2001/03/15 17:29:16 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -9,6 +9,11 @@
 #include <string.h>
 
 #include "luac.h"
+#include "lobject.h"
+#include "lopcodes.h"
+#include "ltable.h"
+
+#define	L	luac_state		/* lazy! */
 
 static int MapConstant(Hash* t, int j, const TObject* key)
 {
