@@ -1,14 +1,16 @@
 /*
 ** luac.c
-** lua compiler (saves bytecodes to files)
+** lua compiler (saves bytecodes to files; also list binary files)
 */
 
-char* rcs_luac="$Id: luac.c,v 1.19 1997/04/10 18:02:04 lhf Exp lhf $";
+char* rcs_luac="$Id: luac.c,v 1.20 1997/04/14 12:12:40 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
+#include "lex.h"
+#include "zio.h"
 
 static void compile(char* filename);
 static void undump(char* filename);
@@ -31,7 +33,7 @@ static void usage(void)
  " -q\tquiet (default for -c)\n"
  " -v\tshow version information\n"
  );
- exit(0);
+ exit(1);
 }
 
 #define	IS(s)	(strcmp(argv[i],s)==0)
@@ -104,50 +106,68 @@ int main(int argc, char* argv[])
  return 0;
 }
 
+TFunc* MAIN;
 
-static void do_dump(TFunc* tf)		/* only for tf==main */
+static void do_dump(TFunc* m)
 {
- if (dumping) DumpHeader(D);
- while (tf!=NULL)
+ TFunc* tf;
+ MAIN=m;
+ LinkFunctions(m);
+ if (listing)
  {
-  TFunc* nf;
-  if (listing) PrintFunction(tf);
-  if (dumping) DumpFunction(tf,D);
-  nf=tf->next;				/* list only built after first main */
+  for (tf=m; tf!=NULL; tf=tf->next) PrintFunction(tf);
+ }
+ if (dumping)
+ {
+  DumpHeader(D);
+  for (tf=m; tf!=NULL; tf=tf->next) DumpFunction(tf,D);
+ }
+ for (tf=m; tf!=NULL; )
+ {
+  TFunc* nf=tf->next;
   luaI_freefunc(tf);
   tf=nf;
  }
 }
 
-static void do_compile(void)
+static void do_compile(ZIO* z)
 {
  TFunc* tf=new(TFunc);
+ lua_setinput(z);
  luaI_initTFunc(tf);
- tf->fileName = lua_parsedfile;
+ tf->fileName=lua_parsedfile;
  lua_parse(tf);
  do_dump(tf);
 }
 
 static void compile(char* filename)
 {
- if (lua_openfile(filename)==NULL)
+ FILE* f= (filename==NULL) ? stdin : fopen(filename, "r");
+ if (f==NULL)
  {
   fprintf(stderr,"luac: cannot open ");
   perror(filename);
   exit(1);
  }
- do_compile();
- lua_closefile();
+ else
+ {
+  ZIO z;
+  zFopen(&z,f);
+  lua_parsedfile=filename;		/* TODO: is this ok? */
+  do_compile(&z);
+  fclose(f);
+ }
 }
 
-static void do_undump(FILE* f)
+static void do_undump(ZIO* z)
 {
  TFunc* m;
- while ((m=luaI_undump1(f)))
+ while ((m=luaI_undump1(z)))
  {
   if (listing)
   {
    TFunc* tf;
+   MAIN=m;
    for (tf=m; tf!=NULL; tf=tf->next)
     PrintFunction(tf);
   }
@@ -164,6 +184,11 @@ static void undump(char* filename)
   perror(filename);
   exit(1);
  }
- do_undump(f);
- fclose(f);
+ else
+ {
+  ZIO z;
+  zFopen(&z,f);
+  do_undump(&z);
+  fclose(f);
+ }
 }
