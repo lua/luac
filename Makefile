@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.2 1998/06/19 21:23:35 lhf Exp lhf $
+# $Id: Makefile,v 1.3 1998/07/03 13:17:54 lhf Exp lhf $
 # makefile for lua compiler
 
 # begin of configuration -----------------------------------------------------
@@ -8,16 +8,16 @@ LUA=lua
 
 # compiler -------------------------------------------------------------------
 
-# gcc
-CC= gcc
-INCS= -I$(LUA) -I/usr/5include
-WARN= -ansi -Wall\
- -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
-WARN= -ansi -pedantic -Wall
-
 # Sun acc
 CC= acc
 WARN= #-fast
+
+# gcc
+CC= gcc
+INCS= -I$(LUA) -I/usr/5include
+WARN= -ansi -pedantic -Wall \
+ -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
+WARN= -ansi -pedantic -Wall
 
 # SGI cc
 CC= cc
@@ -39,14 +39,14 @@ all:	opcode.h luac man lua
 luac:	$(OBJS) $(LUA)/liblua.a
 	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
 
-lua:	../tmp/lua
+lua:	lua/lua
 
-../tmp/lua:	lundump.c lundump.h
-	cd ../tmp; make update
+lua/lua: lundump.c lundump.h
+	cd lua; make update
 
 opcode.h: lua/lopcodes.h mkopcodeh
 	-mv -f $@ $@,old
-	mkopcodeh lua/lopcodes.h >$@
+	nawk -f mkopcodeh lua/lopcodes.h >$@
 	-diff $@,old $@
 	rm -f opcode.o $@,old
 
@@ -69,6 +69,10 @@ debug:	clean
 noparser:
 	rm -f stubs.o
 	make DEFS="-DNOPARSER"
+
+nostubs:
+	rm -f stubs.o luac
+	cat /dev/null >s.c; cc -o stubs.o -c s.c; rm -f s.c; make
 
 map:	$(OBJS)
 	@echo -n '* use only '
@@ -98,4 +102,4 @@ diff:
 	rcsdiff $(SRCS) Makefile
 
 what:
-	@grep '^[^	].*:	' Makefile | cut -f1 -d:
+	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort
