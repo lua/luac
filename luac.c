@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.10 1998/07/12 00:38:30 lhf Exp lhf $
+** $Id: luac.c,v 1.11 1999/03/08 11:08:43 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -9,8 +9,8 @@
 #include <string.h>
 #include "luac.h"
 #include "lparser.h"
+#include "lstate.h"
 #include "lzio.h"
-#include "luadebug.h"
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
@@ -143,8 +143,8 @@ int main(int argc, char* argv[])
 static void do_compile(ZIO* z)
 {
  TProtoFunc* Main;
- if (optimizing) lua_setdebug(0);	/* set debugging before parsing */
- if (debugging)  lua_setdebug(1);
+ if (optimizing) L->debug=0;		/* set debugging before parsing */
+ if (debugging)  L->debug=1;
  Main=luaY_parser(z);
  if (optimizing) luaU_optchunk(Main);
  if (listing) luaU_printchunk(Main);
@@ -164,24 +164,14 @@ static void do_undump(ZIO* z)
  }
 }
 
-#define	MAXFILENAME	200
-
 static void doit(int undump, char* filename)
 {
- FILE* f;
+ FILE* f= (filename==NULL) ? stdin : efopen(filename, undump ? "rb" : "r");
  ZIO z;
- char name[MAXFILENAME+2];		/* +2 for '@' and '\0' */
- if (filename==NULL)
- {
-  f=stdin; filename="(stdin)";
- }
- else
- {
-  f=efopen(filename, undump ? "rb" : "r");
- }
- sprintf(name,"@%.*s",MAXFILENAME,filename);
- zFopen(&z,f,name);
- if (verbose) fprintf(stderr,"%s\n",filename);
+ char source[255+2];
+ luaL_filesource(source,filename,sizeof(source));
+ zFopen(&z,f,source);
+ if (verbose) fprintf(stderr,"%s\n",source+1);
  if (undump) do_undump(&z); else do_compile(&z);
  if (f!=stdin) fclose(f);
 }
