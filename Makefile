@@ -1,38 +1,102 @@
-# $Id: Makefile,v 1.3 1997/06/27 20:23:34 lhf Exp lhf $
+# $Id: Makefile,v 1.1 1997/09/11 15:57:35 lhf Exp lhf $
 # makefile for lua compiler
 
+# begin of configuration -----------------------------------------------------
+
+# location of lua headers and library
 LUA=lua
+
+# compiler -------------------------------------------------------------------
+
+# gcc
 CC= gcc
-CFLAGS= $(INCS) $(DEFS) $(WARN) -g
-
 INCS= -I$(LUA) -I/usr/5include
-#WARN= -ansi -pedantic -Wall
-
 WARN= -ansi -Wall\
  -Wmissing-prototypes -Wshadow -Wpointer-arith -Wcast-align -Waggregate-return
+WARN= -ansi -pedantic -Wall
 
-# for SGI
+# Sun acc
+CC= acc
+WARN= #-fast
+
+# SGI cc
 CC= cc
 WARN= -ansi -fullwarn
+
+# end of configuration -------------------------------------------------------
+
+CFLAGS= -g $(WARN) $(INCS) $(DEFS)
 INCS= -I$(LUA)
 
-OBJS= luac.o dump.o print.o lundump.o
-SRCS= dump.c luac.c luac.h print.c print.h lundump.c lundump.h
+OBJS= dump.o luac.o lundump.o print.o stubs.o opcode.o opt.o test.o
+SRCS= dump.c luac.c lundump.c print.c stubs.c opcode.c opt.c test.c \
+      luac.h lundump.h opcode.h luac.man
 
-all: luac
+# targets --------------------------------------------------------------------
 
-luac: $(OBJS) $(LUA)/liblua.a
-	$(CC) -o $@ $(OBJS) -L$(LUA) -llua
+all:	opcode.h luac man lua
 
-printh:
-#	sed -n '/^[A-Z]/{s=,.*==;s=$$=",=;s=^= "=;p;}' < lua/lopcodes.h >op
-	sed -n '/^[A-Z]/{s=\([A-Z0-9]*\).*$$= "\1",=;p;}' < lua/lopcodes.h > op
+luac:	$(OBJS) $(LUA)/liblua.a
+	$(CC) -o $@ $(OBJS) $(LUA)/liblua.a
+
+lua:	../tmp/lua
+
+../tmp/lua:	lundump.c lundump.h
+	cd ../tmp; make update
+
+opcode.h: lua/lopcodes.h mkopcodeh
+	-mv -f $@ $@,old
+	mkopcodeh lua/lopcodes.h >$@
+	-diff $@,old $@
+	rm -f opcode.o $@,old
+
+man:	man/cat1/luac.1	luac.html
+
+luac.html:	luac.man
+	man2html luac.man> luac.html
+
+man/cat1/luac.1:	luac.man
+	nroff -man luac.man >$@
+
+luac.man:
+
+xman:	man
+	env MANPATH=`pwd`/man:$MANPATH xman &
+
+debug:	clean
+	make DEFS="-DDEBUG"
+
+noparser:
+	rm -f stubs.o
+	make DEFS="-DNOPARSER"
+
+map:	$(OBJS)
+#	@echo luac needs the following modules from liblua.a:
+	@echo -n '* use only '
+	@ld -o /dev/null -M $(OBJS) lua/liblua.a -lc | grep '	' | sort | xargs echo | sed 's/\.o//g'
+	grep 'use only' stubs.c
+
+MAP:	map
+	nm -o -u $(OBJS) | grep lua._
+
+lint:
+	lint -I$(LUA) *.c >lint.out
 
 clean:
-	rm -f luac $(OBJS) luac.out core
+	-rm -f luac *.o luac.out a.out core mon.out
+	cd test; make $@
 
 co:
 	co -l -M $(SRCS)
 
+conl:
+	co -M $(SRCS)
+
 ci:
 	ci $(SRCS)
+
+diff:
+	rcsdiff $(SRCS)
+
+what:
+	@grep '^[^	].*:	' Makefile | cut -f1 -d:
