@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.36 2002/06/06 13:22:56 lhf Exp lhf $
+** $Id: dump.c,v 1.37 2002/08/07 00:36:03 lhf Exp lhf $
 ** save bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -8,6 +8,7 @@
 
 #include "lobject.h"
 #include "lopcodes.h"
+#include "lstate.h"
 #include "lundump.h"
 
 #define DumpBlock(b,size,D)	(*D->write)(b,size,D->data)
@@ -72,13 +73,8 @@ static void DumpLocals(const Proto* f, DumpState* D)
 
 static void DumpLines(const Proto* f, DumpState* D)
 {
- if (f->lineinfo==NULL)
-  DumpInt(0,D);
- else
- {
-  DumpInt(f->sizecode,D);
-  DumpVector(f->lineinfo,f->sizecode,sizeof(*f->lineinfo),D);
- }
+ DumpInt(f->sizelineinfo,D);
+ DumpVector(f->lineinfo,f->sizelineinfo,sizeof(*f->lineinfo),D);
 }
 
 static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
@@ -147,4 +143,24 @@ void luaU_dump(const Proto* Main, Writer w, void* data)
  D.data=data;
  DumpHeader(&D);
  DumpFunction(Main,NULL,&D);
+}
+
+
+/*
+** dump object at top; currently only works for Lua functions with no upvalues
+*/
+LUA_API int lua_dump (lua_State *L, Writer writer, void *data) {
+  int status=0;
+  TObject *o;
+  lua_lock(L);
+#if 0
+  api_checknelems(L, 1);
+#endif
+  o=L->top-1; 
+  if (isLfunction(o) && clvalue(o)->l.nupvalues==0) {
+    luaU_dump(clvalue(o)->l.p, writer, data);
+    status=1;
+  }
+  lua_unlock(L);
+  return status;
 }
