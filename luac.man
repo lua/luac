@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.3 1996/03/28 20:24:55 lhf Exp lhf $
-.TH LUAC 1 "15 April 1997"
+.\" $Id: luac.man,v 1.4 1997/04/15 11:49:02 lhf Exp $
+.TH LUAC 1 "23 December 1997"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -23,14 +23,14 @@ luac \- Lua compiler
 .B \-v
 ]
 [
-.B \-o 
+.B \-o
 .I outputfile
 ]
 .I sourcefile
 \&.\|.\|.
 .SH DESCRIPTION
 .B luac
-is the Lua compiler. 
+is the Lua compiler.
 It translates programs written in the Lua programming language
 into binary files that can be loaded and executed with
 .B lua_dofile
@@ -39,19 +39,21 @@ in C or
 in Lua.
 
 .BR luac
-produces a single output file containing the bytecode
+produces a single output file containing the bytecodes
 for all named source files.
 By default,
 the output file is named
 .BR luac.out ,
 but you can change this with the
-.B \-o 
+.B \-o
 option.
 
 You can use "-" to indicate stdin as a source file.
 
 .BR luac
-can also load and list binary files.
+can also load and list binary files with the
+.B \-u
+option.
 
 .SH OPTIONS
 .LP
@@ -60,7 +62,14 @@ can also load and list binary files.
 compile (this is the default).
 .TP
 .B \-u
-undump.
+undump, i.e., load and list the given binary files.
+If no files are given, then luac undumps
+.BR luac.out .
+.TP
+.BI \-D " name"
+predefine symbol
+.IR name
+for conditional compilation.
 .TP
 .B \-d
 turns debugging on.
@@ -78,8 +87,11 @@ quiet; procudes no listing. This is the default when compiling.
 .B \-v
 prints version information.
 .TP
+.B \-V
+verbose.
+.TP
 .BI \-o " outputfile"
-Name the output file
+name the output file
 .IR output ,
 instead of the default
 .BR luac.out .
@@ -94,6 +106,8 @@ default output file
 .BR lua (1)
 .LP
 .IR "Reference Manual of the Programming Language Lua"
+.LP
+http://www.tecgraf.puc-rio.br/lua/
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
 .SH BUGS
