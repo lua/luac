@@ -1,28 +1,26 @@
-#!/bin/nawk -f
-# $Id$ 
+#!/usr/bin/nawk
+# $Id: mkopcodeh,v 1.1 1999/02/03 00:05:02 lhf Exp lhf $ 
 # make opcode.h from lopcodes.h
 
 BEGIN {
- class="xxxxx"
  print "/*"
- print "** $Id$"
+ print "** $" "Id$"
  print "** opcode info to be #included into opcode.c"
  print "** extracted automatically from lopcodes.h by mkopcodeh"
  print "** See Copyright Notice in lua.h"
  print "*/"
+ OFS=", "
 }
 
 /^[A-Z]/ {
-	sub("/\\*"," ")
-	gsub("[^A-Z0-9]","",$1)
-	#print "/* [" $1 "]" " [" $2 "]" " [" $3 "]" " [" $4 "] /*"
-	if ($2=="" || $2=="-") n=1;
-	else if ($2=="b" || $2=="c") n=2;
-	else if ($2=="w") n=3;
-	else {
-		print "#error " $0
-	}
-	if ($3=="b" || $3=="c") n++;
-	if (!match($1,"^" class)) class=$1
-	print "{ \"" $1 "\", " n ", " $1 ", " class ", " $1 "-" class "-1, 0 },"
+	gsub("[^A-Za-z0-9-]"," ")
+	name=op=class=$1; sub("W$","",class)
+
+	     if ($2=="-")	{ args="NONE"; }
+	else if ($2=="b")	{ args="B"; }
+	else if ($2=="w")	{ args="W"; }
+	else			{ print "#error " $0 }
+	if ($3=="b" || $3=="c") { args=args "B"; }
+
+	print "{ \"" name "\"",op,class,"ARGS_" args,"-1, -1 },"
 }
