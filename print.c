@@ -3,7 +3,7 @@
 ** print bytecodes
 */
 
-char* rcs_print="$Id: print.c,v 1.14 1997/06/19 14:56:04 lhf Exp lhf $";
+char* rcs_print="$Id: print.c,v 1.15 1997/06/19 17:32:08 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,8 +311,27 @@ static void PrintCode(Byte* code, Byte* end)
  }
 }
 
+static void PrintLocals(LocVar* v, int n)
+{
+ int i=0;
+ if (v==NULL || v->varname==NULL) return;
+ if (n>0)
+ {
+  printf("parameters:");
+  for (i=0; i<n; v++,i++) printf(" %s",LocStr(i));
+  printf("\n");
+ }
+ if (v->varname!=NULL)
+ {
+  printf("locals:");
+  for (; v->varname!=NULL; v++,i++) printf(" %s[%d@%d]",LocStr(i),i,v->line);
+  printf("\n");
+ }
+}
+
 void PrintFunction(TFunc* tf, TFunc* Main)
 {
+ int n=0;
  if (IsMain(tf))
   printf("\nmain of \"%s\" (%d bytes at %p)\n",tf->fileName,tf->size,tf);
  else
@@ -331,9 +350,9 @@ void PrintFunction(TFunc* tf, TFunc* Main)
    {
     if (p[-11]==PUSHGLOBAL && p[-8]==PUSHSTRING)
     {
-     Byte* pp=p;
      Word w;
-     p-=11; p++; get_word(w,p); printf("%s:",VarStr(w));
+     Byte* pp=p;
+     p-=11; p++; get_word(w,p); printf("%s.",VarStr(w));
      p=pp;
      p-=8;  p++; get_word(w,p); printf("%s defined at ",StrStr(w));
      p=pp;
@@ -343,7 +362,10 @@ void PrintFunction(TFunc* tf, TFunc* Main)
   }
   printf("\"%s\":%d (%d bytes at %p); used at main+%d\n",
 	tf->fileName,tf->lineDefined,tf->size,tf,tf->marked);
+  p=tf->code;
+  if (*p==ADJUST) n=p[1];
  }
  V=tf->locvars;
+ PrintLocals(V,n);
  PrintCode(tf->code,tf->code+tf->size);
 }
