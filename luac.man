@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.11 1998/07/01 14:51:45 lhf Exp lhf $
-.TH LUAC 1 "03 March 1999"
+.\" $Id: luac.man,v 1.12 1999/03/08 11:08:43 lhf Exp lhf $
+.TH LUAC 1 "$Date$"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -22,10 +22,16 @@ in Lua.
 The main advantages of pre-compiling chunks are:
 faster loading,
 protecting source code from user changes,
+and
 off-line syntax error detection.
 The binary files created by
 .B luac
 are portable to all known architectures.
+.LP
+Pre-compiling does not imply faster execution
+because in Lua chunks are always compiled into bytecodes before being executed.
+.B luac
+simply allows those bytecodes to be saved in files for later execution.
 .LP
 .B luac
 produces a single output file containing the bytecodes
@@ -50,6 +56,7 @@ option.
 .LP
 Binary files produced by differents runs of
 .B luac
+(even in different machines)
 can be combined into one large file,
 using 
 .BR cat (1).
@@ -129,9 +136,9 @@ quiet; produces no listing.
 This is the default when compiling.
 .TP
 .B \-t
-perform thourough integrity test when undumping.
+perform a thourough integrity test when undumping.
 Code that passes this test is completely safe,
-in the sense that they will not break the interpreter.
+in the sense that it will not break the interpreter.
 However,
 there is no guarantee that such code does anything sensible.
 (None can be given, because the halting problem is unsolvable.)
