@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.13 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: stubs.c,v 1.14 1999/12/02 18:51:09 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -8,7 +8,6 @@
 
 /* according to gcc, ANSI C forbids an empty source file */
 void luaU_dummy(void);
-void luaU_dummy(void){}
 
 #else
 
@@ -16,9 +15,10 @@ void luaU_dummy(void){}
 #include <stdio.h>
 #include <stdlib.h>
 #include "luac.h"
-
 #undef L
-#define	UNUSED(x)	(void)x
+
+const char luac_ident[] = "$luac: " LUA_VERSION " " LUA_COPYRIGHT " $\n"
+                          "$Authors: " LUA_AUTHORS " $";
 
 /*
 * avoid lapi lauxlib lbuiltin ldo lgc ltable ltm lvm
@@ -94,30 +94,37 @@ int luaL_findstring (const char *name, const char *const list[]) {
   return -1;  /* name not found */
 }
 
+#define EXTRALEN	sizeof("string \"...\"0")
+
 /* copied from lauxlib.c */
 void luaL_chunkid (char *out, const char *source, int len) {
-  len -= 13;  /* 13 = strlen("string ''...\0") */
-  if (*source == '@')
-    sprintf(out, "file `%.*s'", len, source+1);
-  else if (*source == '(')
-    strcpy(out, "(C code)");
+  if (*source == '(') {
+    strncpy(out, source+1, len-1);  /* remove first char */
+    out[len-1] = '\0';  /* make sure `out' has an end */
+    out[strlen(out)-1] = '\0';  /* remove last char */
+  }
   else {
-    const char *b = strchr(source , '\n');  /* stop string at first new line */
-    int lim = (b && (b-source)<len) ? b-source : len;
-    sprintf(out, "string `%.*s'", lim, source);
-    strcpy(out+lim+(13-5), "...'");  /* 5 = strlen("...'\0") */
+    len -= EXTRALEN;
+    if (*source == '@')
+      sprintf(out, "file `%.*s'", len, source+1);
+    else {
+      const char *b = strchr(source , '\n');  /* stop at first new line */
+      int lim = (b && (b-source)<len) ? b-source : len;
+      sprintf(out, "string \"%.*s\"", lim, source);
+      strcpy(out+lim+(EXTRALEN-sizeof("...\"0")), "...\"");
+    }
   }
 }
 
 void luaD_checkstack(lua_State *L, int n){ UNUSED(L); UNUSED(n); }
 
-#define DEFAULT_STACK_SIZE      1024
 #define EXTRA_STACK     32
 
 /* copied from ldo.c */
-void luaD_init (lua_State *L) {
-  L->stack = luaM_newvector(L, DEFAULT_STACK_SIZE+EXTRA_STACK, TObject);
-  L->stack_last = L->stack+(DEFAULT_STACK_SIZE-1);
+void luaD_init (lua_State *L, int stacksize) {
+  L->stack = luaM_newvector(L, stacksize+EXTRA_STACK, TObject);
+  L->stack_last = L->stack+(stacksize-1);
+  L->stacksize = stacksize;
   L->Cstack.base = L->Cstack.lua2C = L->top = L->stack;
   L->Cstack.num = 0;
 }
