@@ -3,9 +3,10 @@
 ** thread and save bytecodes to file
 */
 
-char* rcs_dump="$Id: dump.c,v 1.14 1996/11/07 14:47:10 lhf Exp lhf $";
+char* rcs_dump="$Id: dump.c,v 1.15 1996/11/14 11:44:34 lhf Exp lhf $";
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "luac.h"
 
@@ -164,7 +165,7 @@ static void DumpWord(int i, FILE* D)
  fwrite(&w,sizeof(w),1,D);
 }
 
-static void DumpBlock(char* b, int size, FILE* D)
+static void DumpBlock(void* b, int size, FILE* D)
 {
  fwrite(b,size,1,D);
 }
