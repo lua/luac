@@ -1,18 +1,16 @@
 /*
-** $Id: print.c,v 1.45 2003/12/09 19:22:19 lhf Exp lhf $
+** $Id: print.c,v 1.46 2004/03/24 00:25:08 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
 
+#include <ctype.h>
 #include <stdio.h>
 
-#if 1
-#define DEBUG_PRINT
-#endif
-
-#ifndef LUA_OPNAMES
+#undef LUA_OPNAMES
 #define LUA_OPNAMES
-#endif
+
+#define LUA_CORE
 
 #include "ldebug.h"
 #include "lobject.h"
@@ -38,7 +36,7 @@ static void PrintString(const Proto* f, int n)
    case '\r': printf("\\r"); break;
    case '\t': printf("\\t"); break;
    case '\v': printf("\\v"); break;
-   default: putchar(*s); break;
+   default:   printf(isprint(*s) ? "%c" : "\\%03d",*s);
   }
  }
  putchar('"');
@@ -161,15 +159,13 @@ static const char* Source(const Proto* f)
   return "(string)";
 }
 
-#define IsMain(f)	(f->lineDefined==0)
-
 #define SS(x)	(x==1)?"":"s"
 #define S(x)	x,SS(x)
 
 static void PrintHeader(const Proto* f)
 {
  printf("\n%s <%s:%d> (%d instruction%s, %d bytes at %p)\n",
- 	IsMain(f)?"main":"function",Source(f),f->lineDefined,
+ 	(f->lineDefined==0)?"main":"function",Source(f),f->lineDefined,
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
  printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),S(f->maxstacksize),
@@ -178,7 +174,6 @@ static void PrintHeader(const Proto* f)
 	S(f->sizelocvars),S(f->sizek),S(f->sizep));
 }
 
-#ifdef DEBUG_PRINT
 static void PrintConstants(const Proto* f)
 {
  int i,n=f->sizek;
@@ -212,17 +207,17 @@ static void PrintUpvalues(const Proto* f)
   printf("\t%d\t%s\n",i,getstr(f->upvalues[i]));
  }
 }
-#endif
 
-void luaU_print(const Proto* f)
+void luaU_print(const Proto* f, int full)
 {
  int i,n=f->sizep;
  PrintHeader(f);
  PrintCode(f);
-#ifdef DEBUG_PRINT
- PrintConstants(f);
- PrintLocals(f);
- PrintUpvalues(f);
-#endif
- for (i=0; i<n; i++) luaU_print(f->p[i]);
+ if (full)
+ {
+  PrintConstants(f);
+  PrintLocals(f);
+  PrintUpvalues(f);
+ }
+ for (i=0; i<n; i++) luaU_print(f->p[i],full);
 }
