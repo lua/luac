@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.5 1998/03/05 15:45:08 lhf Exp lhf $
+** $Id: luac.c,v 1.6 1998/03/30 11:22:25 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -18,6 +18,8 @@ extern void DumpChunk(TProtoFunc* Main, FILE* D);
 extern void PrintChunk(TProtoFunc* Main);
 extern void OptChunk(TProtoFunc* Main);
 extern void TestChunk(TProtoFunc* Main);
+
+#define TestChunk(Main)			/* not ready for release yet */
 
 static FILE* efopen(char* name, char* mode);
 static void doit(int undump, char* filename);
@@ -45,7 +47,9 @@ static void usage(void)
  " -O\toptimize\n"
  " -p\tparse only\n"
  " -q\tquiet (default for -c)\n"
+#ifndef TestChunk
  " -t\ttest code integrity\n"
+#endif
  " -v\tshow version information\n"
  " -V\tverbose\n"
  );
@@ -91,8 +95,10 @@ int main(int argc, char* argv[])
   }
   else if (IS("-q"))			/* quiet */
    listing=0;
+#ifndef TestChunk
   else if (IS("-t"))			/* test */
    testing=1; 
+#endif
   else if (IS("-u"))			/* undump */
   {
    dumping=0;
