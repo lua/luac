@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.11 1999/09/09 13:24:52 lhf Exp lhf $
+** $Id: test.c,v 1.12 1999/10/07 12:13:13 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -12,7 +12,7 @@
 #define AT		"pc=%d"
 #define ATLOC		0)
 #define UNSAFE(s)	\
-	luaL_verror("unsafe code at " AT IN "\n      " s,at,INLOC
+	luaL_verror(L,"unsafe code at " AT IN "\n      " s,at,INLOC
 
 const TObject* luaU_getconstant(const TProtoFunc* tf, int i, int at)
 {
@@ -146,7 +146,6 @@ static void TestStack(const TProtoFunc* tf, int size, int* SP, int* JP)
 		longarg=i<<16;
 		if (longarg<0) UNSAFE("longarg overflow"),ATLOC;
 		break;
-	case CHECKSTACK:				break;
 	default:			/* cannot happen */
 		UNSAFE("cannot test opcode %d [%s]"),OP.op,OP.name,ATLOC;
 		break;
@@ -185,8 +184,8 @@ static void TestCode(const TProtoFunc* tf)
  static int* SP=NULL;
  static int* JP=NULL;
  int size=luaU_codesize(tf);
- luaM_reallocvector(SP,size,int); memset(SP,-1,size*sizeof(int));
- luaM_reallocvector(JP,size,int); memset(JP, 0,size*sizeof(int));
+ luaM_reallocvector(L,SP,size,int); memset(SP,-1,size*sizeof(int));
+ luaM_reallocvector(L,JP,size,int); memset(JP, 0,size*sizeof(int));
  TestStack(tf,size,SP,JP);
  TestJumps(tf,size,SP,JP);
 }
@@ -234,7 +233,7 @@ static void TestConstants(const TProtoFunc* tf)
    case LUA_T_NIL:
 	break;
    default:				/* cannot happen */
-	luaU_badconstant("print",i,o,tf);
+	luaU_badconstant(L,"print",i,o,tf);
 	break;
   }
  }

@@ -1,8 +1,10 @@
 /*
-** $Id: luac.h,v 1.11 1999/07/02 19:34:26 lhf Exp lhf $
+** $Id: luac.h,v 1.12 1999/09/09 13:24:52 lhf Exp lhf $
 ** definitions for luac
 ** See Copyright Notice in lua.h
 */
+
+#define LUA_REENTRANT
 
 #include "lauxlib.h"
 #include "lfunc.h"
@@ -11,6 +13,9 @@
 #include "lopcodes.h"
 #include "lstring.h"
 #include "lundump.h"
+
+extern lua_State *lua_state;
+#define	L	lua_state
 
 typedef struct
 {

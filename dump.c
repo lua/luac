@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.21 1999/09/09 13:24:52 lhf Exp lhf $
+** $Id: dump.c,v 1.22 1999/10/07 12:13:13 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -41,7 +41,7 @@ static void DumpNumber(real x, FILE* D, int native, const TProtoFunc* tf)
   char b[256];
   int n;
   sprintf(b,NUMBER_FMT"%n",x,&n);
-  luaU_str2d(b,tf->source->str);	/* help lundump not to fail */
+  luaU_str2d(L,b,tf->source->str);	/* help lundump not to fail */
   fputc(n,D);
   DumpBlock(b,n,D);
  }
@@ -116,7 +116,7 @@ static void DumpConstants(const TProtoFunc* tf, FILE* D, int native)
    case LUA_T_NIL:
 	break;
    default:				/* cannot happen */
-	luaU_badconstant("dump",i,o,tf);
+	luaU_badconstant(L,"dump",i,o,tf);
 	break;
   }
  }
@@ -130,7 +130,7 @@ static void DumpFunction(const TProtoFunc* tf, FILE* D, int native)
  DumpLocals(tf,D);
  DumpConstants(tf,D,native);
  if (ferror(D))
-  luaL_verror("write error" IN ": %s (errno=%d)",INLOC,strerror(errno),errno);
+  luaL_verror(L,"write error" IN ": %s (errno=%d)",INLOC,strerror(errno),errno);
 }
 
 static void DumpHeader(const TProtoFunc* Main, FILE* D, int native)

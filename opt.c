@@ -1,5 +1,5 @@
 /*
-** $Id: opt.c,v 1.13 1999/09/09 13:24:52 lhf Exp lhf $
+** $Id: opt.c,v 1.14 1999/10/07 12:13:13 lhf Exp lhf $
 ** optimize bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -63,7 +63,6 @@ static void FixConstants(TProtoFunc* tf, int* C)
 
 static void NoUnrefs(TProtoFunc* tf)
 {
- int i,n=tf->nconsts;
  Byte* code=tf->code;
  Byte* p=code;
  int longarg=0;
@@ -84,6 +83,8 @@ static void NoUnrefs(TProtoFunc* tf)
   else if (op==ENDCODE) break;
   p+=n;
  }
+{
+ int i,n=tf->nconsts;
  for (i=0; i<n; i++)			/* mark all unused constants */
  {
   TObject* o=tf->consts+i;
@@ -92,6 +93,7 @@ static void NoUnrefs(TProtoFunc* tf)
   else
    ttype(o)-=BIAS;			/* unmark used constant */
  }
+}
 }
 
 #define CMP(oa,ob,f)	memcmp(&f(oa),&f(ob),sizeof(f(oa)))
@@ -130,8 +132,8 @@ static void OptConstants(TProtoFunc* tf)
  int i,k;
  int n=tf->nconsts;
  if (n==0) return;
- luaM_reallocvector(C,n,int);
- luaM_reallocvector(D,n,int);
+ luaM_reallocvector(L,C,n,int);
+ luaM_reallocvector(L,D,n,int);
  NoUnrefs(tf);
  for (i=0; i<n; i++) C[i]=D[i]=i;	/* group duplicates */
  TF=tf; qsort(C,n,sizeof(C[0]),compare1);
@@ -271,7 +273,7 @@ static void OptFunction(TProtoFunc* tf)
  OptConstants(tf);
  OptCode(tf);
  OptFunctions(tf);
- tf->source=luaS_new("");
+ tf->source=luaS_new(L,"");
  tf->locvars=NULL;
 }
 

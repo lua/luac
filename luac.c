@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.18 1999/10/07 12:13:13 lhf Exp lhf $
+** $Id: luac.c,v 1.19 1999/11/23 19:12:11 lhf Exp lhf $
 ** lua compiler (saves bytecodes to files; also list binary files)
 ** See Copyright Notice in lua.h
 */
@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "luac.h"
 #include "lparser.h"
 #include "lstate.h"
 #include "lzio.h"
+#include "luac.h"
 
 #define	OUTPUT	"luac.out"		/* default output file */
 
@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 {
  const char* d=OUTPUT;			/* output file name */
  int i;
- lua_open();
+ L=lua_newstate();
  for (i=1; i<argc; i++)
  {
   if (argv[i][0]!='-')			/* end of options */
@@ -119,7 +119,7 @@ int main(int argc, char* argv[])
   if (dumping)
   {
    for (i=1; i<argc; i++)		/* play safe with output file */
-    if (IS(d)) luaL_verror("will not overwrite input file \"%s\"",d);
+    if (IS(d)) luaL_verror(L,"will not overwrite input file \"%s\"",d);
    D=efopen(d,"wb");			/* must open in binary mode */
   }
   for (i=1; i<argc; i++) doit(0,IS("-")? NULL : argv[i]);
@@ -140,7 +140,7 @@ static void do_compile(ZIO* z)
  TProtoFunc* Main;
  if (optimizing) L->debug=0;
  if (debugging)  L->debug=1;
- Main=luaY_parser(z);
+ Main=luaY_parser(L,z);
  if (optimizing) luaU_optchunk(Main);
  if (listing) luaU_printchunk(Main);
  if (testing) luaU_testchunk(Main);
@@ -151,7 +151,7 @@ static void do_undump(ZIO* z)
 {
  for (;;)
  {
-  TProtoFunc* Main=luaU_undump1(z);
+  TProtoFunc* Main=luaU_undump1(L,z);
   if (Main==NULL) break;
   if (optimizing) luaU_optchunk(Main);
   if (listing) luaU_printchunk(Main);
@@ -173,7 +173,7 @@ static void doit(int undump, const char* filename)
 
 static void defineglobal(char* name, int define)
 {
- GlobalVar* s=luaS_assertglobalbyname(name);
+ GlobalVar* s=luaS_assertglobalbyname(L,name);
  if (define)
  {
   s->value.ttype=LUA_T_NUMBER;
