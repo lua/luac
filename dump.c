@@ -3,7 +3,7 @@
 ** thread and save bytecodes to file
 */
 
-char *rcs_dump="$Id: dump.c,v 1.5 1996/02/23 19:02:26 lhf Exp lhf $";
+char *rcs_dump="$Id: dump.c,v 1.6 1996/02/24 21:51:06 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -200,6 +200,11 @@ static void DumpWord(int i, FILE *D)
  fwrite(&w,sizeof(w),1,D);
 }
 
+static void DumpBlock(char* b, int size, FILE *D)
+{
+ fwrite(b,size,1,D);
+}
+
 static void DumpString(char *s, FILE *D)
 {
  int n=strlen(s)+1;
@@ -209,7 +214,7 @@ static void DumpString(char *s, FILE *D)
   exit(1);
  }
  DumpWord(n,D);
- fwrite(s,n,1,D);
+ DumpBlock(s,n,D);
 }
 
 static void DumpStrings(FILE *D)
@@ -246,7 +251,7 @@ void DumpFunction(TFunc *tf, FILE *D)
  DumpWord(tf->marked,D);
  DumpWord(tf->lineDefined,D);
  DumpString(tf->fileName,D);
- fwrite(tf->code,tf->size,1,D);
+ DumpBlock(tf->code,tf->size,D);
  DumpStrings(D);
 #if 0
 CheckThreads(tf->code);			/* TODO: remove */
