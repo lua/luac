@@ -1,5 +1,5 @@
 /*
-** $Id: test.c,v 1.2 1998/07/12 00:17:37 lhf Exp lhf $
+** $Id: test.c,v 1.3 1999/03/08 11:08:43 lhf Exp lhf $
 ** test integrity
 ** See Copyright Notice in lua.h
 */
@@ -8,8 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "luac.h"
-#include "ldo.h"
-#include "lmem.h"
 
 #define AT		" at %d in %p (\"%s\":%d)"
 #define UNSAFE(s)	luaL_verror("unsafe code: " s AT
@@ -58,14 +56,12 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	case GETDOTTED:
 	case PUSHSELF:
 	case SETGLOBAL:
-	case SETGLOBALDUP:
 	case CLOSURE:
 		if (i>=tf->nconsts)
 			UNSAFE("bad constant #%d (max=%d)"),i,tf->nconsts,ATLOC;
 		break;
 	case PUSHLOCAL:
 	case SETLOCAL:
-	case SETLOCALDUP:
 		if (i>=sp)
 			UNSAFE("bad local #%d (max=%d)"),i,sp-1,ATLOC;
 		break;
@@ -81,13 +77,6 @@ static void TestStack(TProtoFunc* tf, int size, int* SP, int* JP)
 	case IFFUPJMP:
 		JP[at]=at-i+n;
 		break;
-	case CALL:
-		if (i==MULT_RET)
-		{
-		 i=0;
-		 if (p[n]!=RETCODE) UNSAFE("RETCODE expected after CALL"),ATLOC;
-		}
-		break;
 	}
 
 #if 0
@@ -101,9 +90,10 @@ printf("tf=%p ss=%d sp=%d JP=%d at=%d %s %d %d\n",tf,ss,sp,JP[at],at,OP.name,i,O
 	case VARARGS:					break;
 	case ENDCODE:					return;
 	case RETCODE:		CHECK(i,0); sp=i;	break;
+	case CALL:		CHECK(OP.arg2+1,i);	break;
+	case TAILCALL:		CHECK(OP.arg2,0); sp=i;	break;
 	case PUSHNIL:		CHECK(0,i+1);		break;
 	case POP:		CHECK(0,-i);		break;
-	case POPDUP:		CHECK(i+1,1);		break;
 	case PUSHNUMBER:
 	case PUSHNUMBERNEG:
 	case PUSHCONSTANT:
@@ -115,13 +105,9 @@ printf("tf=%p ss=%d sp=%d JP=%d at=%d %s %d %d\n",tf,ss,sp,JP[at],at,OP.name,i,O
 	case PUSHSELF:		CHECK(1,2);		break;
 	case CREATEARRAY:	CHECK(0,1);		break;
 	case SETLOCAL:		CHECK(1,0);		break;
-	case SETLOCALDUP:	CHECK(1,1);		break;
 	case SETGLOBAL:		CHECK(1,0);		break;
-	case SETGLOBALDUP:	CHECK(1,1);		break;
 	case SETTABLEPOP:	CHECK(3,0);		break;
-	case SETTABLEPOPDUP:	CHECK(3,1);		break;
 	case SETTABLE:		CHECK(i+3,i+2);		break;
-	case SETTABLEDUP:	CHECK(i+3,i+3);		break;
 	case SETLIST:		CHECK(OP.arg2+1,1);	break;
 	case SETMAP:		CHECK(2*(i+1)+1,1);	break;
 	case NEQOP:
@@ -145,7 +131,6 @@ printf("tf=%p ss=%d sp=%d JP=%d at=%d %s %d %d\n",tf,ss,sp,JP[at],at,OP.name,i,O
 	case IFFUPJMP:		CHECK(1,0);		break;
 	case JMP:					break;
 	case CLOSURE:		CHECK(OP.arg2,1);	break;
-	case CALL:		CHECK(OP.arg2+1,i);	break;
 	case SETLINE:					break;
 	case LONGARG:
 		longarg=i<<16;
