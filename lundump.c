@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.24 1999/12/02 18:45:03 lhf Exp lhf $
+** $Id: lundump.c,v 1.25 2000/01/28 17:51:09 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -81,7 +81,7 @@ static int LoadInt (lua_State* L, ZIO* Z, const char* message)
 static Byte* LoadCode (lua_State* L, ZIO* Z)
 {
  int size=LoadInt(L,Z,"code too long (%lu bytes) in %.255s");
- Byte* b=luaM_malloc(L,size+PAD);
+ Byte* b=luaM_newvector(L,size+PAD,Byte);
  LoadBlock(L,b,size,Z);
  if (b[size-1]!=ENDCODE) luaL_verror(L,"bad code in %.255s",zname(Z));
  memset(b+size,ENDCODE,PAD);		/* pad code for safety */
@@ -119,31 +119,24 @@ static TProtoFunc* LoadFunction (lua_State* L, ZIO* Z, int native);
 
 static void LoadConstants (lua_State* L, TProtoFunc* tf, ZIO* Z, int native)
 {
- int i,n=LoadInt(L,Z,"too many constants (%lu) in %.255s");
- tf->nconsts=n;
- if (n==0) return;
- tf->consts=luaM_newvector(L,n,TObject);
- for (i=0; i<n; i++)
+ int i,n;
+ tf->nkstr=n=LoadInt(L,Z,"too many strings (%lu) in %.255s");
+ if (n>0)
  {
-  TObject* o=tf->consts+i;
-  ttype(o)=-ezgetc(L,Z);		/* ttype(o) is negative - ORDER LUA_T */
-  switch (ttype(o))
-  {
-   case LUA_T_NUMBER:
-	nvalue(o)=LoadNumber(L,Z,native);
-	break;
-   case LUA_T_STRING:
-	tsvalue(o)=LoadTString(L,Z);
-	break;
-   case LUA_T_LPROTO:
-	tfvalue(o)=LoadFunction(L,Z,native);
-	break;
-   case LUA_T_NIL:
-	break;
-   default:				/* cannot happen */
-	luaU_badconstant(L,"load",i,o,tf);
-	break;
-  }
+  tf->kstr=luaM_newvector(L,n,TaggedString*);
+  for (i=0; i<n; i++) tf->kstr[i]=LoadTString(L,Z);
+ }
+ tf->nknum=n=LoadInt(L,Z,"too many numbers (%lu) in %.255s");
+ if (n>0)
+ {
+  tf->knum=luaM_newvector(L,n,real);
+  for (i=0; i<n; i++) tf->knum[i]=LoadNumber(L,Z,native);
+ }
+ tf->nkproto=n=LoadInt(L,Z,"too many functions (%lu) in %.255s");
+ if (n>0)
+ {
+  tf->kproto=luaM_newvector(L,n,TProtoFunc*);
+  for (i=0; i<n; i++) tf->kproto[i]=LoadFunction(L,Z,native);
  }
 }
 
@@ -217,16 +210,6 @@ TProtoFunc* luaU_undump1 (lua_State* L, ZIO* Z)
  else if (c!=EOZ)
   luaL_verror(L,"%.255s is not a Lua binary file",zname(Z));
  return NULL;
-}
-
-/*
-* handle constants that cannot happen
-*/
-void luaU_badconstant (lua_State* L, const char* s, int i, const TObject* o, const TProtoFunc* tf)
-{
- int t=ttype(o);
- const char* name= (t>0 || t<LUA_T_LINE) ? "?" : luaO_typenames[-t];
- luaL_verror(L,"cannot %.255s constant #%d: type=%d [%s]" IN,s,i,t,name,INLOC);
 }
 
 /*
