@@ -1,5 +1,5 @@
 /*
-** $Id: stubs.c,v 1.1 1997/12/02 23:18:50 lhf Exp lhf $
+** $Id: stubs.c,v 1.2 1998/01/12 13:04:24 lhf Exp lhf $
 ** avoid runtime modules in luac
 ** See Copyright Notice in lua.h
 */
@@ -75,13 +75,14 @@ void lua_open (void)
 
 #ifdef NOPARSER
 /* avoid llex.o lstx.o */
+#include "lparser.h"
 
 int lua_debug=0;
 
 void luaX_init(void){}
 void luaY_init(void){}
 
-TProtoFunc* luaY_parser(ZIO* z, char* chunkname)
+TProtoFunc* luaY_parser(ZIO* z)
 {
  lua_error("no parser loaded");
 }
