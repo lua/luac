@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.9 1996/02/26 19:43:44 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.10 1996/02/28 23:09:21 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -67,16 +67,16 @@ static void dump(TFunc *tf)
 {
  if (listing) PrintFunction(tf);
  DumpFunction(tf,D);
- luaI_free(tf->code);
+ luaI_free(tf->code);			/* TODO: use freefunc */
  luaI_free(tf->locvars);
 }
 
 static void do_dump(TFunc *tf)		/* only for tf=main */
 {
  DumpHeader(D);
- dump(tf);			/* thread main and build function list */
+ dump(tf);				/* thread main; build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
-  dump(tf);
+  dump(tf);				/* TODO: free tf */
 }
 
 static void do_compile(void)
