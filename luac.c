@@ -3,7 +3,7 @@
 ** lua compiler (saves bytecodes to files)
 */
 
-char *rcs_luac="$Id: luac.c,v 1.8 1996/02/24 21:49:53 lhf Exp lhf $";
+char *rcs_luac="$Id: luac.c,v 1.9 1996/02/26 19:43:44 lhf Exp lhf $";
 
 #include <stdio.h>
 #include <string.h>
@@ -18,7 +18,7 @@ static FILE *D;				/* output file */
 
 static void usage(void)
 {
- fprintf(stderr,"usage: luac [-v] [-l] [-o filename] file ...\n");
+ fprintf(stderr,"usage: luac [-dlpv] [-o filename] file ...\n");
  exit(0);
 }
 
@@ -73,8 +73,6 @@ static void dump(TFunc *tf)
 
 static void do_dump(TFunc *tf)		/* only for tf=main */
 {
- tf->next=NULL;			/* TODO: remove */
- tf->marked=0;			/* TODO: remove */
  DumpHeader(D);
  dump(tf);			/* thread main and build function list */
  for (tf=tf->next; tf!=NULL; tf=tf->next)
