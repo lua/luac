@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.32 2001/11/01 08:50:39 lhf Exp lhf $
+** $Id: luac.c,v 1.33 2001/11/29 01:00:34 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "lauxlib.h"
 #include "luac.h"
 #include "lfunc.h"
 #include "lmem.h"
@@ -21,13 +22,12 @@
 
 static void usage(const char* message, const char* arg);
 static int doargs(int argc, const char* argv[]);
-static Proto* load(const char* filename);
-static Proto* combine(Proto** P, int n);
-static void strip(Proto* f);
+static Proto* load(lua_State* L, const char* filename);
+static Proto* combine(lua_State* L, Proto** P, int n);
+static void strip(lua_State* L, Proto* f);
 static void cannot(const char* name, const char* what, const char* mode);
 static void fatal(const char* message);
 
-static lua_State* L=NULL;
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
 static int stripping=0;			/* strip debug information? */
@@ -44,26 +44,35 @@ static int ERRORMESSAGE(lua_State *l)
 
 int main(int argc, const char* argv[])
 {
+ lua_State* L;
  Proto** P,*f;
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
  if (argc<=0) usage("no input files given",NULL);
- L=lua_open(0);
+ L=lua_open();
+#ifdef LUA_DEBUG
+#define FREEALL
+ luaB_opentests(L);
+#endif
  lua_register(L,LUA_ERRORMESSAGE,ERRORMESSAGE);
  P=luaM_newvector(L,argc,Proto*);
  for (i=0; i<argc; i++)
-  P[i]=load(IS("-")? NULL : argv[i]);
- f=combine(P,argc);
+  P[i]=load(L,IS("-")? NULL : argv[i]);
+ f=combine(L,P,argc);
  if (listing) luaU_printchunk(f);
  if (dumping)
  {
   FILE* D=fopen(output,"wb");
   if (D==NULL) cannot(output,"open","out");
-  if (stripping) strip(f);
+  if (stripping) strip(L,f);
   luaU_dumpchunk(f,D);
   if (ferror(D)) cannot(output,"write","out");
   fclose(D);
  }
+#ifdef FREEALL
+ if (argc==1) luaM_freearray(L,P,argc,sizeof(Proto*));
+ lua_close(L);
+#endif
  return 0;
 }
 
@@ -121,9 +130,10 @@ static int doargs(int argc, const char* argv[])
  return i;
 }
 
-static Proto* load(const char* filename)
+static Proto* load(lua_State* L, const char* filename)
 {
- switch (lua_loadfile(L,filename))
+ int code=lua_loadfile(L,filename);
+ switch (code)
  {
   case 0:
   if (errno!=0) cannot(filename,"read","in");
@@ -134,26 +144,14 @@ static Proto* load(const char* filename)
   case LUA_ERRFILE:
    cannot(filename,"open","in");
    break;
-  case LUA_ERRSYNTAX:
-   fatal("syntax error");
-   break;
-  case LUA_ERRRUN:
-   fatal("run-time error");
-   break;
-  case LUA_ERRMEM:
-   fatal("not enough memory");
-   break;
-  case LUA_ERRERR:
-   fatal("error in error handling");
-   break;
   default:
-   fatal("unknown status returned by lua_loadfile");
+   fatal(luaL_errstr(code));
    break;
  }
  return NULL;
 }
 
-static Proto* combine(Proto** P, int n)
+static Proto* combine(lua_State* L, Proto** P, int n)
 {
  if (n==1)
   return P[0];
@@ -177,15 +175,19 @@ static Proto* combine(Proto** P, int n)
  }
 }
 
-static void strip(Proto* f)
+static void strip(lua_State* L, Proto* f)
 {
  int i,n=f->sizep;
+#ifdef FREEALL
+ luaM_freearray(L, f->lineinfo, f->sizelineinfo, int);
+ luaM_freearray(L, f->locvars, f->sizelocvars, struct LocVar);
+#endif
  f->lineinfo=NULL;
  f->sizelineinfo=0;
  f->source=luaS_new(L,"=(none)");
  f->locvars=NULL;
  f->sizelocvars=0;
- for (i=0; i<n; i++) strip(f->p[i]);
+ for (i=0; i<n; i++) strip(L,f->p[i]);
 }
 
 static void cannot(const char* name, const char* what, const char* mode)
