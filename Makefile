@@ -1,4 +1,4 @@
-# $Id: Makefile,v 1.21 2003/04/01 17:57:52 lhf Exp lhf $
+# $Id: Makefile,v 1.22 2003/08/29 10:44:45 lhf Exp lhf $
 # makefile for Lua compiler
 
 LUA=..
@@ -18,7 +18,7 @@ luac:	$(OBJS) $(LIBS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
 $(LIBS):
-	cd $(LUA); make o $@
+	make -C $(LUA) o $@
 
 lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
 	$(CC) -o $@ -c $(CFLAGS) -DLUA_OPNAMES $(LUA)/lopcodes.c
@@ -26,15 +26,8 @@ lopcodes.o:	$(LUA)/lopcodes.c $(LUA)/lopcodes.h
 print.c:	$(LUA)/lopcodes.h
 	@diff lopcodes.h $(LUA)
 
-debug:
-	$(CC) -c $(CFLAGS) -DLUA_USER_H='"ltests.h"' *.c
-	$(MAKE)
-
-lint:
-	lint -I$(LUA) *.c >lint.out
-
 clean:
-	-rm -f luac *.o luac.out a.out core mon.out gmon.out tags luac.lst
+	-rm -f luac *.o luac.out a.out core core.* mon.out gmon.out tags luac.lst
 	@#cd test; $(MAKE) $@
 
 co:
@@ -58,9 +51,6 @@ what:
 ln:
 	ln -s L/*.[ch] .
 
-u:	$(OBJS)
-	nm -o $(OBJS) | grep 'U lua'
-
 lo:
 	cp -fp $(LUA)/lopcodes.h .
 
@@ -75,5 +65,13 @@ opp:
 	grep RK  lopcodes.h | grep ^OP_; echo ''
 	grep pc  lopcodes.h | grep ^OP_; echo ''
 
-load.c:	$(LUA)/lauxlib.c
-	ex <load.ex $<
+u:	$(OBJS)
+	nm -o $(OBJS) | grep 'U lua'
+
+api:	$(OBJS)
+	nm -o *.o | grep 'T lua._' | sed 's/:.*T /	/'
+
+libc:	$(OBJS)
+	rm -f lua.o
+	nm -o *.o | grep -v 'lib.o' | grep ' U ' | grep -v ' U lua'
+
