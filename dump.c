@@ -1,5 +1,5 @@
 /*
-** $Id: dump.c,v 1.16 1999/03/24 19:36:29 lhf Exp lhf $
+** $Id: dump.c,v 1.17 1999/04/09 02:51:31 lhf Exp lhf $
 ** save bytecodes to file
 ** See Copyright Notice in lua.h
 */
@@ -14,7 +14,6 @@
 #endif
 
 #define DumpBlock(b,size,D)	fwrite(b,size,1,D)
-#define	DumpNative(t,D)		DumpBlock(&t,sizeof(t),D)
 #define	DumpInt			DumpLong
 
 static void DumpWord(int i, FILE* D)
@@ -33,35 +32,18 @@ static void DumpLong(long i, FILE* D)
  DumpWord(lo,D);
 }
 
-#if ID_NUMBER==ID_REAL4			/* LUA_NUMBER */
-/* assumes sizeof(long)==4 and sizeof(float)==4 (IEEE) */
-static void DumpFloat(float f, FILE* D)
+static void DumpNumber(real x, FILE* D)
 {
- long l;
- memcpy(&l,&f,sizeof(l));
- DumpLong(l,D);
-}
+#if LUAC_NATIVE
+ DumpBlock(&x,sizeof(x),D);
+#else
+ char b[256];
+ int n;
+ sprintf(b,NUMBER_FMT"%n",x,&n);
+ fputc(n,D);
+ DumpBlock(b,n,D);
 #endif
-
-#if ID_NUMBER==ID_REAL8			/* LUA_NUMBER */
-/* assumes sizeof(long)==4 and sizeof(double)==8 (IEEE) */
-static void DumpDouble(double f, FILE* D)
-{
- long l[2];
- int x=1;
- memcpy(&l,&f,sizeof(l));
- if (*(char*)&x==1)			/* little-endian */
- {
-  DumpLong(l[1],D);
-  DumpLong(l[0],D);
- }
- else					/* big-endian */
- {
-  DumpLong(l[0],D);
-  DumpLong(l[1],D);
- }
 }
-#endif
 
 static void DumpCode(TProtoFunc* tf, FILE* D)
 {
@@ -151,13 +133,15 @@ static void DumpFunction(TProtoFunc* tf, FILE* D)
 
 static void DumpHeader(TProtoFunc* Main, FILE* D)
 {
- real t=TEST_NUMBER;
  fputc(ID_CHUNK,D);
  fputs(SIGNATURE,D);
  fputc(VERSION,D);
- fputc(ID_NUMBER,D);
- fputc(sizeof(t),D);
- DumpNumber(t,D);
+#if LUAC_NATIVE
+ fputc(sizeof(real),D);
+ DumpNumber(TEST_NUMBER,D);
+#else
+ fputc(0,D);
+#endif
 }
 
 void luaU_dumpchunk(TProtoFunc* Main, FILE* D)
