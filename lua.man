@@ -1,5 +1,5 @@
-.\" $Id: lua.man,v 1.3 2000/09/04 21:41:28 lhf Exp lhf $
-.TH LUA 1 "$Date: 2000/09/04 21:41:28 $"
+.\" $Id: lua.man,v 1.4 2001/07/19 20:06:36 lhf Exp lhf $
+.TH LUA 1 "$Date: 2001/07/19 20:06:36 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -12,10 +12,10 @@ lua \- Lua interpreter
 is the stand-alone Lua interpreter.
 It loads and executes Lua programs,
 either in textual source form or
-in precompiled binary form,
-as output by
+in precompiled binary form.
+(Precompiled binaries are output by
 .BR luac ,
-the Lua compiler.
+the Lua compiler.)
 .B lua
 can be used as a batch interpreter and also interactively.
 .LP
@@ -35,7 +35,9 @@ which assigns the string
 .RB ` b '
 to the global variable
 .BR a .
-Note that no quotes are needed around the string if it does not contain spaces
+Note that,
+in this special command-line form,
+no quotes are needed around the string if it does not contain spaces
 or other characters special to the shell.
 This is for convenience only.
 (In general,
@@ -53,6 +55,7 @@ is assumed when the standard input is a terminal;
 otherwise,
 .B "\-"
 is assumed.
+Interactive mode is explained in detail below.
 .SH OPTIONS
 .TP
 .B \-
@@ -71,7 +74,8 @@ execute statement
 .IR stat .
 You need to quote
 .I stat 
-if it contains spaces or quotes.
+if it contains spaces, quotes,
+or other characters special to the shell.
 .TP
 .BI \-f " file"
 collect all remaining arguments as strings into a global table named
@@ -92,43 +96,40 @@ displaying a prompt.
 In this mode,
 .B lua
 reads lines from the standard input and executes them as they are read.
-Each line must contain a complete statement.
-To span a statement across several lines, end each line with a backslash
-.BR `\e' .
-The prompt shown is the value of the global variable
+If a line does not contain a complete statement,
+then a secondary prompt is displayed and
+lines are read until a complete statement is formed or
+a syntax error is found.
+So, one way to interrupt the reading of an incomplete statement is
+to force a syntax error:
+adding a
+.B `;' 
+in the middle of a statement is a sure way of forcing a syntax error
+(except inside multiline strings and comments; these must be closed explicitly).
+
+If a line starts with
+.BR `=' ,
+then
+.B lua
+displays the values of all the expressions in the remainder of the
+line. The expressions must be separated by commas.
+
+The primary prompt is the value of the global variable
 .BR _PROMPT ,
-if this value is a string.
+if this value is a string;
+otherwise, the default prompt is used.
+Similarly, the secondary prompt is the value of the global variable
+.BR _PROMPT2 .
 So,
-to change the prompt,
-set
-.B _PROMPT
-to a string of your choice.
+to change the prompts,
+set the corresponding variable to a string of your choice.
 You can do that after calling the interpreter
 or on the command line with
 .BR "_PROMPT" "=\'lua: \'" ,
 for example.
 (Note the need for quotes, because the string contains a space.)
-The default prompt is ``> ''.
-.TP
-.B \-q
-enter interactive mode,
-but without displaying a prompt.
-.TP
-.BI \-s n
-set the stack size to
-.IB n .
-If present,
-this must be the first option.
-Note that
-.I n
-must be in the same argument as
-.BR \-s .
-For example,
-to specify a stack size of 2000,
-use
-.BR "\-s" 2000
-(not
-.BR "\-s " 2000 ).
+The default prompts are ``> '' and ``>> ''.
+
 .TP
 .B \-v
 print version information.
