@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.6 1998/02/06 20:24:30 lhf Exp lhf $
+** $Id: lundump.c,v 1.7 1998/03/05 15:45:08 lhf Exp lhf $
 ** load bytecodes from files
 ** See Copyright Notice in lua.h
 */
@@ -106,23 +106,17 @@ static Byte* LoadCode(ZIO* Z)
  return b;
 }
 
-static char* LoadString(ZIO* Z)
+static TaggedString* LoadTString(ZIO* Z)
 {
  int size=LoadWord(Z);
  if (size==0)
   return NULL;
  else
  {
-  char* b=luaL_openspace(size);
-  LoadBlock(b,size,Z);
-  return b;
+  char* s=luaL_openspace(size);
+  LoadBlock(s,size,Z);
+  return luaS_newlstr(s,size-1);
  }
-}
-
-static TaggedString* LoadTString(ZIO* Z)
-{
- char* s=LoadString(Z);
- return (s==NULL) ? NULL : luaS_new(s);
 }
 
 static void LoadLocals(TProtoFunc* tf, ZIO* Z)
