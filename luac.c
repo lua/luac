@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.48 2004/06/09 21:03:53 lhf Exp lhf $
+** $Id: luac.c,v 1.49 2004/09/01 21:22:34 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -151,8 +151,6 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
  return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
-void unprint(lua_State* L, const char* name);
-
 struct Smain {
   int argc;
   char **argv;
@@ -169,7 +167,6 @@ static int pmain(lua_State *L)
  for (i=0; i<argc; i++)
  {
   const char* filename=IS("-") ? NULL : argv[i];
-  if (listing>2) unprint(L,filename); else
   if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
  }
  f=combine(L,argc);
