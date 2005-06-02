@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.49 2004/11/25 09:31:41 lhf Exp lhf $
+** $Id: print.c,v 1.50 2005/05/12 00:26:50 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -158,7 +158,7 @@ static void PrintHeader(const Proto* f)
  	(f->linedefined==0)?"main":"function",s,
 	f->linedefined,f->lastlinedefined,
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
- printf("%d%s param%s, %d stack%s, %d upvalue%s, ",
+ printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->nups));
  printf("%d local%s, %d constant%s, %d function%s\n",

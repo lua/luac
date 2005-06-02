@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.9 2004/11/25 09:31:41 lhf Exp lhf $
+** $Id: ldump.c,v 1.10 2005/05/12 00:26:50 lhf Exp lhf $
 ** save pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -21,7 +21,7 @@
 
 typedef struct {
  lua_State* L;
- lua_Chunkwriter writer;
+ lua_Writer writer;
  void* data;
  int strip;
  int status;
@@ -105,8 +105,8 @@ static void DumpFunction(const Proto* f, const TString* p, DumpState* D);
 
 static void DumpConstants(const Proto* f, DumpState* D)
 {
- int i,n;
- DumpInt(n=f->sizek,D);
+ int i,n=f->sizek;
+ DumpInt(n,D);
  for (i=0; i<n; i++)
  {
   const TValue* o=&f->k[i];
@@ -129,7 +129,8 @@ static void DumpConstants(const Proto* f, DumpState* D)
 	break;
   }
  }
- DumpInt(n=f->sizep,D);
+ n=f->sizep;
+ DumpInt(n,D);
  for (i=0; i<n; i++) DumpFunction(f->p[i],f->source,D);
 }
 
@@ -164,7 +165,7 @@ static void DumpHeader(DumpState* D)
 /*
 ** dump Lua function as precompiled chunk
 */
-int luaU_dump (lua_State* L, const Proto* f, lua_Chunkwriter w, void* data, int strip)
+int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip)
 {
  DumpState D;
  D.L=L;

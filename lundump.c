@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.54 2004/11/25 09:31:41 lhf Exp lhf $
+** $Id: lundump.c,v 1.55 2005/05/12 00:26:50 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -21,7 +21,7 @@
 #include "lundump.h"
 #include "lzio.h"
 
-#define	LoadByte	(lu_byte) ezgetc
+#define	LoadByte	(lu_byte)ezgetc
 
 typedef struct {
  lua_State* L;
@@ -49,18 +49,19 @@ static int ezgetc (LoadState* S)
  return c;
 }
 
-static void ezread (LoadState* S, void* b, int n)
+static void ezread (LoadState* S, void* b, size_t n)
 {
- int r=luaZ_read(S->Z,b,n);
+ size_t r=luaZ_read(S->Z,b,n);
  if (r!=0) error(S,"unexpected end of file");
 }
 
 static void LoadBlock (LoadState* S, void* b, size_t size)
 {
+printf("LoadBlock %d\n",size);
  if (S->swap)
  {
-  char* p=(char*) b+size-1;
-  int n=size;
+  char* p=(char*)b+size-1;
+  size_t n=size;
   while (n--) *p--=(char)ezgetc(S);
  }
  else
@@ -69,13 +70,14 @@ static void LoadBlock (LoadState* S, void* b, size_t size)
 
 static void LoadVector (LoadState* S, void* b, int m, size_t size)
 {
+printf("LoadVector %d %d\n",m,size);
  if (S->swap)
  {
-  char* q=(char*) b;
+  char* q=(char*)b;
   while (m--)
   {
    char* p=q+size-1;
-   int n=size;
+   size_t n=size;
    while (n--) *p--=(char)ezgetc(S);
    q+=size;
   }
