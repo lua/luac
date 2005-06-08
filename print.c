@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.50 2005/05/12 00:26:50 lhf Exp lhf $
+** $Id: print.c,v 1.51 2005/06/02 13:39:23 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -134,6 +134,10 @@ static void PrintCode(const Proto* f)
     break;
    case OP_CLOSURE:
     printf("\t; %p",VOID(f->p[bx]));
+    break;
+   case OP_SETLIST:
+    if (c==0) printf("\t; %d",(int)code[++pc]);
+    else printf("\t; %d",c);
     break;
    default:
     break;
