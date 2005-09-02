@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.24 2002/08/12 20:28:42 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2002/08/12 20:28:42 $"
+.\" $Id: luac.man,v 1.25 2002/12/13 11:45:12 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2002/12/13 11:45:12 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -38,14 +38,7 @@ option.
 .LP
 The binary files created by
 .B luac
-are portable to all architectures with the same word size.
-This means that
-binary files created on a 32-bit platform (such as Intel)
-can be read without change in another 32-bit platform (such as Sparc),
-even if the byte order (``endianness'') is different.
-On the other hand,
-binary files created on a 16-bit platform cannot be read in a 32-bit platform,
-nor vice-versa.
+are portable only among architectures with the same word size and byte order.
 .LP
 In the command line,
 you can mix
@@ -132,5 +125,4 @@ Error messages should be self explanatory.
 L. H. de Figueiredo,
 R. Ierusalimschy and
 W. Celes
-(lua@tecgraf.puc-rio.br)
 .\" EOF
