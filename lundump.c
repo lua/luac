@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.56 2005/06/02 13:39:23 lhf Exp lhf $
+** $Id: lundump.c,v 1.57 2005/06/08 14:40:44 lhf Exp lhf $
 ** load pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -20,7 +20,7 @@
 #include "lundump.h"
 #include "lzio.h"
 
-#ifdef TRUST_BINARIES
+#ifdef LUAC_TRUST_BINARIES
 #define IF(c,s)
 #else
 #define IF(c,s)		if (c) error(S,s)
@@ -31,10 +31,18 @@ typedef struct {
  ZIO* Z;
  Mbuffer* b;
  const char* name;
+#ifdef LUAC_SWAP_ON_LOAD
+ int swap;
+#endif
 } LoadState;
 
-#define	LoadByte(S)		(lu_byte)LoadChar(S)
+#ifdef LUAC_SWAP_ON_LOAD
+static void LoadMem (LoadState* S, void* b, int n, size_t size);
+#else
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
+#endif
+
+#define	LoadByte(S)		(lu_byte)LoadChar(S)
 #define LoadVar(S,x)		LoadMem(S,&x,1,sizeof(x))
 #define LoadVector(S,b,n,size)	LoadMem(S,b,n,size)
 
@@ -193,6 +201,9 @@ static void LoadHeader(LoadState* S)
  char s[LUAC_HEADERSIZE];
  luaU_header(h);
  LoadBlock(S,s,LUAC_HEADERSIZE);
+#ifdef LUAC_SWAP_ON_LOAD
+ S->swap=(s[6]!=h[6]); s[6]=h[6];
+#endif
  IF (memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
 }
 
@@ -232,3 +243,48 @@ void luaU_header (char* h)
  *h++=(char)sizeof(lua_Number);
  *h++=(char)(((lua_Number)0.5)==0);
 }
+
+#ifdef LUAC_SWAP_ON_LOAD
+static void LoadMem (LoadState* S, void* b, int n, size_t size)
+{
+ LoadBlock(S,b,n*size);
+ if (S->swap)
+ {
+  char* p=(char*) b;
+  char c;
+  switch (size)
+  {
+   case 1:
+  	break;
+   case 2:
+	while (n--)
+	{
+	 c=p[0]; p[0]=p[1]; p[1]=c;
+	 p+=2;
+	}
+  	break;
+   case 4:
+	while (n--)
+	{
+	 c=p[0]; p[0]=p[3]; p[3]=c;
+	 c=p[1]; p[1]=p[2]; p[2]=c;
+	 p+=4;
+	}
+  	break;
+   case 8:
+	while (n--)
+	{
+	 c=p[0]; p[0]=p[7]; p[7]=c;
+	 c=p[1]; p[1]=p[6]; p[6]=c;
+	 c=p[2]; p[2]=p[5]; p[5]=c;
+	 c=p[3]; p[3]=p[4]; p[4]=c;
+	 p+=8;
+	}
+  	break;
+   default:
+   	IF(1, "bad size");
+  	break;
+  }
+ }
+}
+#endif
