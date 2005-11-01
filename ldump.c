@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.11 2005/06/02 13:39:23 lhf Exp lhf $
+** $Id: ldump.c,v 1.12 2005/06/08 14:40:44 lhf Exp lhf $
 ** save pre-compiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -26,7 +26,6 @@ typedef struct {
 
 #define DumpCode(f,D)	 DumpVector(f->code,f->sizecode,sizeof(Instruction),D)
 #define DumpLines(f,D)	 DumpVector(f->lineinfo,f->sizelineinfo,sizeof(int),D)
-#define DumpLiteral(s,D) DumpBlock("" s,(sizeof(s))-1,D)
 #define DumpVar(x,D)	 DumpMem(&x,1,sizeof(x),D)
 #define DumpMem(b,n,size,D)	DumpBlock(b,(n)*(size),D)
 
