@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.25 2002/12/13 11:45:12 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2002/12/13 11:45:12 $"
+.\" $Id: luac.man,v 1.26 2005/09/02 16:29:34 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2005/09/02 16:29:34 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -17,7 +17,7 @@ into binary files that can be latter loaded and executed.
 .LP
 The main advantages of precompiling chunks are:
 faster loading,
-protecting source code from user changes,
+protecting source code from accidental user changes,
 and
 off-line syntax checking.
 .LP
@@ -25,6 +25,13 @@ Pre-compiling does not imply faster execution
 because in Lua chunks are always compiled into bytecodes before being executed.
 .B luac
 simply allows those bytecodes to be saved in a file for later execution.
+.LP
+Pre-compiled chunks are not necessarily smaller than the corresponding source.
+The main goal in pre-compiling is faster loading.
+.LP
+The binary files created by
+.B luac
+are portable only among architectures with the same word size and byte order.
 .LP
 .B luac
 produces a single output file containing the bytecodes
@@ -35,10 +42,6 @@ the output file is named
 but you can change this with the
 .B \-o
 option.
-.LP
-The binary files created by
-.B luac
-are portable only among architectures with the same word size and byte order.
 .LP
 In the command line,
 you can mix
@@ -81,6 +84,10 @@ output to
 .IR file ,
 instead of the default
 .BR luac.out .
+(You can use
+.B "\-"
+for standard output,
+but not on platforms that open standard output in text mode.)
 The output file may be a source file because
 all files are loaded before the output file is written.
 Be careful not to overwrite precious files.
@@ -105,9 +112,10 @@ No messages are displayed if the file passes the integrity test.
 .B \-s
 strip debug information before writing the output file.
 This saves some space in very large chunks,
-but if errors occur when running these chunks,
-then the error messages may not contain the full information they usually do
-(line numbers and names of locals are lost).
+but if errors occur when running a stripped chunk,
+then the error messages may not contain the full information they usually do.
+For instance,
+line numbers and names of local variables are lost.
 .TP
 .B \-v
 show version information.
