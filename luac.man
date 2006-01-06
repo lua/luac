@@ -1,5 +1,5 @@
-.\" $Id: luac.man,v 1.26 2005/09/02 16:29:34 lhf Exp lhf $
-.TH LUAC 1 "$Date: 2005/09/02 16:29:34 $"
+.\" $Id: luac.man,v 1.27 2006/01/06 13:45:26 lhf Exp lhf $
+.TH LUAC 1 "$Date: 2006/01/06 13:45:26 $"
 .SH NAME
 luac \- Lua compiler
 .SH SYNOPSIS
@@ -52,14 +52,14 @@ even from different (but compatible) platforms,
 into a single precompiled chunk.
 .LP
 You can use
-.B "\-"
+.B "'\-'"
 to indicate the standard input as a source file
 and
-.B "\--"
+.B "'\--'"
 to signal the end of options
 (that is,
 all remaining arguments will be treated as files even if they start with
-.BR "\-" ).
+.BR "'\-'" ).
 .LP
 The internal format of the binary files produced by
 .B luac
@@ -85,7 +85,7 @@ output to
 instead of the default
 .BR luac.out .
 (You can use
-.B "\-"
+.B "'\-'"
 for standard output,
 but not on platforms that open standard output in text mode.)
 The output file may be a source file because

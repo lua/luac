@@ -1,5 +1,5 @@
-.\" $Id: lua.man,v 1.9 2005/09/02 16:29:34 lhf Exp lhf $
-.TH LUA 1 "$Date: 2005/09/02 16:29:34 $"
+.\" $Id: lua.man,v 1.10 2006/01/06 13:45:26 lhf Exp lhf $
+.TH LUA 1 "$Date: 2006/01/06 13:45:26 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -73,7 +73,7 @@ Options start with
 .B '\-'
 and are described below.
 You can use
-.B "\--"
+.B "'\--'"
 to signal the end of options.
 .LP
 If no arguments are given,
@@ -142,7 +142,7 @@ is executed.
 .TP
 .BI \-l " name"
 call
-.BI require(" name ")
+.BI require(' name ')
 before executing
 .IR script .
 Typically used to load libraries.
