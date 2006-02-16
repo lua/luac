@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.13 2005/11/01 17:04:55 lhf Exp lhf $
+** $Id: ldump.c,v 1.14 2005/11/11 14:03:13 lhf Exp lhf $
 ** save precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -128,7 +128,7 @@ static void DumpDebug(const Proto* f, DumpState* D)
 
 static void DumpFunction(const Proto* f, const TString* p, DumpState* D)
 {
- DumpString((f->source==p) ? NULL : f->source,D);
+ DumpString((f->source==p || D->strip) ? NULL : f->source,D);
  DumpInt(f->linedefined,D);
  DumpInt(f->lastlinedefined,D);
  DumpChar(f->nups,D);
