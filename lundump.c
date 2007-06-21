@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.59 2005/11/11 14:03:13 lhf Exp lhf $
+** $Id: lundump.c,v 1.60 2006/02/16 15:53:49 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -30,7 +30,7 @@ typedef struct {
 #ifdef LUAC_TRUST_BINARIES
 #define IF(c,s)
 #else
-#define IF(c,s)		if (c) error(S,s)
+#define IF(c,s)			if (c) error(S,s)
 
 static void error(LoadState* S, const char* why)
 {
@@ -40,7 +40,7 @@ static void error(LoadState* S, const char* why)
 #endif
 
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
-#define	LoadByte(S)		(lu_byte)LoadChar(S)
+#define LoadByte(S)		(lu_byte)LoadChar(S)
 #define LoadVar(S,x)		LoadMem(S,&x,1,sizeof(x))
 #define LoadVector(S,b,n,size)	LoadMem(S,b,n,size)
 
@@ -206,6 +206,8 @@ Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
 
 /*
 * make header
+* if you make any changes in the header or in LUA_SIGNATURE,
+* be sure to update LUAC_HEADERSIZE accordingly.
 */
 void luaU_header (char* h)
 {

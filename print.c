@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.54 2006/01/11 22:49:27 lhf Exp lhf $
+** $Id: print.c,v 1.55 2006/05/31 13:30:05 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -23,15 +23,15 @@
 static void PrintString(const TString* ts)
 {
  const char* s=getstr(ts);
- int n=ts->tsv.len;
- int i;
+ size_t i,n=ts->tsv.len;
  putchar('"');
  for (i=0; i<n; i++)
  {
   int c=s[i];
   switch (c)
   {
-   case '"': printf("\\\""); break;
+   case '"':  printf("\\\""); break;
+   case '\\': printf("\\\\"); break;
    case '\a': printf("\\a"); break;
    case '\b': printf("\\b"); break;
    case '\f': printf("\\f"); break;
@@ -85,6 +85,9 @@ static void PrintCode(const Proto* f)
   int bx=GETARG_Bx(i);
   int sbx=GETARG_sBx(i);
   int line=getline(f,pc);
+#ifdef LUAC_DUMP_INSTRUCTIONS
+  printf("%0*X",2*sizeof(i),i);
+#endif
   printf("\t%d\t",pc+1);
   if (line>0) printf("[%d]\t",line); else printf("[-]\t");
   printf("%-9s\t",luaP_opnames[o]);

@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.53 2006/05/31 13:30:05 lhf Exp lhf $
+** $Id: luac.c,v 1.54 2006/06/02 17:37:11 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -24,7 +24,7 @@
 #include "lundump.h"
 
 #define PROGNAME	"luac"		/* default program name */
-#define	OUTPUT		PROGNAME ".out"	/* default output file */
+#define OUTPUT		PROGNAME ".out"	/* default output file */
 
 static int listing=0;			/* list bytecodes? */
 static int dumping=1;			/* dump bytecodes? */
@@ -52,7 +52,7 @@ static void usage(const char* message)
  else
   fprintf(stderr,"%s: %s\n",progname,message);
  fprintf(stderr,
- "usage: %s [options] [filenames].\n"
+ "usage: %s [options] [filenames]\n"
  "Available options are:\n"
  "  -        process stdin\n"
  "  -l       list\n"
@@ -65,7 +65,7 @@ static void usage(const char* message)
  exit(EXIT_FAILURE);
 }
 
-#define	IS(s)	(strcmp(argv[i],s)==0)
+#define IS(s)	(strcmp(argv[i],s)==0)
 
 static int doargs(int argc, char* argv[])
 {
