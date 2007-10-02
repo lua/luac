@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.54 2006/06/02 17:37:11 lhf Exp lhf $
+** $Id: luac.c,v 1.55 2007/06/21 16:41:26 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -108,7 +108,7 @@ static int doargs(int argc, char* argv[])
  }
  if (version)
  {
-  printf("%s  %s\n",LUA_RELEASE,LUA_COPYRIGHT);
+  printf("%s\n",LUA_COPYRIGHT);
   if (version==argc-1) exit(EXIT_SUCCESS);
  }
  return i;
