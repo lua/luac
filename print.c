@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.55 2006/05/31 13:30:05 lhf Exp lhf $
+** $Id: print.c,v 1.56 2007/06/21 16:41:26 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -181,9 +181,10 @@ static void PrintHeader(const Proto* f)
 	S(f->sizelocvars),S(f->sizek),S(f->sizep));
 }
 
-static void PrintConstants(const Proto* f)
+static void PrintDebug(const Proto* f)
 {
- int i,n=f->sizek;
+ int i,n;
+ n=f->sizek;
  printf("constants (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
@@ -191,22 +192,14 @@ static void PrintConstants(const Proto* f)
   PrintConstant(f,i);
   printf("\n");
  }
-}
-
-static void PrintLocals(const Proto* f)
-{
- int i,n=f->sizelocvars;
+ n=f->sizelocvars;
  printf("locals (%d) for %p:\n",n,VOID(f));
  for (i=0; i<n; i++)
  {
   printf("\t%d\t%s\t%d\t%d\n",
   i,getstr(f->locvars[i].varname),f->locvars[i].startpc+1,f->locvars[i].endpc+1);
  }
-}
-
-static void PrintUpvalues(const Proto* f)
-{
- int i,n=f->sizeupvalues;
+ n=f->sizeupvalues;
  printf("upvalues (%d) for %p:\n",n,VOID(f));
  if (f->upvalues==NULL) return;
  for (i=0; i<n; i++)
@@ -220,11 +213,6 @@ void PrintFunction(const Proto* f, int full)
  int i,n=f->sizep;
  PrintHeader(f);
  PrintCode(f);
- if (full)
- {
-  PrintConstants(f);
-  PrintLocals(f);
-  PrintUpvalues(f);
- }
+ if (full) PrintDebug(f);
  for (i=0; i<n; i++) PrintFunction(f->p[i],full);
 }
