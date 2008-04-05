@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.61 2007/06/21 16:41:26 lhf Exp lhf $
+** $Id: lundump.c,v 1.62 2008/03/26 13:51:20 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -27,18 +27,11 @@ typedef struct {
  const char* name;
 } LoadState;
 
-#ifdef LUAC_TRUST_BINARIES
-#define IF(c,s)
-#define error(S,s)
-#else
-#define IF(c,s)			if (c) error(S,s)
-
 static void error(LoadState* S, const char* why)
 {
  luaO_pushfstring(S->L,"%s: %s in precompiled chunk",S->name,why);
  luaD_throw(S->L,LUA_ERRSYNTAX);
 }
-#endif
 
 #define LoadMem(S,b,n,size)	LoadBlock(S,b,(n)*(size))
 #define LoadByte(S)		(lu_byte)LoadChar(S)
@@ -49,7 +42,7 @@ static void LoadBlock(LoadState* S, void* b, size_t size)
 {
  size_t r=luaZ_read(S->Z,b,size);
  UNUSED(r);
- IF (r!=0, "unexpected end");
+ if (r!=0) error(S,"unexpected end");
 }
 
 static int LoadChar(LoadState* S)
@@ -63,7 +56,7 @@ static int LoadInt(LoadState* S)
 {
  int x;
  LoadVar(S,x);
- IF (x<0, "bad integer");
+ if (x<0) error(S,"bad integer");
  return x;
 }
 
@@ -173,7 +166,7 @@ static Proto* LoadFunction(LoadState* S, TString* p)
  LoadCode(S,f);
  LoadConstants(S,f);
  LoadDebug(S,f);
- IF (!luaG_checkcode(f), "bad code");
+ if (!luaG_checkcode(f)) error(S,"bad code");
  S->L->top--;
  return f;
 }
@@ -184,7 +177,7 @@ static void LoadHeader(LoadState* S)
  char s[LUAC_HEADERSIZE];
  luaU_header(h);
  LoadBlock(S,s,LUAC_HEADERSIZE);
- IF (memcmp(h,s,LUAC_HEADERSIZE)!=0, "bad header");
+ if (memcmp(h,s,LUAC_HEADERSIZE)!=0) error(S,"bad header");
 }
 
 /*
