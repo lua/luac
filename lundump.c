@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.62 2008/03/26 13:51:20 lhf Exp lhf $
+** $Id: lundump.c,v 1.63 2008/04/05 07:05:46 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -41,7 +41,6 @@ static void error(LoadState* S, const char* why)
 static void LoadBlock(LoadState* S, void* b, size_t size)
 {
  size_t r=luaZ_read(S->Z,b,size);
- UNUSED(r);
  if (r!=0) error(S,"unexpected end");
 }
 
@@ -154,7 +153,9 @@ static void LoadDebug(LoadState* S, Proto* f)
 
 static Proto* LoadFunction(LoadState* S, TString* p)
 {
- Proto* f=luaF_newproto(S->L);
+ Proto* f;
+ if (++G(S->L)->nCcalls > LUAI_MAXCCALLS) error(S,"code too deep");
+ f=luaF_newproto(S->L);
  setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
  f->source=LoadString(S); if (f->source==NULL) f->source=p;
  f->linedefined=LoadInt(S);
@@ -168,6 +169,7 @@ static Proto* LoadFunction(LoadState* S, TString* p)
  LoadDebug(S,f);
  if (!luaG_checkcode(f)) error(S,"bad code");
  S->L->top--;
+ G(S->L)->nCcalls--;
  return f;
 }
 
