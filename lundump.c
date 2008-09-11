@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.63 2008/04/05 07:05:46 lhf Exp lhf $
+** $Id: lundump.c,v 1.64 2008/04/05 07:14:40 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -66,12 +66,15 @@ static lua_Number LoadNumber(LoadState* S)
  return x;
 }
 
-static TString* LoadString(LoadState* S)
+static TString* LoadString(LoadState* S, TString* p)
 {
  size_t size;
  LoadVar(S,size);
  if (size==0)
-  return NULL;
+ {
+  if (p==NULL) error(S,"bad string");
+  return p;
+ }
  else
  {
   char* s=luaZ_openspace(S->L,S->b,size);
@@ -113,7 +116,7 @@ static void LoadConstants(LoadState* S, Proto* f)
 	setnvalue(o,LoadNumber(S));
 	break;
    case LUA_TSTRING:
-	setsvalue2n(S->L,o,LoadString(S));
+	setsvalue2n(S->L,o,LoadString(S,NULL));
 	break;
    default:
 	error(S,"bad constant");
@@ -140,7 +143,7 @@ static void LoadDebug(LoadState* S, Proto* f)
  for (i=0; i<n; i++) f->locvars[i].varname=NULL;
  for (i=0; i<n; i++)
  {
-  f->locvars[i].varname=LoadString(S);
+  f->locvars[i].varname=LoadString(S,NULL);
   f->locvars[i].startpc=LoadInt(S);
   f->locvars[i].endpc=LoadInt(S);
  }
@@ -148,7 +151,7 @@ static void LoadDebug(LoadState* S, Proto* f)
  f->upvalues=luaM_newvector(S->L,n,TString*);
  f->sizeupvalues=n;
  for (i=0; i<n; i++) f->upvalues[i]=NULL;
- for (i=0; i<n; i++) f->upvalues[i]=LoadString(S);
+ for (i=0; i<n; i++) f->upvalues[i]=LoadString(S,NULL);
 }
 
 static Proto* LoadFunction(LoadState* S, TString* p)
@@ -157,7 +160,7 @@ static Proto* LoadFunction(LoadState* S, TString* p)
  if (++G(S->L)->nCcalls > LUAI_MAXCCALLS) error(S,"code too deep");
  f=luaF_newproto(S->L);
  setptvalue2s(S->L,S->L->top,f); incr_top(S->L);
- f->source=LoadString(S); if (f->source==NULL) f->source=p;
+ f->source=LoadString(S,p);
  f->linedefined=LoadInt(S);
  f->lastlinedefined=LoadInt(S);
  f->nups=LoadByte(S);
