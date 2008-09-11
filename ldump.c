@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.14 2005/11/11 14:03:13 lhf Exp lhf $
+** $Id: ldump.c,v 1.15 2006/02/16 15:53:49 lhf Exp lhf $
 ** save precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -60,7 +60,7 @@ static void DumpVector(const void* b, int n, size_t size, DumpState* D)
 
 static void DumpString(const TString* s, DumpState* D)
 {
- if (s==NULL || getstr(s)==NULL)
+ if (s==NULL)
  {
   size_t size=0;
   DumpVar(size,D);

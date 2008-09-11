@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.56 2007/06/21 16:41:26 lhf Exp lhf $
+** $Id: print.c,v 1.57 2008/03/26 13:44:31 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -158,7 +158,7 @@ static void PrintCode(const Proto* f)
  }
 }
 
-#define SS(x)	(x==1)?"":"s"
+#define SS(x)	((x==1)?"":"s")
 #define S(x)	x,SS(x)
 
 static void PrintHeader(const Proto* f)
