@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.64 2008/04/05 07:14:40 lhf Exp lhf $
+** $Id: lundump.c,v 1.65 2008/09/11 12:05:06 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -170,7 +170,6 @@ static Proto* LoadFunction(LoadState* S, TString* p)
  LoadCode(S,f);
  LoadConstants(S,f);
  LoadDebug(S,f);
- if (!luaG_checkcode(f)) error(S,"bad code");
  S->L->top--;
  G(S->L)->nCcalls--;
  return f;
