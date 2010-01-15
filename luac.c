@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.56 2007/10/02 22:24:49 lhf Exp lhf $
+** $Id: luac.c,v 1.57 2008/03/26 13:40:18 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -150,16 +150,10 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
  return (fwrite(p,size,1,(FILE*)u)!=1) && (size!=0);
 }
 
-struct Smain {
- int argc;
- char** argv;
-};
-
 static int pmain(lua_State* L)
 {
- struct Smain* s = (struct Smain*)lua_touserdata(L, 1);
- int argc=s->argc;
- char** argv=s->argv;
+ int argc=lua_tointeger(L,1);
+ char** argv=lua_touserdata(L,2);
  const Proto* f;
  int i;
  if (!lua_checkstack(L,argc)) fatal("too many input files");
@@ -185,16 +179,18 @@ static int pmain(lua_State* L)
 
 int main(int argc, char* argv[])
 {
+ static lua_CFunction ppmain = &pmain; 
  lua_State* L;
- struct Smain s;
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
  if (argc<=0) usage("no input files given");
- L=lua_open();
+ L=luaL_newstate();
  if (L==NULL) fatal("not enough memory for state");
- s.argc=argc;
- s.argv=argv;
- if (lua_cpcall(L,pmain,&s)!=0) fatal(lua_tostring(L,-1));
+ lua_rawgeti(L,LUA_REGISTRYINDEX,LUA_RIDX_CPCALL);
+ lua_pushlightuserdata(L,&ppmain);
+ lua_pushinteger(L,argc);
+ lua_pushlightuserdata(L,argv);
+ if (lua_pcall(L,3,0,0)!=0) fatal(lua_tostring(L,-1));
  lua_close(L);
  return EXIT_SUCCESS;
 }
