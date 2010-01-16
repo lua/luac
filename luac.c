@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.57 2008/03/26 13:40:18 lhf Exp lhf $
+** $Id: luac.c,v 1.58 2010/01/15 02:55:36 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -60,7 +60,7 @@ static void usage(const char* message)
  "  -s       strip debug information\n"
  "  -v       show version information\n"
  "  --       stop handling options\n"
- "  -        process stdin and stop handling options\n"
+ "  -        stop handling options and process stdin\n"
  ,progname,Output);
  exit(EXIT_FAILURE);
 }
@@ -179,7 +179,7 @@ static int pmain(lua_State* L)
 
 int main(int argc, char* argv[])
 {
- static lua_CFunction ppmain = &pmain; 
+ lua_CFunction ppmain = &pmain; 
  lua_State* L;
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
