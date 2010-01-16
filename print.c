@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.57 2008/03/26 13:44:31 lhf Exp lhf $
+** $Id: print.c,v 1.58 2008/09/11 12:05:06 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -82,9 +82,10 @@ static void PrintCode(const Proto* f)
   int a=GETARG_A(i);
   int b=GETARG_B(i);
   int c=GETARG_C(i);
+  int ax=GETARG_Ax(i);
   int bx=GETARG_Bx(i);
   int sbx=GETARG_sBx(i);
-  int line=getline(f,pc);
+  int line=getfuncline(f,pc);
 #ifdef LUAC_DUMP_INSTRUCTIONS
   printf("%0*X",2*sizeof(i),i);
 #endif
@@ -99,24 +100,27 @@ static void PrintCode(const Proto* f)
     if (getCMode(o)!=OpArgN) printf(" %d",ISK(c) ? (-1-INDEXK(c)) : c);
     break;
    case iABx:
-    if (getBMode(o)==OpArgK) printf("%d %d",a,-1-bx); else printf("%d %d",a,bx);
+    if (getBMode(o)==OpArgK) printf("%d %d",a,-bx); else printf("%d %d",a,bx);
     break;
    case iAsBx:
     if (o==OP_JMP) printf("%d",sbx); else printf("%d %d",a,sbx);
+    break;
+   case iAx:
+    printf("%d",ax);
     break;
   }
   switch (o)
   {
    case OP_LOADK:
-    printf("\t; "); PrintConstant(f,bx);
+    printf("\t; "); PrintConstant(f,bx-1);
     break;
    case OP_GETUPVAL:
    case OP_SETUPVAL:
-    printf("\t; %s", (f->sizeupvalues>0) ? getstr(f->upvalues[b]) : "-");
+    printf("\t; %s", (f->sizeupvalues>0) ? getstr(f->upvalues[b].name) : "-");
     break;
    case OP_GETGLOBAL:
    case OP_SETGLOBAL:
-    printf("\t; %s",svalue(&f->k[bx]));
+    printf("\t; %s",svalue(&f->k[bx-1]));
     break;
    case OP_GETTABLE:
    case OP_SELF:
@@ -176,7 +180,7 @@ static void PrintHeader(const Proto* f)
 	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),
-	S(f->maxstacksize),S(f->nups));
+	S(f->maxstacksize),S(f->sizeupvalues));
  printf("%d local%s, %d constant%s, %d function%s\n",
 	S(f->sizelocvars),S(f->sizek),S(f->sizep));
 }
@@ -204,7 +208,7 @@ static void PrintDebug(const Proto* f)
  if (f->upvalues==NULL) return;
  for (i=0; i<n; i++)
  {
-  printf("\t%d\t%s\n",i,getstr(f->upvalues[i]));
+  printf("\t%d\t%s\n",i,getstr(f->upvalues[i].name));
  }
 }
 
