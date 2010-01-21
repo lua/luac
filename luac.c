@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.58 2010/01/15 02:55:36 lhf Exp lhf $
+** $Id: luac.c,v 1.59 2010/01/16 00:23:56 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -179,7 +179,6 @@ static int pmain(lua_State* L)
 
 int main(int argc, char* argv[])
 {
- lua_CFunction ppmain = &pmain; 
  lua_State* L;
  int i=doargs(argc,argv);
  argc-=i; argv+=i;
@@ -187,10 +186,9 @@ int main(int argc, char* argv[])
  L=luaL_newstate();
  if (L==NULL) fatal("not enough memory for state");
  lua_rawgeti(L,LUA_REGISTRYINDEX,LUA_RIDX_CPCALL);
- lua_pushlightuserdata(L,&ppmain);
  lua_pushinteger(L,argc);
  lua_pushlightuserdata(L,argv);
- if (lua_pcall(L,3,0,0)!=0) fatal(lua_tostring(L,-1));
+ if (luaL_cpcall(L,&pmain,2,0)!=0) fatal(lua_tostring(L,-1));
  lua_close(L);
  return EXIT_SUCCESS;
 }
