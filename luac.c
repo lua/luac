@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.59 2010/01/16 00:23:56 lhf Exp lhf $
+** $Id: luac.c,v 1.60 2010/01/21 23:32:41 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -89,7 +89,7 @@ static int doargs(int argc, char* argv[])
   else if (IS("-o"))			/* output file */
   {
    output=argv[++i];
-   if (output==NULL || *output==0) usage(LUA_QL("-o") " needs argument");
+   if (output==NULL || *output==0 || *output=='-') usage(LUA_QL("-o") " needs argument");
    if (IS("-")) output=NULL;
   }
   else if (IS("-p"))			/* parse only */
@@ -185,10 +185,10 @@ int main(int argc, char* argv[])
  if (argc<=0) usage("no input files given");
  L=luaL_newstate();
  if (L==NULL) fatal("not enough memory for state");
- lua_rawgeti(L,LUA_REGISTRYINDEX,LUA_RIDX_CPCALL);
+ lua_pushcfunction(L,&pmain);
  lua_pushinteger(L,argc);
  lua_pushlightuserdata(L,argv);
- if (luaL_cpcall(L,&pmain,2,0)!=0) fatal(lua_tostring(L,-1));
+ if (lua_pcall(L,2,0,0)!=0) fatal(lua_tostring(L,-1));
  lua_close(L);
  return EXIT_SUCCESS;
 }
