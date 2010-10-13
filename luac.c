@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.60 2010/01/21 23:32:41 lhf Exp lhf $
+** $Id: luac.c,v 1.61 2010/05/14 11:40:22 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -89,7 +89,8 @@ static int doargs(int argc, char* argv[])
   else if (IS("-o"))			/* output file */
   {
    output=argv[++i];
-   if (output==NULL || *output==0 || *output=='-') usage(LUA_QL("-o") " needs argument");
+   if (output==NULL || *output==0 || (*output=='-' && output[1]!=0))
+    usage(LUA_QL("-o") " needs argument");
    if (IS("-")) output=NULL;
   }
   else if (IS("-p"))			/* parse only */
