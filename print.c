@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.60 2010/05/17 22:27:10 lhf Exp lhf $
+** $Id: print.c,v 1.61 2010/07/31 11:34:07 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -108,13 +108,13 @@ static void PrintCode(const Proto* f)
     if (o==OP_JMP) printf("%d",sbx); else printf("%d %d",a,sbx);
     break;
    case iAx:
-    printf("%d",ax);
+    printf("%d",-1-ax);
     break;
   }
   switch (o)
   {
    case OP_LOADK:
-    printf("\t; "); PrintConstant(f,bx-1);
+    if (bx>0) { printf("\t; "); PrintConstant(f,bx-1); }
     break;
    case OP_GETUPVAL:
    case OP_SETUPVAL:
@@ -153,6 +153,7 @@ static void PrintCode(const Proto* f)
    case OP_JMP:
    case OP_FORLOOP:
    case OP_FORPREP:
+   case OP_TFORLOOP:
     printf("\t; to %d",sbx+pc+2);
     break;
    case OP_CLOSURE:
@@ -161,6 +162,9 @@ static void PrintCode(const Proto* f)
    case OP_SETLIST:
     if (c==0) printf("\t; %d",(int)code[++pc]);
     else printf("\t; %d",c);
+    break;
+   case OP_EXTRAARG:
+    printf("\t; "); PrintConstant(f,ax);
     break;
    default:
     break;
@@ -174,7 +178,7 @@ static void PrintCode(const Proto* f)
 
 static void PrintHeader(const Proto* f)
 {
- const char* s=getstr(f->source);
+ const char* s=f->source ? getstr(f->source) : "=?";
  if (*s=='@' || *s=='=')
   s++;
  else if (*s==LUA_SIGNATURE[0])
@@ -212,10 +216,10 @@ static void PrintDebug(const Proto* f)
  }
  n=f->sizeupvalues;
  printf("upvalues (%d) for %p:\n",n,VOID(f));
- if (f->upvalues==NULL) return;
  for (i=0; i<n; i++)
  {
-  printf("\t%d\t%s\n",i,getstr(f->upvalues[i].name));
+  printf("\t%d\t%s\t%d\t%d\n",
+  i,UPVALNAME(i),f->upvalues[i].instack,f->upvalues[i].idx);
  }
 }
 
