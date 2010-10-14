@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.61 2010/07/31 11:34:07 lhf Exp lhf $
+** $Id: print.c,v 1.62 2010/10/13 21:04:52 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -24,7 +24,7 @@ static void PrintString(const TString* ts)
 {
  const char* s=getstr(ts);
  size_t i,n=ts->tsv.len;
- putchar('"');
+ printf("%c",'"');
  for (i=0; i<n; i++)
  {
   int c=s[i];
@@ -40,12 +40,12 @@ static void PrintString(const TString* ts)
    case '\t': printf("\\t"); break;
    case '\v': printf("\\v"); break;
    default:	if (isprint((unsigned char)c))
-   			putchar(c);
+   			printf("%c",c);
 		else
 			printf("\\%03u",(unsigned char)c);
   }
  }
- putchar('"');
+ printf("%c",'"');
 }
 
 static void PrintConstant(const Proto* f, int i)
@@ -88,9 +88,6 @@ static void PrintCode(const Proto* f)
   int bx=GETARG_Bx(i);
   int sbx=GETARG_sBx(i);
   int line=getfuncline(f,pc);
-#ifdef LUAC_DUMP_INSTRUCTIONS
-  printf("%0*X",2*sizeof(i),i);
-#endif
   printf("\t%d\t",pc+1);
   if (line>0) printf("[%d]\t",line); else printf("[-]\t");
   printf("%-9s\t",luaP_opnames[o]);
@@ -185,10 +182,10 @@ static void PrintHeader(const Proto* f)
   s="(bstring)";
  else
   s="(string)";
- printf("\n%s <%s:%d,%d> (%d instruction%s, %d bytes at %p)\n",
+ printf("\n%s <%s:%d,%d> (%d instruction%s at %p)\n",
  	(f->linedefined==0)?"main":"function",s,
 	f->linedefined,f->lastlinedefined,
-	S(f->sizecode),f->sizecode*Sizeof(Instruction),VOID(f));
+	S(f->sizecode),VOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
 	f->numparams,f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->sizeupvalues));
