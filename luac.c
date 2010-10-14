@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.61 2010/05/14 11:40:22 lhf Exp lhf $
+** $Id: luac.c,v 1.62 2010/10/13 21:04:52 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -15,12 +15,8 @@
 #include "lua.h"
 #include "lauxlib.h"
 
-#include "ldo.h"
-#include "lfunc.h"
-#include "lmem.h"
 #include "lobject.h"
-#include "lopcodes.h"
-#include "lstring.h"
+#include "lstate.h"
 #include "lundump.h"
 
 #define PROGNAME	"luac"		/* default program name */
@@ -52,16 +48,16 @@ static void usage(const char* message)
  else
   fprintf(stderr,"%s: %s\n",progname,message);
  fprintf(stderr,
- "usage: %s [options] [filenames]\n"
- "Available options are:\n"
- "  -l       list\n"
- "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
- "  -p       parse only\n"
- "  -s       strip debug information\n"
- "  -v       show version information\n"
- "  --       stop handling options\n"
- "  -        stop handling options and process stdin\n"
- ,progname,Output);
+  "usage: %s [options] [filenames]\n"
+  "Available options are:\n"
+  "  -l       list\n"
+  "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
+  "  -p       parse only\n"
+  "  -s       strip debug information\n"
+  "  -v       show version information\n"
+  "  --       stop handling options\n"
+  "  -        stop handling options and process stdin\n"
+  ,progname,Output);
  exit(EXIT_FAILURE);
 }
 
@@ -115,7 +111,24 @@ static int doargs(int argc, char* argv[])
  return i;
 }
 
-#define toproto(L,i) (clvalue(L->top+(i))->l.p)
+#define FUNCTION "(function()end)();"
+
+static const char* reader(lua_State *L, void *ud, size_t *size)
+{
+ UNUSED(L);
+ if ((*(int*)ud)--)
+ {
+  *size=sizeof(FUNCTION)-1;
+  return FUNCTION;
+ }
+ else
+ {
+  *size=0;
+  return NULL;
+ }
+}
+
+#define toproto(L,i) getproto(L->top+(i))
 
 static const Proto* combine(lua_State* L, int n)
 {
@@ -123,24 +136,13 @@ static const Proto* combine(lua_State* L, int n)
   return toproto(L,-1);
  else
  {
-  int i,pc;
-  Proto* f=luaF_newproto(L);
-  setptvalue2s(L,L->top,f); incr_top(L);
-  f->source=luaS_newliteral(L,"=(" PROGNAME ")");
-  f->maxstacksize=1;
-  pc=2*n+1;
-  f->code=luaM_newvector(L,pc,Instruction);
-  f->sizecode=pc;
-  f->p=luaM_newvector(L,n,Proto*);
-  f->sizep=n;
-  pc=0;
-  for (i=0; i<n; i++)
-  {
-   f->p[i]=toproto(L,i-n-1);
-   f->code[pc++]=CREATE_ABx(OP_CLOSURE,0,i);
-   f->code[pc++]=CREATE_ABC(OP_CALL,0,1,1);
-  }
-  f->code[pc++]=CREATE_ABC(OP_RETURN,0,1,0);
+  Proto* f;
+  int i=n;
+  if (lua_load(L,reader,&i,"=(" PROGNAME ")")!=LUA_OK) fatal(lua_tostring(L,-1));
+  f=toproto(L,-1);
+  for (i=0; i<n; i++) f->p[i]=toproto(L,i-n-1);
+  f->sizelineinfo=0;
+  f->sizeupvalues=0;
   return f;
  }
 }
@@ -161,7 +163,7 @@ static int pmain(lua_State* L)
  for (i=0; i<argc; i++)
  {
   const char* filename=IS("-") ? NULL : argv[i];
-  if (luaL_loadfile(L,filename)!=0) fatal(lua_tostring(L,-1));
+  if (luaL_loadfile(L,filename)!=LUA_OK) fatal(lua_tostring(L,-1));
  }
  f=combine(L,argc);
  if (listing) luaU_print(f,listing>1);
@@ -189,7 +191,7 @@ int main(int argc, char* argv[])
  lua_pushcfunction(L,&pmain);
  lua_pushinteger(L,argc);
  lua_pushlightuserdata(L,argv);
- if (lua_pcall(L,2,0,0)!=0) fatal(lua_tostring(L,-1));
+ if (lua_pcall(L,2,0,0)!=LUA_OK) fatal(lua_tostring(L,-1));
  lua_close(L);
  return EXIT_SUCCESS;
 }
