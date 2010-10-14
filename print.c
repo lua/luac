@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.62 2010/10/13 21:04:52 lhf Exp lhf $
+** $Id: print.c,v 1.63 2010/10/14 03:19:39 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -13,7 +13,6 @@
 #include "ldebug.h"
 #include "lobject.h"
 #include "lopcodes.h"
-#include "lundump.h"
 
 #define PrintFunction	luaU_print
 
@@ -220,7 +219,7 @@ static void PrintDebug(const Proto* f)
  }
 }
 
-void PrintFunction(const Proto* f, int full)
+static void PrintFunction(const Proto* f, int full)
 {
  int i,n=f->sizep;
  PrintHeader(f);

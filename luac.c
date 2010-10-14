@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.62 2010/10/13 21:04:52 lhf Exp lhf $
+** $Id: luac.c,v 1.63 2010/10/14 03:19:39 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -18,6 +18,9 @@
 #include "lobject.h"
 #include "lstate.h"
 #include "lundump.h"
+
+static void PrintFunction(const Proto* f, int full);
+#define luaU_print	PrintFunction
 
 #define PROGNAME	"luac"		/* default program name */
 #define OUTPUT		PROGNAME ".out"	/* default output file */
@@ -195,3 +198,4 @@ int main(int argc, char* argv[])
  lua_close(L);
  return EXIT_SUCCESS;
 }
+
