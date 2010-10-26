@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.h,v 1.41 2010/10/13 21:04:52 lhf Exp lhf $
+** $Id: lundump.h,v 1.42 2010/10/14 13:15:30 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -19,13 +19,7 @@ LUAI_FUNC void luaU_header (char* h);
 /* dump one chunk; from ldump.c */
 LUAI_FUNC int luaU_dump (lua_State* L, const Proto* f, lua_Writer w, void* data, int strip);
 
-/* for header of binary files -- this is Lua 5.2 */
-#define LUAC_VERSION		0x52
-
-/* for header of binary files -- this is the official format */
-#define LUAC_FORMAT		0
-
 /* size of header of binary files */
-#define LUAC_HEADERSIZE		12
+#define LUAC_HEADERSIZE		18
 
 #endif
