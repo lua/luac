@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.64 2010/10/14 13:16:35 lhf Exp lhf $
+** $Id: print.c,v 1.65 2010/10/26 00:23:46 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -24,7 +24,7 @@ static void PrintString(const TString* ts)
  printf("%c",'"');
  for (i=0; i<n; i++)
  {
-  int c=s[i];
+  int c=(int)(unsigned char)s[i];
   switch (c)
   {
    case '"':  printf("\\\""); break;
@@ -39,7 +39,7 @@ static void PrintString(const TString* ts)
    default:	if (isprint(c))
    			printf("%c",c);
 		else
-			printf("\\%03u",(unsigned int)c);
+			printf("\\%03d",c);
   }
  }
  printf("%c",'"');
@@ -168,7 +168,7 @@ static void PrintCode(const Proto* f)
 }
 
 #define SS(x)	((x==1)?"":"s")
-#define S(x)	x,SS(x)
+#define S(x)	(int)(x),SS(x)
 
 static void PrintHeader(const Proto* f)
 {
@@ -184,7 +184,7 @@ static void PrintHeader(const Proto* f)
 	f->linedefined,f->lastlinedefined,
 	S(f->sizecode),VOID(f));
  printf("%d%s param%s, %d slot%s, %d upvalue%s, ",
-	f->numparams,f->is_vararg?"+":"",SS(f->numparams),
+	(int)(f->numparams),f->is_vararg?"+":"",SS(f->numparams),
 	S(f->maxstacksize),S(f->sizeupvalues));
  printf("%d local%s, %d constant%s, %d function%s\n",
 	S(f->sizelocvars),S(f->sizek),S(f->sizep));

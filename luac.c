@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.63 2010/10/14 03:19:39 lhf Exp lhf $
+** $Id: luac.c,v 1.64 2010/10/14 13:15:30 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -158,7 +158,7 @@ static int writer(lua_State* L, const void* p, size_t size, void* u)
 
 static int pmain(lua_State* L)
 {
- int argc=lua_tointeger(L,1);
+ int argc=(int)lua_tointeger(L,1);
  char** argv=lua_touserdata(L,2);
  const Proto* f;
  int i;
