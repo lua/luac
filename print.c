@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.63 2010/10/14 03:19:39 lhf Exp lhf $
+** $Id: print.c,v 1.64 2010/10/14 13:16:35 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -13,8 +13,6 @@
 #include "ldebug.h"
 #include "lobject.h"
 #include "lopcodes.h"
-
-#define PrintFunction	luaU_print
 
 #define Sizeof(x)	((int)sizeof(x))
 #define VOID(p)		((const void*)(p))
@@ -38,10 +36,10 @@ static void PrintString(const TString* ts)
    case '\r': printf("\\r"); break;
    case '\t': printf("\\t"); break;
    case '\v': printf("\\v"); break;
-   default:	if (isprint((unsigned char)c))
+   default:	if (isprint(c))
    			printf("%c",c);
 		else
-			printf("\\%03u",(unsigned char)c);
+			printf("\\%03u",(unsigned int)c);
   }
  }
  printf("%c",'"');
@@ -114,14 +112,14 @@ static void PrintCode(const Proto* f)
     break;
    case OP_GETUPVAL:
    case OP_SETUPVAL:
-    printf("\t; %s", UPVALNAME(b));
+    printf("\t; %s",UPVALNAME(b));
     break;
    case OP_GETTABUP:
-    printf("\t; %s", UPVALNAME(b));
+    printf("\t; %s",UPVALNAME(b));
     if (ISK(c)) { printf(" "); PrintConstant(f,INDEXK(c)); }
     break;
    case OP_SETTABUP:
-    printf("\t; %s", UPVALNAME(a));
+    printf("\t; %s",UPVALNAME(a));
     if (ISK(b)) { printf(" "); PrintConstant(f,INDEXK(b)); }
     if (ISK(c)) { printf(" "); PrintConstant(f,INDEXK(c)); }
     break;
