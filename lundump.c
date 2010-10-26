@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.66 2009/05/01 01:25:34 lhf Exp lhf $
+** $Id: lundump.c,v 1.67 2010/10/13 21:04:52 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -175,13 +175,22 @@ static Proto* LoadFunction(LoadState* S)
  return f;
 }
 
+/* the code below must be consistent with the code in luaU_header */
+#define N0	LUAC_HEADERSIZE
+#define N1	(sizeof(LUA_SIGNATURE)-1)
+#define N2	N1+2
+#define N3	N2+6
+
 static void LoadHeader(LoadState* S)
 {
  char h[LUAC_HEADERSIZE];
  char s[LUAC_HEADERSIZE];
  luaU_header(h);
  LoadBlock(S,s,LUAC_HEADERSIZE);
- if (memcmp(h,s,LUAC_HEADERSIZE)!=0) error(S,"incompatible");
+ if (memcmp(h,s,N0)==0) return;
+ if (memcmp(h,s,N1)!=0) error(S,"not a");
+ if (memcmp(h,s,N2)!=0) error(S,"version mismatch in");
+ if (memcmp(h,s,N3)!=0) error(S,"incompatible"); else error(S,"corrupted");
 }
 
 /*
@@ -203,22 +212,26 @@ Proto* luaU_undump (lua_State* L, ZIO* Z, Mbuffer* buff, const char* name)
  return LoadFunction(&S);
 }
 
+/* data to catch conversion errors */
+#define TAIL	"\x19\x93\r\n\x1a\n"
+
 /*
-* make header
-* if you make any changes in the header or in LUA_SIGNATURE,
-* be sure to update LUAC_HEADERSIZE accordingly in lundump.h.
+* make header for precompiled chunks
+* if you make any changes in the code below or in LUA_SIGNATURE in lua.h,
+* be sure to update LoadHeader above and LUAC_HEADERSIZE in lundump.h
 */
 void luaU_header (char* h)
 {
  int x=1;
  memcpy(h,LUA_SIGNATURE,sizeof(LUA_SIGNATURE)-1);
  h+=sizeof(LUA_SIGNATURE)-1;
- *h++=(char)LUAC_VERSION;
- *h++=(char)LUAC_FORMAT;
+ *h++=(char)0x52;				/* Lua 5.2 */
+ *h++=(char)0;					/* the official format */
  *h++=(char)*(char*)&x;				/* endianness */
  *h++=(char)sizeof(int);
  *h++=(char)sizeof(size_t);
  *h++=(char)sizeof(Instruction);
  *h++=(char)sizeof(lua_Number);
  *h++=(char)(((lua_Number)0.5)==0);		/* is lua_Number integral? */
+ memcpy(h,TAIL,sizeof(TAIL)-1);
 }
