@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.16 2008/09/11 12:05:06 lhf Exp lhf $
+** $Id: ldump.c,v 1.17 2010/10/13 21:04:52 lhf Exp lhf $
 ** save precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -69,7 +69,7 @@ static void DumpString(const TString* s, DumpState* D)
  {
   size_t size=s->tsv.len+1;		/* include trailing '\0' */
   DumpVar(size,D);
-  DumpBlock(getstr(s),size,D);
+  DumpBlock(getstr(s),size*sizeof(char),D);
  }
 }
 
@@ -150,7 +150,7 @@ static void DumpFunction(const Proto* f, DumpState* D)
 
 static void DumpHeader(DumpState* D)
 {
- char h[LUAC_HEADERSIZE];
+ lu_byte h[LUAC_HEADERSIZE];
  luaU_header(h);
  DumpBlock(h,LUAC_HEADERSIZE,D);
 }
