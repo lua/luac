@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.65 2010/10/26 00:23:46 lhf Exp lhf $
+** $Id: print.c,v 1.66 2010/10/26 09:07:52 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -69,6 +69,7 @@ static void PrintConstant(const Proto* f, int i)
 }
 
 #define UPVALNAME(x) ((f->upvalues[x].name) ? getstr(f->upvalues[x].name) : "-")
+#define MYK(x)		(-1-(x))
 
 static void PrintCode(const Proto* f)
 {
@@ -92,23 +93,25 @@ static void PrintCode(const Proto* f)
   {
    case iABC:
     printf("%d",a);
-    if (getBMode(o)!=OpArgN) printf(" %d",ISK(b) ? (-1-INDEXK(b)) : b);
-    if (getCMode(o)!=OpArgN) printf(" %d",ISK(c) ? (-1-INDEXK(c)) : c);
+    if (getBMode(o)!=OpArgN) printf(" %d",ISK(b) ? (MYK(INDEXK(b))) : b);
+    if (getCMode(o)!=OpArgN) printf(" %d",ISK(c) ? (MYK(INDEXK(c))) : c);
     break;
    case iABx:
-    if (getBMode(o)==OpArgK) printf("%d %d",a,-bx); else printf("%d %d",a,bx);
+    printf("%d",a);
+    if (getBMode(o)==OpArgK) printf(" %d",MYK(bx));
+    if (getBMode(o)==OpArgU) printf(" %d",bx);
     break;
    case iAsBx:
-    if (o==OP_JMP) printf("%d",sbx); else printf("%d %d",a,sbx);
+    printf("%d %d",a,sbx);
     break;
    case iAx:
-    printf("%d",-1-ax);
+    printf("%d",MYK(ax));
     break;
   }
   switch (o)
   {
    case OP_LOADK:
-    if (bx>0) { printf("\t; "); PrintConstant(f,bx-1); }
+    printf("\t; "); PrintConstant(f,bx);
     break;
    case OP_GETUPVAL:
    case OP_SETUPVAL:
@@ -154,8 +157,7 @@ static void PrintCode(const Proto* f)
     printf("\t; %p",VOID(f->p[bx]));
     break;
    case OP_SETLIST:
-    if (c==0) printf("\t; %d",(int)code[++pc]);
-    else printf("\t; %d",c);
+    if (c==0) printf("\t; %d",(int)code[++pc]); else printf("\t; %d",c);
     break;
    case OP_EXTRAARG:
     printf("\t; "); PrintConstant(f,ax);
