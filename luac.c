@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.64 2010/10/14 13:15:30 lhf Exp lhf $
+** $Id: luac.c,v 1.65 2010/10/26 09:07:52 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -143,9 +143,12 @@ static const Proto* combine(lua_State* L, int n)
   int i=n;
   if (lua_load(L,reader,&i,"=(" PROGNAME ")")!=LUA_OK) fatal(lua_tostring(L,-1));
   f=toproto(L,-1);
-  for (i=0; i<n; i++) f->p[i]=toproto(L,i-n-1);
+  for (i=0; i<n; i++)
+  {
+   f->p[i]=toproto(L,i-n-1);
+   if (f->p[i]->sizeupvalues>0) f->p[i]->upvalues[0].instack=0;
+  }
   f->sizelineinfo=0;
-  f->sizeupvalues=0;
   return f;
  }
 }
