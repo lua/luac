@@ -1,5 +1,5 @@
 /*
-** $Id: lundump.c,v 1.68 2010/10/26 00:23:46 lhf Exp lhf $
+** $Id: lundump.c,v 1.69 2011/05/06 13:35:17 lhf Exp lhf $
 ** load precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -44,7 +44,7 @@ static void error(LoadState* S, const char* why)
 
 static void LoadBlock(LoadState* S, void* b, size_t size)
 {
- if (luaZ_read(S->Z,b,size)!=0) error(S,"corrupted");
+ if (luaZ_read(S->Z,b,size)!=0) error(S,"truncated");
 }
 
 static int LoadChar(LoadState* S)
