@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.66 2010/10/26 09:07:52 lhf Exp lhf $
+** $Id: print.c,v 1.67 2011/05/06 13:37:15 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -14,7 +14,6 @@
 #include "lobject.h"
 #include "lopcodes.h"
 
-#define Sizeof(x)	((int)sizeof(x))
 #define VOID(p)		((const void*)(p))
 
 static void PrintString(const TString* ts)
