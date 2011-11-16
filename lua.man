@@ -1,5 +1,5 @@
-.\" $Id: lua.man,v 1.11 2006/01/06 16:03:34 lhf Exp lhf $
-.TH LUA 1 "$Date: 2006/01/06 16:03:34 $"
+.\" $Id: lua.man,v 1.12 2011/11/16 13:53:40 lhf Exp lhf $
+.TH LUA 1 "$Date: 2011/11/16 13:53:40 $"
 .SH NAME
 lua \- Lua interpreter
 .SH SYNOPSIS
@@ -60,12 +60,6 @@ then
 .B lua
 evaluates and displays
 the values of the expressions in the remainder of the line.
-The primary and secondary prompt are the value of the global variables
-.B _PROMPT
-and
-.BR _PROMPT2 ,
-if set.
-The default prompts are "> " and ">> ".
 .LP
 At the very start,
 before even handling the command line,
@@ -111,7 +105,8 @@ stop handling options and execute the standard input as a file.
 .SH "SEE ALSO"
 .BR luac (1)
 .br
-The documentation at lua.org.
+The documentation at lua.org,
+especially section 7 of the reference manual.
 .SH DIAGNOSTICS
 Error messages should be self explanatory.
 .SH AUTHORS
