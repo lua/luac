@@ -1,5 +1,5 @@
 /*
-** $Id: ldump.c,v 1.17 2010/10/13 21:04:52 lhf Exp lhf $
+** $Id: ldump.c,v 1.18 2011/05/06 13:35:17 lhf Exp lhf $
 ** save precompiled Lua chunks
 ** See Copyright Notice in lua.h
 */
@@ -111,8 +111,8 @@ static void DumpUpvalues(const Proto* f, DumpState* D)
  DumpInt(n,D);
  for (i=0; i<n; i++)
  {
-  DumpChar(f->upvalues[i].instack, D);
-  DumpChar(f->upvalues[i].idx, D);
+  DumpChar(f->upvalues[i].instack,D);
+  DumpChar(f->upvalues[i].idx,D);
  }
 }
 
