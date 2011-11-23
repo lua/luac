@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.66 2011/05/10 01:08:57 lhf Exp lhf $
+** $Id: luac.c,v 1.67 2011/06/21 12:29:00 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also list bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -53,7 +53,7 @@ static void usage(const char* message)
  fprintf(stderr,
   "usage: %s [options] [filenames]\n"
   "Available options are:\n"
-  "  -l       list\n"
+  "  -l       list (use -l -l for full listing)\n"
   "  -o name  output to file " LUA_QL("name") " (default is \"%s\")\n"
   "  -p       parse only\n"
   "  -s       strip debug information\n"
