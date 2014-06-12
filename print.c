@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.71 2014/06/12 02:17:09 lhf Exp lhf $
+** $Id: print.c,v 1.72 2014/06/12 02:28:56 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -136,8 +136,14 @@ static void PrintCode(const Proto* f)
    case OP_ADD:
    case OP_SUB:
    case OP_MUL:
-   case OP_DIV:
    case OP_POW:
+   case OP_DIV:
+   case OP_IDIV:
+   case OP_BAND:
+   case OP_BOR:
+   case OP_BXOR:
+   case OP_SHL:
+   case OP_SHR:
    case OP_EQ:
    case OP_LT:
    case OP_LE:
