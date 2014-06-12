@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.70 2014/06/12 02:13:44 lhf Exp lhf $
+** $Id: print.c,v 1.71 2014/06/12 02:17:09 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -47,7 +47,7 @@ static void PrintString(const TString* ts)
 static void PrintConstant(const Proto* f, int i)
 {
  const TValue* o=&f->k[i];
- switch (ttnov(o))
+ switch (ttype(o))
  {
   case LUA_TNIL:
 	printf("nil");
