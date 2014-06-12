@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.69 2013/07/04 01:03:46 lhf Exp lhf $
+** $Id: print.c,v 1.70 2014/06/12 02:13:44 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -61,7 +61,7 @@ static void PrintConstant(const Proto* f, int i)
   case LUA_TNUMINT:
 	printf(LUA_INTEGER_FMT,ivalue(o));
 	break;
-  case LUA_TSHRSTR: case LUA_TLNGSTR
+  case LUA_TSHRSTR: case LUA_TLNGSTR:
 	PrintString(rawtsvalue(o));
 	break;
   default:				/* cannot happen */
