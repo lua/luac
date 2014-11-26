@@ -1,5 +1,5 @@
 /*
-** $Id: luac.c,v 1.69 2011/11/29 17:46:33 lhf Exp lhf $
+** $Id: luac.c,v 1.70 2014/11/21 12:26:39 lhf Exp lhf $
 ** Lua compiler (saves bytecodes to files; also lists bytecodes)
 ** See Copyright Notice in lua.h
 */
@@ -9,6 +9,7 @@
 
 #include "lprefix.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
