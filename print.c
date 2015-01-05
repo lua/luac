@@ -1,5 +1,5 @@
 /*
-** $Id: print.c,v 1.74 2014/07/21 01:41:45 lhf Exp lhf $
+** $Id: print.c,v 1.75 2015/01/03 17:51:00 lhf Exp lhf $
 ** print bytecodes
 ** See Copyright Notice in lua.h
 */
@@ -56,11 +56,13 @@ static void PrintConstant(const Proto* f, int i)
 	printf(bvalue(o) ? "true" : "false");
 	break;
   case LUA_TNUMFLT:
+	{
 	char buff[100];
 	sprintf(buff,LUA_NUMBER_FMT,fltvalue(o));
 	printf("%s",buff);
 	if (buff[strspn(buff,"-0123456789")]=='\0') printf(".0");
 	break;
+	}
   case LUA_TNUMINT:
 	printf(LUA_INTEGER_FMT,ivalue(o));
 	break;
