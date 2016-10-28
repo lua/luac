@@ -1,14 +1,18 @@
-# $Id: Makefile,v 1.24 2004/11/25 09:35:24 lhf Exp lhf $
+# $Id: Makefile,v 1.25 2005/05/12 00:29:32 lhf Exp lhf $
 # makefile for Lua compiler
 
-LUA=..
-WARN= -ansi -pedantic -Wall -W
+LUA= distr
+WARN= -Wall -Wextra $(XWARN)
+XWARN= -Wc++-compat -Wwrite-strings -Wstrict-prototypes -Wmissing-prototypes
+XWARN=
+
+CC= gcc -std=gnu99
 CFLAGS= -O2 $(WARN) $(INCS) $G
 INCS= -I$(LUA)
 
 LIBS= $(LUA)/liblua.a -lm
-OBJS= ldump.o luac.o lundump.o print.o
-SRCS= ldump.c luac.c lundump.c print.c lundump.h
+OBJS= luac.o
+SRCS= luac.c
 
 # targets --------------------------------------------------------------------
 
@@ -18,13 +22,13 @@ luac:	$(OBJS) $(LIBS)
 	$(CC) -o $@ $(OBJS) $(LIBS)
 
 $(LIBS):
-	make -C $(LUA) o $@
+	make -C $(LUA) a "CFLAGS=$(CFLAGS)"
 
 print.c:	$(LUA)/lopcodes.h
 	@diff lopcodes.h $(LUA)
 
 clean:
-	-rm -f luac *.o luac.out a.out core core.* mon.out gmon.out tags luac.lst
+	-rm -f luac *.o luac.out a.out core core.* mon.out gmon.out tags luac.lst lua
 	@#cd test; $(MAKE) $@
 
 co:
@@ -37,38 +41,20 @@ ci:
 	ci -u $(SRCS)
 
 diff:
-	@-rcsdiff $(SRCS) Makefile 2>&1 | awk -f rcsdiff.awk
+	@#-rcsdiff $(SRCS) Makefile 2>&1 | awk -f rcsdiff.awk
+	@-rcsdiff $(SRCS) 2>&1 | awk -f rcsdiff.awk
 
 wl:
-	@rlog -L -R RCS/* | sed 's/RCS.//;s/,v//' 
-
-what:
-	@grep '^[^	].*:' Makefile | cut -f1 -d: | sort | column
-
-ln:
-	ln -s L/*.[ch] .
-
-lo:
-	cp -fp $(LUA)/lopcodes.h .
-
-tags:	$(SRCS)
-	ctags $(SRCS)
-
-depend:
-	@$(CC) -MM $(CFLAGS) $(SRCS)
+	@rlog -L -R RCS/* | sed 's/RCS.//;s/,v//'
 
 opp:
 	grep Kst lopcodes.h | grep ^OP_; echo ''
 	grep RK  lopcodes.h | grep ^OP_; echo ''
 	grep pc  lopcodes.h | grep ^OP_; echo ''
 
-u:	$(OBJS)
-	nm -o $(OBJS) | grep 'U lua'
-
-api:	$(OBJS)
-	nm -o *.o | grep 'T lua._' | sed 's/:.*T /	/'
-
-libc:	$(OBJS)
-	rm -f lua.o
-	nm -o *.o | grep -v 'lib.o' | grep ' U ' | grep -v ' U lua'
+diffd:
+	-diff ldump.c $(LUA)
+	-diff lundump.c $(LUA)
+	-diff lundump.h $(LUA)
+	-cat luac.c print.c | diff - $(LUA)/luac.c
 
